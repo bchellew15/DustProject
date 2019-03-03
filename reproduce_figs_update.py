@@ -1,6 +1,7 @@
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
+from time import time
 
 #reproduce figures 3-6 from the paper
 #but using correction factor for i100 to account for tao, optical depth
@@ -8,6 +9,9 @@ import matplotlib.pyplot as plt
 
 #NEXT: update code with xlambda
 #check paper to make sure this is correct
+
+t1 = time()
+t4 = 0 #for later
 
 #load data
 fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
@@ -23,6 +27,9 @@ wavelength = np.array(hdulist[1].data)  # Angstroms
 flambda = np.array(hdulist[2].data)     # df/dlam, units of 1e-17 erg/s/cm^2/A
 ivar = np.array(hdulist[3].data)        # inverse variance, units of 1/flambda^2
 ivar *= (ivar > 0) #correct the negative values
+
+t2 = time()
+print("check 1: ", t2-t1)
 
 #no need to mask now; we are accounting for optical depth
 
@@ -44,15 +51,15 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     x1 *= freq100
     #avg x1 over plates (assuming in ascending order)
     x2 = np.zeros(x1.shape) #will be array of averages
-    plate_numbers = np.unique(plate_)
-    for p in plate_numbers:
-        mask = np.isin(plate_, p)
-        mask = mask.reshape(len(mask), 1)
-        mask = np.tile(mask, len(wavelength))
-        
-        vals_on_plate = x1[mask]
-        avg = np.mean(vals_on_plate)
-        np.putmask(x2, mask, avg)
+
+    t3 = time()
+    print("check 2: ", t3-t2)
+
+    boundaries = np.sort(np.unique(plate_, return_index=True)[1])
+    for idx, b in enumerate(boundaries[:-1]):
+        avgs = np.mean(x1[boundaries[idx]:boundaries[idx+1]], axis=0) #mean across plates, not wavelength
+        x2[boundaries[idx]:boundaries[idx+1]] = avgs
+    
     x = np.subtract(x1, x2)
     #unit conversion (see notes)
     x *= (1.617 * 10**-10)
@@ -60,6 +67,9 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     for i in range(0, len(wavelength)):
         ivar_[:,i] /= pow(wavelength[i], 2)
 
+    t4 = time()
+    print("check 3: ", t4-t3)
+        
     #calculate alpha
     alphas = np.zeros(wavelength.shape)
     alpha_std = np.zeros(wavelength.shape)
@@ -110,6 +120,8 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
 #figure 3: 
 plot_alphas(i100, plate, flambda, ivar, 'k', bin=True)
+t5 = time()
+print("check 2: ", t5 - t4)
 plt.show()
 
 

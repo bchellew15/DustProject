@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from time import time
 
-time1 = time()
+t1 = time()
 
 #load data
 fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
@@ -20,12 +20,10 @@ flambda = np.array(hdulist[2].data)     # df/dlam, units of 1e-17 erg/s/cm^2/A
 ivar = np.array(hdulist[3].data)        # inverse variance, units of 1/flambda^2
 ivar *= (ivar > 0) #correct the negative values
 
-for p in plate:
-    print(p)
-exit(0)
+t2 = time()
+print("check 1: ", t2-t1)
 
-time2 = time()
-print("check 1: ", time2-time1)
+print("wavelength shape: ", wavelength.shape)
 
 #mask the high-intensity values:
 mask_indices = np.arange(len(i100))[i100>10]
@@ -36,18 +34,30 @@ plate = np.delete(plate, mask_indices)
 flambda = np.delete(flambda, mask_indices, 0)
 ivar = np.delete(ivar, mask_indices, 0)
 
-time3 = time()
-print("check 2: ", time3-time2)
+t3 = time()
+print("check 2: ", t3-t2)
 
 def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
     plate_ = np.copy(plate)
     ivar_ = np.copy(ivar)
+
+    t3a = time()
+    print("check 3a: ", t3a-t3)
+    
     
     #calculate y
     y = np.copy(flambda)
     for i in range(0, len(wavelength)):
         y[:,i] *= wavelength[i]
+
+    y2 = np.multiply(flambda, wavelength)
+
+    for idx, elem in enumerate(y):
+        print(elem, " ", y2[idx])
+
+    t3b = time()
+    print("check 3b: ", t3b-t3a)
         
     #calculate x
     lam100 = 100 * pow(10,-6)
@@ -57,13 +67,20 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     x1 *= freq100
     #avg x1 over plates (assuming in ascending order)
     x2 = np.zeros(x1.shape) #will be array of averages
-    plate_numbers = np.unique(plate_)
-    for p in plate_numbers:
-        mask = np.isin(plate_, p)
-        vals_on_plate = x1[mask]
-        avg = np.mean(vals_on_plate)
-        np.putmask(x2, mask, avg)
+
+    t4 = time()
+    print("check 3c: ", t4-t3b)
+    
+    boundaries = np.sort(np.unique(plate_, return_index=True)[1])
+    for idx, b in enumerate(boundaries[:-1]):
+        avgs = np.mean(x1[boundaries[idx]:boundaries[idx+1]], axis=0) #mean across plates, not wavelength
+        x2[boundaries[idx]:boundaries[idx+1]] = avgs
+        
     x = np.subtract(x1, x2)
+
+    t5 = time()
+    print("check 4: ", t5-t4)
+
     #unit conversion (see notes)
     x *= (1.617 * 10**-10)
     #unit conversion for ivar:
@@ -73,19 +90,23 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     #calculate alpha
     alphas = np.zeros(wavelength.shape)
     alpha_std = np.zeros(wavelength.shape)
+
+    xx = np.multiply(x, x)
     for i, lmda in enumerate(wavelength):
         ylambda = y[:,i]
         varlambda = ivar_[:,i]
         yx = np.multiply(ylambda, x)
         yxsig = np.multiply(yx, varlambda)
         sum1 = np.sum(yxsig)
-        xx = np.multiply(x, x)
         xxsig = np.multiply(xx, varlambda)
         sum2 = np.sum(xxsig)
         alpha = sum1 / sum2
         alphas[i] = alpha
         alpha_std[i] = np.sqrt(1/sum2)
 
+    t6 = time()
+    print("check 5: ", t6-t5)
+        
     if bin:
         #binning:
         binned_lambdas = np.arange(3900, 9000, 50)
@@ -111,6 +132,9 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
         plt.plot(wavelength[50:-100], alphas[50:-100], color)
         plt.plot(wavelength[50:-100], alpha_std[50:-100], color)
 
+    t7 = time()
+    print("check 6: ", t7-t6)
+        
     print("alphas :", alpha_std)
 
     plt.xlabel("Wavelength")
@@ -120,9 +144,6 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 #figure 3: 
 plot_alphas(i100, plate, flambda, ivar, 'k', bin=True)
 plt.show()
-
-time4 = time()
-print("check 3: ", time4-time3)
 
 
 '''
