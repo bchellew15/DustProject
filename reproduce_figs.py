@@ -26,6 +26,7 @@ print("check 1: ", t2-t1)
 print("flambda shape: ", flambda.shape)
 print("wavelength shape: ", wavelength.shape)
 
+
 #mask the high-intensity values:
 mask_indices = np.arange(len(i100))[i100>10]
 l = np.delete(l, mask_indices)
@@ -34,6 +35,7 @@ i100 = np.delete(i100, mask_indices)
 plate = np.delete(plate, mask_indices)
 flambda = np.delete(flambda, mask_indices, 0)
 ivar = np.delete(ivar, mask_indices, 0)
+
 
 t3 = time()
 print("check 2: ", t3-t2)

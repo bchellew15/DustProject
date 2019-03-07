@@ -21,8 +21,7 @@ for i in range(len(l)):
 b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
 
 i100 = np.load("/Users/blakechellew/Documents/DustProject/taos.npy") # 100 micron intensity (MJy/sr), plus correction factor with tao
-#i100 = np.array(fiberinfo[:, 4])  # 100 micron intensity (MJy/sr)
-#i100 = np.tile(i100, 4000, axis=0)
+i100_old = np.array(fiberinfo[:, 4])  # 100 micron intensity (MJy/sr)
 
 hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
 plate = np.array(hdulist[0].data)
@@ -35,6 +34,17 @@ t2 = time()
 print("check 1: ", t2-t1)
 
 #no need to mask now; we are accounting for optical depth
+
+'''
+#mask the high-intensity values:
+mask_indices = np.arange(len(i100_old))[i100_old>10]
+l = np.delete(l, mask_indices)
+b = np.delete(b, mask_indices)
+i100 = np.delete(i100, mask_indices, 0)
+plate = np.delete(plate, mask_indices)
+flambda = np.delete(flambda, mask_indices, 0)
+ivar = np.delete(ivar, mask_indices, 0)
+'''
 
 def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
