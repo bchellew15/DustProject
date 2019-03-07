@@ -11,7 +11,6 @@ from time import time
 #check paper to make sure this is correct
 
 t1 = time()
-t4 = 0 #for later
 
 #load data
 fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
@@ -20,7 +19,11 @@ for i in range(len(l)):
     if l[i] > 180:
         l[i] = l[i] - 360
 b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
+
 i100 = np.load("/Users/blakechellew/Documents/DustProject/taos.npy") # 100 micron intensity (MJy/sr), plus correction factor with tao
+#i100 = np.array(fiberinfo[:, 4])  # 100 micron intensity (MJy/sr)
+#i100 = np.tile(i100, 4000, axis=0)
+
 hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
 plate = np.array(hdulist[0].data)
 wavelength = np.array(hdulist[1].data)  # Angstroms
@@ -37,6 +40,8 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
     plate_ = np.copy(plate)
     ivar_ = np.copy(ivar)
+
+    t3 = time()
     
     #calculate y
     #consider changing to np.multiply, might cause rest to take longer
@@ -53,8 +58,8 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     #avg x1 over plates (assuming in ascending order)
     x2 = np.zeros(x1.shape) #will be array of averages
 
-    t3 = time()
-    print("check 2: ", t3-t2)
+    t4 = time()
+    print("check 2: ", t4-t3)
 
     boundaries = np.sort(np.unique(plate_, return_index=True)[1])
     for idx, b in enumerate(boundaries[:-1]):
@@ -66,28 +71,23 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     x *= (1.617 * 10**-10)
 
     #unit conversion for ivar:
-    for i in range(0, len(wavelength)):
-        ivar_[:,i] /= pow(wavelength[i], 2)
+    ivar_ /= np.power(wavelength, 2)
 
-    t4 = time()
-    print("check 3: ", t4-t3)
-        
+    t5 = time()
+    print("check 3: ", t5-t4)
+
     #calculate alpha
-    alphas = np.zeros(wavelength.shape)
-    alpha_std = np.zeros(wavelength.shape)
-    for i, lmda in enumerate(wavelength):
-        xlambda = x[:,i]
-        ylambda = y[:,i]
-        varlambda = ivar_[:,i]
-        yx = np.multiply(ylambda, xlambda)
-        yxsig = np.multiply(yx, varlambda)
-        sum1 = np.sum(yxsig)
-        xx = np.multiply(xlambda, xlambda)
-        xxsig = np.multiply(xx, varlambda)
-        sum2 = np.sum(xxsig)
-        alpha = sum1 / sum2
-        alphas[i] = alpha
-        alpha_std[i] = np.sqrt(1/sum2)
+    xx = np.multiply(x, x)
+    yx = np.multiply(y, x)
+    yxsig = np.multiply(yx, ivar_)
+    xxsig = np.multiply(xx, ivar_)
+    sums1 = np.sum(yxsig, axis=0)
+    sums2 = np.sum(xxsig, axis=0)
+    alphas = np.divide(sums1, sums2)
+    alpha_std = np.sqrt(1/sums2)
+
+    t6 = time()
+    print("check 4: ", t6-t5)
 
     if bin:
         #binning:
@@ -114,6 +114,9 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
         plt.plot(wavelength[50:-100], alphas[50:-100], color)
         plt.plot(wavelength[50:-100], alpha_std[50:-100], color)
 
+    t7 = time()
+    print("check 5: ", t7-t6)
+        
     print("alphas :", alpha_std)
 
     plt.xlabel("Wavelength")
@@ -122,8 +125,6 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
 #figure 3: 
 plot_alphas(i100, plate, flambda, ivar, 'k', bin=True)
-t5 = time()
-print("check 2: ", t5 - t4)
 plt.show()
 
 
