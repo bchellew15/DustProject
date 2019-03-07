@@ -39,6 +39,7 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     ivar_ = np.copy(ivar)
     
     #calculate y
+    #consider changing to np.multiply, might cause rest to take longer
     y = np.copy(flambda)
     for i in range(0, len(wavelength)):
         y[:,i] *= wavelength[i]
@@ -63,6 +64,7 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     x = np.subtract(x1, x2)
     #unit conversion (see notes)
     x *= (1.617 * 10**-10)
+
     #unit conversion for ivar:
     for i in range(0, len(wavelength)):
         ivar_[:,i] /= pow(wavelength[i], 2)

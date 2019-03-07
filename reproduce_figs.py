@@ -23,6 +23,7 @@ ivar *= (ivar > 0) #correct the negative values
 t2 = time()
 print("check 1: ", t2-t1)
 
+print("flambda shape: ", flambda.shape)
 print("wavelength shape: ", wavelength.shape)
 
 #mask the high-intensity values:
@@ -45,16 +46,12 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     t3a = time()
     print("check 3a: ", t3a-t3)
     
-    
     #calculate y
     y = np.copy(flambda)
     for i in range(0, len(wavelength)):
         y[:,i] *= wavelength[i]
 
-    y2 = np.multiply(flambda, wavelength)
-
-    for idx, elem in enumerate(y):
-        print(elem, " ", y2[idx])
+    #y = np.multiply(flambda, wavelength)
 
     t3b = time()
     print("check 3b: ", t3b-t3a)
@@ -83,29 +80,26 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
     #unit conversion (see notes)
     x *= (1.617 * 10**-10)
-    #unit conversion for ivar:
-    for i in range(0, len(wavelength)):
-        ivar_[:,i] /= pow(wavelength[i], 2)
+    x = x.reshape(len(x), 1)
 
+    #unit conversion for ivar
+    ivar_ /= np.power(wavelength, 2)
+
+    t5b = time()
+    print("check 4b: ", t5b-t5)
+        
     #calculate alpha
-    alphas = np.zeros(wavelength.shape)
-    alpha_std = np.zeros(wavelength.shape)
-
     xx = np.multiply(x, x)
-    for i, lmda in enumerate(wavelength):
-        ylambda = y[:,i]
-        varlambda = ivar_[:,i]
-        yx = np.multiply(ylambda, x)
-        yxsig = np.multiply(yx, varlambda)
-        sum1 = np.sum(yxsig)
-        xxsig = np.multiply(xx, varlambda)
-        sum2 = np.sum(xxsig)
-        alpha = sum1 / sum2
-        alphas[i] = alpha
-        alpha_std[i] = np.sqrt(1/sum2)
-
+    yx = np.multiply(y, x)
+    yxsig = np.multiply(yx, ivar_)
+    xxsig = np.multiply(xx, ivar_)
+    sums1 = np.sum(yxsig, axis=0)
+    sums2 = np.sum(xxsig, axis=0)
+    alphas = np.divide(sums1, sums2)
+    alpha_std = np.sqrt(1/sums2)
+        
     t6 = time()
-    print("check 5: ", t6-t5)
+    print("check 5: ", t6-t5b)
         
     if bin:
         #binning:
