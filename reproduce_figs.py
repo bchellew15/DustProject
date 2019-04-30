@@ -16,7 +16,7 @@ plate = np.array(hdulist[0].data)
 wavelength = np.array(hdulist[1].data)  # Angstroms
 flambda = np.array(hdulist[2].data)     # df/dlam, units of 1e-17 erg/s/cm^2/A
 ivar = np.array(hdulist[3].data)        # inverse variance, units of 1/flambda^2
-#ivar *= (ivar > 0) #correct the negative values
+ivar *= (ivar > 0) #correct the negative values
 
 #mask the high-intensity values:
 mask_indices = np.arange(len(i100))[i100>10]
@@ -27,7 +27,7 @@ plate = np.delete(plate, mask_indices)
 flambda = np.delete(flambda, mask_indices, 0)
 ivar = np.delete(ivar, mask_indices, 0)
 
-#unit conversion for ivar
+#convert ivar to ivar of y
 ivar /= np.power(wavelength, 2)
 
 #calculate x, y, alpha. then plot alpha vs. wavelength
