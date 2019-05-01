@@ -10,7 +10,7 @@ for i in range(len(l)): #convert l to range: -180 to 180
     if l[i] > 180:
         l[i] = l[i] - 360
 b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
-i100 = np.array(fiberinfo[:, 4])  # 100 micron intensity (MJy/sr)
+i100 = np.array(fiberinfo[:, 4]).astype('float32')  # 100 micron intensity (MJy/sr)
 hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
 plate = np.array(hdulist[0].data)
 wavelength = np.array(hdulist[1].data)  # Angstroms
@@ -18,6 +18,7 @@ flambda = np.array(hdulist[2].data)     # df/dlam, units of 1e-17 erg/s/cm^2/A
 ivar = np.array(hdulist[3].data)        # inverse variance, units of 1/flambda^2
 ivar *= (ivar > 0) #correct the negative values
 
+'''
 #mask the high-intensity values:
 mask_indices = np.arange(len(i100))[i100>10]
 l = np.delete(l, mask_indices)
@@ -26,6 +27,9 @@ i100 = np.delete(i100, mask_indices)
 plate = np.delete(plate, mask_indices)
 flambda = np.delete(flambda, mask_indices, 0)
 ivar = np.delete(ivar, mask_indices, 0)
+'''
+#new masking
+ivar[i100>10] = 0
 
 #convert ivar to ivar of y
 ivar /= np.power(wavelength, 2)
@@ -85,12 +89,12 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
             binned_alphas[i] = avg1
             binned_std[i] = np.sqrt(avg2)
         #plot alpha vs. wavelength
-        plt.plot(binned_lambdas[0:-2], binned_alphas[0:-2], color, marker='.')
-        plt.plot(binned_lambdas[0:-2], binned_std[0:-2], color)
+        plt.scatter(binned_lambdas[0:-2], binned_alphas[0:-2], s=5, c=color)
+        plt.scatter(binned_lambdas[0:-2], binned_std[0:-2], s=5, c=color)
     else: 
         #plot alpha vs. wavelength
-        plt.plot(wavelength[50:-100], alphas[50:-100], color)
-        plt.plot(wavelength[50:-100], alpha_std[50:-100], color)
+        plt.scatter(wavelength[50:-100], alphas[50:-100], s=5, c=color)
+        plt.scatter(wavelength[50:-100], alpha_std[50:-100], s=5, c=color)
 
     plt.xlabel("Wavelength")
     plt.ylabel("Alpha")

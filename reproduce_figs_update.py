@@ -7,6 +7,8 @@ from time import time
 #but using correction factor for i100 to account for tao (optical depth)
 #note: this does not include updated i100 values
 
+print("Testing")
+
 #load data
 fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
 l = np.array(fiberinfo[:, 2])     # Galactic longitude, degrees
@@ -14,7 +16,8 @@ for i in range(len(l)):
     if l[i] > 180:
         l[i] = l[i] - 360
 b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
-i100 = np.load("/Users/blakechellew/Documents/DustProject/i100_tao.npy").astype('float32') # 100 micron intensity (MJy/sr), plus correction factor with tao
+#100 micron intensity (MJy/sr), plus correction factor with tao
+i100 = np.load("/Users/blakechellew/Documents/DustProject/i100_tao.npy").astype('float32') 
 i100_old = np.array(fiberinfo[:, 4])  # 100 micron intensity (MJy/sr)
 hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
 plate = np.array(hdulist[0].data)
@@ -23,6 +26,7 @@ flambda = np.array(hdulist[2].data)     # df/dlam, units of 1e-17 erg/s/cm^2/A
 ivar = np.array(hdulist[3].data)        # inverse variance, units of 1/flambda^2
 ivar *= (ivar > 0) #correct the negative values
 
+'''
 #mask the high-intensity values:
 mask_indices = np.arange(i100.shape[0])[i100_old>10]
 l = np.delete(l, mask_indices)
@@ -31,11 +35,14 @@ i100 = np.delete(i100, mask_indices, 0)
 plate = np.delete(plate, mask_indices)
 flambda = np.delete(flambda, mask_indices, 0)
 ivar = np.delete(ivar, mask_indices, 0)
+'''
+#better masking:
+ivar[i100_old>10] = 0
+
+print("testing")
 
 #convert ivar to ivar of y
 ivar /= np.power(wavelength, 2)
-
-print(type(i100[0,0]))
 
 #calculate x, y, alpha. then plot alpha vs. wavelength
 def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
@@ -47,11 +54,9 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     c = 2.998 * pow(10, 8) #speed of light
     freq100 = c / lam100
     x1 = np.copy(i100)
-    print(type(x1[0,0]))
     x1 *= freq100
     #avg x1 over plates (assuming in ascending order)
     x2 = np.zeros(x1.shape, dtype='float32') #x2 will be array of averages
-    print(type(x2[0,0]))
     boundaries = np.sort(np.unique(plate, return_index=True)[1])
     for idx, b in enumerate(boundaries[:-1]):
         avgs = np.mean(x1[boundaries[idx]:boundaries[idx+1]], axis=0) #mean across plates, not wavelength
@@ -62,11 +67,6 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
     #x unit conversion
     x *= (1.617 * 10**-10)
-    print(type(x[0,0]))
-
-    print("x data type: ", type(x[0,0]))
-    print("y data type: ", type(y[0,0]))
-    print("ivar data type: ", type(ivar[0,0]))
     
     #calculate alpha
     xx = np.multiply(x, x)
@@ -95,12 +95,12 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
             avg2 = 1 / denominator
             binned_alphas[i] = avg1
             binned_std[i] = np.sqrt(avg2)
-        plt.plot(binned_lambdas[0:-2], binned_alphas[0:-2], color, marker='.')
-        plt.plot(binned_lambdas[0:-2], binned_std[0:-2], color)
+        plt.scatter(binned_lambdas[0:-2], binned_alphas[0:-2], s=5, c=color)
+        plt.scatter(binned_lambdas[0:-2], binned_std[0:-2], s=5, c=color)
     else: 
         #plot alpha vs. wavelength
-        plt.plot(wavelength[50:-100], alphas[50:-100], color)
-        plt.plot(wavelength[50:-100], alpha_std[50:-100], color)
+        plt.scatter(wavelength[50:-100], alphas[50:-100], s=5, c=color)
+        plt.scatter(wavelength[50:-100], alpha_std[50:-100], s=5, c=color)
 
     plt.xlabel("Wavelength")
     plt.ylabel("Alpha")
