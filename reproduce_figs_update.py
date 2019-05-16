@@ -7,8 +7,6 @@ from time import time
 #but using correction factor for i100 to account for tao (optical depth)
 #note: this does not include updated i100 values
 
-print("Testing")
-
 #load data
 fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
 l = np.array(fiberinfo[:, 2])     # Galactic longitude, degrees
@@ -38,8 +36,6 @@ ivar = np.delete(ivar, mask_indices, 0)
 '''
 #better masking:
 ivar[i100_old>10] = 0
-
-print("testing")
 
 #convert ivar to ivar of y
 ivar /= np.power(wavelength, 2)
@@ -95,8 +91,8 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
             avg2 = 1 / denominator
             binned_alphas[i] = avg1
             binned_std[i] = np.sqrt(avg2)
-        plt.scatter(binned_lambdas[0:-2], binned_alphas[0:-2], s=5, c=color)
-        plt.scatter(binned_lambdas[0:-2], binned_std[0:-2], s=5, c=color)
+        plt.scatter(binned_lambdas, binned_alphas, s=5, c=color)
+        plt.scatter(binned_lambdas, binned_std, s=5, c=color)
     else: 
         #plot alpha vs. wavelength
         plt.scatter(wavelength[50:-100], alphas[50:-100], s=5, c=color)

@@ -6,17 +6,27 @@ from astropy.io import fits
 import glob
 import os
 import scipy.interpolate as interpolate
+import matplotlib.pyplot as plt
+from time import time
+import astropy.wcs as wcs #for ad2xy
 
 #next steps:
-#finish implementing functions
 #test functions independently
-#better way to convert coordinates (find examples)
-#upload to github
+#look at output step by step
+#better way to convert coordinates? (find examples)
+#are there undefined values in the map?
+
+'''
+issues:
+subtracting 1 in the ad2xy method
+
+
+'''
 
 
 #should work
 #if select == 2, galactic to RA / DEC
-#fk4 == 1 means convert to B1950
+#fk4 == 1 means convert to B1950 (0 means J2000)
 #result is in degrees
 def euler(alpha, delta, select, fk4):
     if select == 2:
@@ -27,6 +37,7 @@ def euler(alpha, delta, select, fk4):
     elif select == 3:
         #convert ecliptic to celestial
         print("not implemented yet")
+    return alpha, delta
 
 #not needed
 #implemented in IDL
@@ -38,7 +49,7 @@ def nan2undef(l, undef):
     l[np.isnan(l)] = undef
 
 #implemented in IDL
-def get_iris(num, direc, band, silent):
+def get_iris(num, direc, band):
     bd = str(band)
     iras_number= str(int(num))
     if num < 100:
@@ -50,10 +61,11 @@ def get_iris(num, direc, band, silent):
     result = glob.glob(direc+'/?'+iras_number+'?'+bd+'?'+hnum+'.*')
     count = len(result)
     if count > 0:
-        imap = fits.open(result[0])[0].data[0]
+        fits.setval(result[0], 'CDELT3', value=1) #TEST: modify header
+        ifile = fits.open(result[0])
+        imap = ifile[0].data[0]
         header = fits.open(result[0])[0].header
-        print(header)
-        #sxaddpar?
+        #sxaddpar sets LONPOLE to 180, but already there.
         bad = np.where((imap < -5) + (imap == 0))[0]
         nbbad = len(bad)
         if nbbad > 0:
@@ -124,6 +136,41 @@ def ad2xy(alpha, delta, header):
 
     return galaxy_X, galaxy_Y
 
+#used formula for tangent projection:
+#https://lambda.gsfc.nasa.gov/product/iras/coordproj.cfm
+def my_ad2xy(alpha, delta, hi):
+    #40 pixels per degree
+    origin_x = hi['CRPIX1']
+    origin_y = hi['CRPIX2']
+    x_deg_pix = hi['CDELT1']
+    y_deg_pix = hi['CDELT1']
+    x_pix_deg = 1/x_deg_pix
+    y_pix_deg = -1/y_deg_pix
+    alpha0 = hi['CRVAL1']
+    delta0 = hi['CRVAL2']
+
+    #first atempt:
+    alpha_res = alpha-alpha0
+    alpha_pix = origin_x + x_pix_deg*alpha_res
+    delta_res = delta-delta0
+    delta_pix = origin_y + y_pix_deg*delta_res
+
+    #better conversion:
+    scale = x_pix_deg
+    #convert to radians
+    alpha = alpha*np.pi/180
+    delta = delta*np.pi/180
+    alpha0 = alpha0*np.pi/180
+    delta0 = delta0*np.pi/180
+    A = np.cos(delta) * np.cos(alpha - alpha0)
+    F = scale * (180/np.pi)/(np.sin(delta0) * np.sin(delta) + A * np.cos(delta0))
+    LINE = -F * (np.cos(delta0) * np.sin(delta) - A * np.sin(delta0))
+    SAMPLE = -F * np.cos(delta) * np.sin(alpha - alpha0)
+    alpha_pix = origin_x - SAMPLE
+    delta_pix = origin_y + LINE
+    
+    return alpha_pix, delta_pix
+
 #implemented in IDL
 #I just did my own interpolation, might go back and update
 def mbilinear(x, y, array):
@@ -152,22 +199,21 @@ def mbilinear(x, y, array):
     for j in range(Ny):
         ind = np.where(x)[]
     '''
-
-    print("shape: ", x.shape)
     
     #check indices
+    #RectBivariateSpline supposed to be faster? (but only for grid...)
+    #f = interpolate.RectBivariateSpline(np.arange(array.shape[0]), np.arange(array.shape[0]), array)
     f = interpolate.interp2d(np.arange(array.shape[0]), np.arange(array.shape[0]), array)
     return np.array([f(i, j) for i, j in zip(x, y)]).reshape(len(x))
 
 def mosaique_iris(alpha, delta, direc):
 
     band = 4
-    silent = 0
     equinox = 2000
 
-    #the IDL code assumes square arrays?
+    #the IDL code assumes square arrays, I think
     totsize = len(alpha)
-
+    
     #sysco = 1 #celestial
     sysco = 2 #galactic
     #get_cootype(astr)? I think not needed
@@ -179,7 +225,7 @@ def mosaique_iris(alpha, delta, direc):
         fk4 = 0
     if sysco == 2:
         print("convert coordinates from Galactic to Celestial B1950")
-        euler(alpha, delta, select=2, fk4=fk4) #how convert?
+        alpha, delta = euler(alpha, delta, select=2, fk4=fk4)
     elif sysco == 3:
         print("not implemented")
         #print("convert coordinates from Ecliptic to Celestial")
@@ -193,7 +239,7 @@ def mosaique_iris(alpha, delta, direc):
     nan2undef(delta, undef=-32768)
         
     result = np.zeros(totsize)
-    weight = np.copy(result) #copy?
+    weight = np.zeros(totsize) #not sure
 
     catname = '/Users/blakechellew/Documents/DustProject/IRIS/irispro/info_issa_map4.txt'
     contents = np.loadtxt(catname)
@@ -216,6 +262,10 @@ def mosaique_iris(alpha, delta, direc):
     c1max = np.max(alpha[ind])
     c2min = np.min(delta[ind])
     c2max = np.max(delta[ind])
+
+    print("ra ranges from", c1min, "to", c1max)
+    print("dec ranges from", c2min, "to", c2max)
+    
     for i in range(nb):
         if (c1min >= ramin[i] and c1min <= ramax[i] and c2min >= demin[i] and c2min <= demax[i]):
             id_good[i] = 1
@@ -243,22 +293,45 @@ def mosaique_iris(alpha, delta, direc):
     print("PLATE NUMBERS: ", inum[ind])
     
     for i in range(nbind):
-        mapi, hi = get_iris(inum[ind[i]], direc=direc, band=band, silent=silent)
-        #astri = extast(hi)
-        xi, yi = ad2xy(alpha, delta, hi)
+        mapi, hi = get_iris(inum[ind[i]], direc=direc, band=band)
+        #print("header:")
+        #print(hi)
+        print("file number: ", inum[ind[i]])
+
+        '''
+        #TEMP
+        #try: fits.setval(fits_file, 'CDELT3', value=1), inside get_iris
+        w = wcs.WCS(hi) #, filei . . . 
+        #filei.close()
+        xi, yi, trash = w.all_world2pix(alpha, delta, np.zeros(len(alpha)), 1) #origin 1 for FITS, zeros b/c axis3 has size 1
+        print(xi, yi)
+        '''
+
+        #my own function:
+        xi, yi = my_ad2xy(alpha, delta, hi)
+        
+        #xi, yi = ad2xy(alpha, delta, hi)
         tempo = mbilinear(xi, yi, mapi)
+        
+        tempo[np.isnan(tempo)] = -32768 #TESTING
+        
         indw = np.where(tempo != -32768)[0]
         nbindw = indw.shape[0]
         if nbindw > 0:
-              weight[indw] = weight[indw]+1 #check addition
+              weight[indw] = weight[indw]+1
               result[indw] = result[indw] + tempo[indw]
-              
+            
+        #print progress:
+        if i % 10 == 0:
+            print("progress: ", i)
+            
     indw = np.where(weight > 0)[0] #nbindw, complement...
     mask = np.zeros(alpha.shape)
     mask[indw] = True
     indempty = mask==0
     nindempty = indempty.shape[0]
     nbindw = indw.shape[0]
+
     if nbindw > 0:
         result[indw] = result[indw] / weight[indw]
     if nindempty > 0:
@@ -270,7 +343,29 @@ def mosaique_iris(alpha, delta, direc):
 
     return result
 
-a = np.arange(9)
-b = np.arange(9)
+
+
+start_idx = 0
+end_idx = 60
+
+a_b = np.load("/Users/blakechellew/Documents/DustProject/l_b_original.npy")
+a = a_b[start_idx:end_idx,0]
+b = a_b[start_idx:end_idx,1]
 result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
-print(result)
+#print(result)
+
+i100_original = np.load("/Users/blakechellew/Documents/DustProject/i100_1d.npy")[start_idx:end_idx]
+
+#print("original:")
+#print(i100_original[:50])
+
+from scipy.stats import linregress
+print(linregress(i100_original, result))
+
+plt.plot(i100_original, result, 'k.', markersize=1)
+#consider density plot
+x = np.arange(np.min(result), np.max(result), 0.1)
+plt.plot(x, x)
+plt.xlabel("original i100")
+plt.ylabel("IRIS i100")
+plt.show()

@@ -18,6 +18,9 @@ flambda = np.array(hdulist[2].data)     # df/dlam, units of 1e-17 erg/s/cm^2/A
 ivar = np.array(hdulist[3].data)        # inverse variance, units of 1/flambda^2
 ivar *= (ivar > 0) #correct the negative values
 
+np.save("i100_1d.npy", i100) #TEMP
+print("saved")
+
 '''
 #mask the high-intensity values:
 mask_indices = np.arange(len(i100))[i100>10]
@@ -89,8 +92,8 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
             binned_alphas[i] = avg1
             binned_std[i] = np.sqrt(avg2)
         #plot alpha vs. wavelength
-        plt.scatter(binned_lambdas[0:-2], binned_alphas[0:-2], s=5, c=color)
-        plt.scatter(binned_lambdas[0:-2], binned_std[0:-2], s=5, c=color)
+        plt.scatter(binned_lambdas, binned_alphas, s=5, c=color)
+        plt.scatter(binned_lambdas, binned_std, s=5, c=color)
     else: 
         #plot alpha vs. wavelength
         plt.scatter(wavelength[50:-100], alphas[50:-100], s=5, c=color)
