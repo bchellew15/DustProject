@@ -265,47 +265,89 @@ verified reason for original code not picking up some files:\
 commented out all the files that are 0 to 360;\
 	didn\'92t make a difference. still successful on all files.\
 \
-5:24/19:\
+5/25/19:\
 \
-check if any data points are resulting in multiple values that are significantly different\
-	????\
+replaced my ad2xy function with WCS\
+now correlation with actual IRIS values is VERY good.\
+plot: actual_10000_52519 (my code vs. actual IRIS, looks very good now)\
+comparing to SFD still looks like 2 distributions\
+plot: IRISvsSFD_52519 (my IRIS predictions vs SFD)\
+checked more ranges of coordinates against actual IRIS\
+	100k-110k, 200k-210k, 700k-710k, 900k-end\
+checked 2nd actual IRIS data again. Comparable accuracy.\
+For both actual datasets, slope is 0.635, probably skewed due to higher values.\
+\
+5/26/19:\
+\
+tried rounding x, y to nearest int. did not remove scatter.\
+changed WCS origin to 0; that removed most of scatter (r = 0.999)\
+changed interp to linear (from cubic) -> r = 0.99999999998\
+	so little scatter, can barely see points behind line\
+tried rounding to nearest int again, that increased scatter.\
+checked a few coordinate ranges against actual IRIS, all look good\
+plot: actual_10000_52619\
+SFD comparison looks similar still\
+plot: sfd_10000_52619\
+picked a couple points from each distribution, didn\'92t notice any pattern\
+\
+6/3/19:\
+\
+updated reproduce_figs.py to handle both 1d and 2d modes.\
+saved alphas for 1d and 2d\
+	alphas_1d.npy, alphas_1d_stds.npy\
+	alphas_2d.npy, alphas_2d_stds.npy\
+code: scatterplot.py (to plot the alphas)\
+	peaks a bit too high.\
+got i100 at all SFD locations\
+	plots: sfd_all_6319, sfd_all_6319_2\
+numpy array: iris_i100_at_sfd.npy\
+	iris i100 values at location of SFD\
+incorporate tao:\
+	i100_iris_tao.npy\
+calculate new alphas:\
+	alphas_iris.npy, alphas_iris_stds,npy\
+	scatterplot looks slightly lower\
+\
+\
+\
+confirmed that 2nd set of coordinates is same, but FK5 (no scatter)\
 \
 \
 remember: re-transform coordinates (I commented it out and changed the euler() function)\
 \
-meeting: see if amount of scatter is acceptable (why is it there?)\
 meeting: how can file 198 cover so much range when it has the same pixel dimensions and deg/pix?\
 	(prob because closer to pole)\
-meeting: point out I changed the interpolation\
-	and ad2xy: even though mine was giving same results, was wrong.\
+	tried with idx 216?, it triggered file 198 but didn\'92t find a value.\
+meeting: point out I fixed the interpolation (it was extrapolating)\
+	and ad2xy: changed back to WCS (mine was kind of working\'85)\
+	and then changed interpolation to linear to remove rest of scatter\
 meeting: ask what to do about the very large values / outliers\
 meeting: ask why iris code seems wrong (file selection)\
 	(fails unless it\'92s run on large section of sky)\
 meeting: point out the two different distributions (try to figure out what is different between the points)\
-meeting: 2nd coordinates are same i100 values?\
+meeting: 2nd coordinates are same i100 values? (verify)\
+meeting: should extend past 9000?\
+meeting: E(B-V) doesn\'92t change right?\
 \
+plan: find out why changing WCS origin to 0 made it work.\
+plan: clean up code. also time and speed up.\
+plan: verify that file selection code was translated correctly\
+plan: figure out the two distributions (SFD vs. IRIS), maybe pick some points.\
+	see if one section is a particular region of the sky\
 plan: figure out why my ad2xy doesn\'92t work\
+	it seemed to work for file 198\
 plan: modify my \'93simple\'94 ad2xy to incorporate cos(delta)\
-plan: brainstorm possible reasons for the two big tails.\
-plan: figure out cos(delta) thing for converting coords to pixels\
-plan: figure out why there is the tail on my IRIS data. maybe select one point that results in large value.\
 plan: test functions individually (and sections)\
 method: track one point over different files\
 \
-\
-Emails 5/17:\
-first (iris_) is 1950 coordinates (maybe), second (skyphot_) is J2000.\
-coordinates are probably RA and DEC, maybe galactic latitude and longitude.\
-(both in brandt_iris folder)\
-\
+plan: verify combo 1d/2d code is good\
 plan: remove the checking for bad values and see if anything changes.\
-\
 plan: clean up code and make note of any issues/confusions\
 plan: combine 1d and 2d code, it\'92s getting hard to manage separately\
 plan: look through onetab, get rid of excess tabs\
 plan: extend x range on right side of plots\
 plan: verify all changes made to updated code\
-plan: see rest of Brandt email\
+plan: see rest of Brandt email (BOSS)\
 plan: check if ok to use float32\
 plan: look into binning functions\
 remember to delete stored x, y, and ivar (files are big)\

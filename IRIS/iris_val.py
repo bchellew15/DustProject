@@ -22,10 +22,10 @@ file_sel = 1
 actual = 0
 
 start_idx_actual = 0
-end_idx_actual = 10000
+end_idx_actual = 1000
 
 start_idx_sfd = 0
-end_idx_sfd = 10000
+end_idx_sfd = 91847
 
 #convert coordinates
 #result is in degrees
@@ -207,11 +207,11 @@ def mosaique_iris(alpha, delta, direc):
         tempo = mbilinear(xi, yi, mapi)
         tempo[np.isnan(tempo)] = -32768 #TESTING
 
-        '''
+        
         #uncomment for small number of datapoints
-        print("tempo:")
-        print(tempo)
-        '''
+        #print("tempo:")
+        #print(tempo)
+        
         
         indw = np.where(tempo != -32768)[0]
         nbindw = indw.shape[0]
@@ -250,10 +250,10 @@ def mosaique_iris(alpha, delta, direc):
 if actual == 1:
     #these are FK4 coordinates
     actual_IRIS = np.loadtxt("/Users/blakechellew/Documents/DustProject/IRIS/brandt_iris/IRIS_values_skyphot.dat")
-    #these are same coordinates but FK5?
+    #these are same coordinates but FK5
     #actual_IRIS2 = np.loadtxt("/Users/blakechellew/Documents/DustProject/IRIS/brandt_iris/skyphot_coords.dat")
 
-    print("shape: ", actual_IRIS.shape)
+    #print("shape: ", actual_IRIS.shape)
 
     start_idx = start_idx_actual
     end_idx = end_idx_actual
@@ -292,18 +292,26 @@ else:
 
 
     result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
+    #np.save('iris_i100_at_sfd.npy', result)
 
     #check correlation
     i100_original = np.load("/Users/blakechellew/Documents/DustProject/i100_1d.npy")[start_idx:end_idx]
 
-
+    '''
     #pick certain points:
+    #lower branch:
     idx1 = np.where((result<1.9) * (result>1.7)*(i100_original<1.01)*(i100_original>0.95))[0]
+    #upper branch:
+    idx2 = np.where((result>2.275) * (result<2.295)*(i100_original<1.09)*(i100_original>1.0725))[0]
     print("indices of selected points:")
     print(idx1)
+    #124  144 2928 2960
+    print(idx2)
+    #668  694  726 2132
     
     #print("original:")
     #print(i100_original[:50])
+    '''
 
     from scipy.stats import linregress
     print(linregress(i100_original, result))

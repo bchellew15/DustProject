@@ -10,7 +10,7 @@ from time import time
 #load data
 fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
 l = np.array(fiberinfo[:, 2])     # Galactic longitude, degrees
-for i in range(len(l)):
+for i in range(len(l)): #convert l to range: -180 to 180
     if l[i] > 180:
         l[i] = l[i] - 360
 b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
@@ -24,16 +24,6 @@ flambda = np.array(hdulist[2].data)     # df/dlam, units of 1e-17 erg/s/cm^2/A
 ivar = np.array(hdulist[3].data)        # inverse variance, units of 1/flambda^2
 ivar *= (ivar > 0) #correct the negative values
 
-'''
-#mask the high-intensity values:
-mask_indices = np.arange(i100.shape[0])[i100_old>10]
-l = np.delete(l, mask_indices)
-b = np.delete(b, mask_indices)
-i100 = np.delete(i100, mask_indices, 0)
-plate = np.delete(plate, mask_indices)
-flambda = np.delete(flambda, mask_indices, 0)
-ivar = np.delete(ivar, mask_indices, 0)
-'''
 #better masking:
 ivar[i100_old>10] = 0
 
@@ -59,6 +49,7 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
         x2[boundaries[idx]:boundaries[idx+1]] = avgs
     #last section:
     avgs = np.mean(x1[boundaries[-1]:], axis=0) #mean across plates, not wavelength
+    #MISSING LINE: x2[boundaries[-1]:] = avgs
     x = np.subtract(x1, x2)
 
     #x unit conversion
@@ -91,6 +82,7 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
             avg2 = 1 / denominator
             binned_alphas[i] = avg1
             binned_std[i] = np.sqrt(avg2)
+        #plot alpha vs. wavelength
         plt.scatter(binned_lambdas, binned_alphas, s=5, c=color)
         plt.scatter(binned_lambdas, binned_std, s=5, c=color)
     else: 

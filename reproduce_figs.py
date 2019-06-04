@@ -2,7 +2,23 @@ from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
+import sys
 
+#reproduce figures 3-6 from the paper
+
+#2d: uses correction factor for i100 to account for tao (optical depth)
+#so far, does not include updated i100 values
+
+if len(sys.argv) == 1:
+    mode = '1d'
+elif sys.argv[1] == '2d':
+    mode = '2d'
+elif sys.argv[1] == 'iris':
+    mode = 'iris'
+else:
+    print("error: usage")
+    exit(0)
+    
 #load data
 fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
 l = np.array(fiberinfo[:, 2])     # Galactic longitude, degrees
@@ -10,7 +26,13 @@ for i in range(len(l)): #convert l to range: -180 to 180
     if l[i] > 180:
         l[i] = l[i] - 360
 b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
-i100 = np.array(fiberinfo[:, 4]).astype('float32')  # 100 micron intensity (MJy/sr)
+i100_old = np.array(fiberinfo[:, 4]).astype('float32')  # 100 micron intensity (MJy/sr)
+if mode == '2d':
+    i100 = np.load("/Users/blakechellew/Documents/DustProject/i100_tao.npy").astype('float32')
+elif mode == 'iris':
+    i100 = np.load("/Users/blakechellew/Documents/DustProject/i100_iris_tao.npy").astype('float32')
+else:
+    i100 = i100_old
 hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
 plate = np.array(hdulist[0].data)
 wavelength = np.array(hdulist[1].data)  # Angstroms
@@ -18,21 +40,8 @@ flambda = np.array(hdulist[2].data)     # df/dlam, units of 1e-17 erg/s/cm^2/A
 ivar = np.array(hdulist[3].data)        # inverse variance, units of 1/flambda^2
 ivar *= (ivar > 0) #correct the negative values
 
-np.save("i100_1d.npy", i100) #TEMP
-print("saved")
-
-'''
-#mask the high-intensity values:
-mask_indices = np.arange(len(i100))[i100>10]
-l = np.delete(l, mask_indices)
-b = np.delete(b, mask_indices)
-i100 = np.delete(i100, mask_indices)
-plate = np.delete(plate, mask_indices)
-flambda = np.delete(flambda, mask_indices, 0)
-ivar = np.delete(ivar, mask_indices, 0)
-'''
 #new masking
-ivar[i100>10] = 0
+ivar[i100_old>10] = 0
 
 #convert ivar to ivar of y
 ivar /= np.power(wavelength, 2)
@@ -50,7 +59,7 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     x1 = np.copy(i100)
     x1 *= freq100
     #avg x1 over plates (assuming in ascending order)
-    x2 = np.zeros(x1.shape) #x2 will be array of averages
+    x2 = np.zeros(x1.shape, dtype='float32') #x2 will be array of averages
     boundaries = np.sort(np.unique(plate, return_index=True)[1])
     for idx, b in enumerate(boundaries[:-1]):
         avgs = np.mean(x1[boundaries[idx]:boundaries[idx+1]], axis=0) #mean across plates, not wavelength
@@ -62,8 +71,9 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
     #x unit conversion
     x *= (1.617 * 10**-10)
-    x = x.reshape(len(x), 1)
-    
+    if mode == '1d':
+        x = x.reshape(len(x), 1)
+        
     #calculate alpha
     xx = np.multiply(x, x)
     yx = np.multiply(y, x)
@@ -73,6 +83,10 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     sums2 = np.sum(xxsig, axis=0)
     alphas = np.divide(sums1, sums2)
     alpha_std = np.sqrt(1/sums2)
+
+    #save alphas:
+    #np.save('alphas_iris.npy', alphas)
+    #np.save('alphas_iris_stds.npy', alpha_std)
         
     if bin:
         #binning:
