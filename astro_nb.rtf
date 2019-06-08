@@ -292,6 +292,7 @@ picked a couple points from each distribution, didn\'92t notice any pattern\
 \
 6/3/19:\
 \
+confirmed that 2nd set of coordinates is same, but FK5 (no scatter)\
 updated reproduce_figs.py to handle both 1d and 2d modes.\
 saved alphas for 1d and 2d\
 	alphas_1d.npy, alphas_1d_stds.npy\
@@ -308,13 +309,32 @@ calculate new alphas:\
 	alphas_iris.npy, alphas_iris_stds,npy\
 	scatterplot looks slightly lower\
 \
+6/4/19:\
+\
+started finding equivalent widths of emission lines\
+\
+6/5/19\
+\
+calculated correction for 4000 A break\
+\
+6/6/19:\
+\
+check wavelength array, histogram of element-to-element differences. not constant.\
+started to update method of calculating line widths (no more interpolation,\
+	use background specified in paper)\
+\
+6/7/19:\
+\
+added error estimation\
 \
 \
-confirmed that 2nd set of coordinates is same, but FK5 (no scatter)\
+\
+\
 \
 \
 remember: re-transform coordinates (I commented it out and changed the euler() function)\
 \
+meeting: see note for project questions\
 meeting: how can file 198 cover so much range when it has the same pixel dimensions and deg/pix?\
 	(prob because closer to pole)\
 	tried with idx 216?, it triggered file 198 but didn\'92t find a value.\
@@ -329,6 +349,7 @@ meeting: 2nd coordinates are same i100 values? (verify)\
 meeting: should extend past 9000?\
 meeting: E(B-V) doesn\'92t change right?\
 \
+plan: get binned plot for 2d IRIS\
 plan: find out why changing WCS origin to 0 made it work.\
 plan: clean up code. also time and speed up.\
 plan: verify that file selection code was translated correctly\
@@ -340,7 +361,7 @@ plan: modify my \'93simple\'94 ad2xy to incorporate cos(delta)\
 plan: test functions individually (and sections)\
 method: track one point over different files\
 \
-plan: verify combo 1d/2d code is good\
+plan: verify combo 1d/2d code is good (check through it visually compared to old 1d and 2d code)\
 plan: remove the checking for bad values and see if anything changes.\
 plan: clean up code and make note of any issues/confusions\
 plan: combine 1d and 2d code, it\'92s getting hard to manage separately\
@@ -351,6 +372,13 @@ plan: see rest of Brandt email (BOSS)\
 plan: check if ok to use float32\
 plan: look into binning functions\
 remember to delete stored x, y, and ivar (files are big)\
+\
+long plan: raise limit on optical thickness. . .\
+long plan: some parts of the wavelength are contributing too much to the signal\
+long plain: raise limit on mask\
+\
+do: read up on astronomy\
+do: read up on dust and stuff\
 \
 discrepancies: mainly because I was neglecting masked values when I averaged over the plate.\
 I got E(B-V) for boss\
