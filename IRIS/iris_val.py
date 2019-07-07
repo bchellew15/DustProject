@@ -288,8 +288,7 @@ else:
     end_idx = end_idx_sfd
 
     a = a_b[start_idx:end_idx,0]
-    b = a_b[start_idx:end_idx,1]
-
+    b = a_b[start_idx:end_idx,1]    
 
     result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
     #np.save('iris_i100_at_sfd.npy', result)
@@ -297,6 +296,8 @@ else:
     #check correlation
     i100_original = np.load("/Users/blakechellew/Documents/DustProject/i100_1d.npy")[start_idx:end_idx]
 
+    
+    
     '''
     #pick certain points:
     #lower branch:

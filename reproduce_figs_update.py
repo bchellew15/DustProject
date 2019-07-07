@@ -3,6 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from time import time
 
+'''
+IMPORTANT:
+
+This code is obsolete.
+Use the 2d option on reproduce_figs.py instead.
+'''
+
 #reproduce figures 3-6 from the paper
 #but using correction factor for i100 to account for tao (optical depth)
 #note: this does not include updated i100 values

@@ -1,10 +1,16 @@
 {\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf200
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\froman\fcharset0 Times-Roman;\f2\fnil\fcharset0 Menlo-Regular;
-}
+\f3\fnil\fcharset0 HelveticaNeue;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue0;\red0\green0\blue233;
 \red242\green242\blue242;}
 {\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\csgray\c0\c0;\cssrgb\c0\c0\c93333;
 \csgray\c95825;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}
+{\list\listtemplateid3\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid201\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid3}
+{\list\listtemplateid4\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid301\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid4}
+{\list\listtemplateid5\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid401\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid5}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}{\listoverride\listid4\listoverridecount0\ls4}{\listoverride\listid5\listoverridecount0\ls5}}
 \margl1440\margr1440\vieww12380\viewh10040\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
@@ -111,6 +117,8 @@ alphas from jiaoyue code, using my mask:\
 \
 saved and checked alphas. max fractional difference is 0.7 percent. maybe because of different correction factor for units.\
 result: the main discrepancy was from the masking\
+(I was neglecting masked values when I averaged over the plate)\
+I got E(B-V) for boss\
 \
 4/5/19\
 \
@@ -327,63 +335,107 @@ started to update method of calculating line widths (no more interpolation,\
 \
 added error estimation\
 \
+6/12/19:\
+\
+got alphas for iris WITHOUT tao adjustment\
+alphas_iris_1d.npy\
+\
+6/13/19:\
+\
+made some nice plots for the 134 paper\
+\
+6/15/19:\
+\
+spent a lot of time (12 hr) working on the 134 paper\
+\
+6/25:\
+\
+met with Brandt, got questions answered\
+\
+6/27:\
+\
+tried to do better job with equivalent widths.\
+changed code to find the TWO wavelength elements closest to peak.\
+was using fractional error without multiplying by value; now errors look way too small.\
+\
+6/30:\
+\
+tried again to get C code for SFD maps to work\
+added header stuff to deal with getline() function duplicate\
+fixed makefile so \'93make all\'94 works\
+now getting \'93abort trap: 6\'94 errors, trying some print statements\
+\
+7/5/19:\
+\
+traced abort trap error to a sprintf() statement.\
+it was trying to assign 8-character string + null to 8-character char array\
+now pNaxis is correct, which is good. output is nonzero, but garbage\'85\
+\
+7/6/19\'94\
+\
+removed check for \'93little_endian.\'94 output might be good now.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf2 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \
+\
+\
+what is little endian?\
+\
+\
+[next time: try using actual stds for everything instead of taking std of continuum.\
+probably will make errors even smaller\'85]\
 \
 \
 \
 \
 \
-remember: re-transform coordinates (I commented it out and changed the euler() function)\
 \
-meeting: see note for project questions\
-meeting: how can file 198 cover so much range when it has the same pixel dimensions and deg/pix?\
-	(prob because closer to pole)\
-	tried with idx 216?, it triggered file 198 but didn\'92t find a value.\
-meeting: point out I fixed the interpolation (it was extrapolating)\
-	and ad2xy: changed back to WCS (mine was kind of working\'85)\
-	and then changed interpolation to linear to remove rest of scatter\
-meeting: ask what to do about the very large values / outliers\
-meeting: ask why iris code seems wrong (file selection)\
-	(fails unless it\'92s run on large section of sky)\
-meeting: point out the two different distributions (try to figure out what is different between the points)\
-meeting: 2nd coordinates are same i100 values? (verify)\
-meeting: should extend past 9000?\
-meeting: E(B-V) doesn\'92t change right?\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
 \
-plan: get binned plot for 2d IRIS\
-plan: find out why changing WCS origin to 0 made it work.\
-plan: clean up code. also time and speed up.\
-plan: verify that file selection code was translated correctly\
-plan: figure out the two distributions (SFD vs. IRIS), maybe pick some points.\
-	see if one section is a particular region of the sky\
-plan: figure out why my ad2xy doesn\'92t work\
-	it seemed to work for file 198\
-plan: modify my \'93simple\'94 ad2xy to incorporate cos(delta)\
-plan: test functions individually (and sections)\
-method: track one point over different files\
 \
+remember: check the coordinate transformations (euler())\
+remember: delete stored x, y, and ivar (files are big)\
+\
+plan: recalculate equivalent widths\
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
+\ls1\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}use correct std devs\
+{\listtext	\uc0\u8226 	}check that the binning is correct (use 6 bins, not 7\'85)\CocoaLigature0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \
+plan: perform analysis on the BOSS code (see mtg notes in \'93questions\'94 sheet)\
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}see BOSS email\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \CocoaLigature0 \
+plan: be able to get SFD i100 values\
+\
+plan: IRIS code\
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
+\ls3\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 find out why changing WCS origin to 0 made it work.\
+\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 clean up code. also time and speed up. (checking for bad values\'85) (also clean up code for equiv_width)\
+\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 figure out why my ad2xy doesn\'92t work (it seemed to work for file 198\'85)\
+\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}figure out the cos(delta) thing\CocoaLigature0 \
+\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}[\CocoaLigature0 method: track one point over different files]\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \
 plan: verify combo 1d/2d code is good (check through it visually compared to old 1d and 2d code)\
-plan: remove the checking for bad values and see if anything changes.\
-plan: clean up code and make note of any issues/confusions\
-plan: combine 1d and 2d code, it\'92s getting hard to manage separately\
 plan: look through onetab, get rid of excess tabs\
-plan: extend x range on right side of plots\
-plan: verify all changes made to updated code\
-plan: see rest of Brandt email (BOSS)\
 plan: check if ok to use float32\
-plan: look into binning functions\
-remember to delete stored x, y, and ivar (files are big)\
+plan: follow up with some 134 stuff (see google drive, gauchospace)\
 \
-long plan: raise limit on optical thickness. . .\
-long plan: some parts of the wavelength are contributing too much to the signal\
-long plain: raise limit on mask\
-\
-do: read up on astronomy\
-do: read up on dust and stuff\
-\
-discrepancies: mainly because I was neglecting masked values when I averaged over the plate.\
-I got E(B-V) for boss\
-\
-notes:\
-best: i100 from IRIS maps\
-contact jiaoyue?\
-}
+plan: understand paper\
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
+\ls4\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 finish summarizing paper (sections 5 and 6)\
+\ls4\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}look through it some more
+\f3 \cf0 \cb1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+plan: review 250\
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
+\ls5\ilvl0\cf0 {\listtext	\uc0\u8226 	}chai squared, max likelihood\'85
+\f0 \cf2 \cb3 \CocoaLigature0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \
+long plan: raise limit on optical thickness / mask\
+long plan: some parts of the wavelength are contributing too much to the signal}

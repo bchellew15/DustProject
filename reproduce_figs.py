@@ -11,13 +11,8 @@ import sys
 
 if len(sys.argv) == 1:
     mode = '1d'
-elif sys.argv[1] == '2d':
-    mode = '2d'
-elif sys.argv[1] == 'iris':
-    mode = 'iris'
 else:
-    print("error: usage")
-    exit(0)
+    mode = sys.argv[1]
     
 #load data
 fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
@@ -28,11 +23,15 @@ for i in range(len(l)): #convert l to range: -180 to 180
 b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
 i100_old = np.array(fiberinfo[:, 4]).astype('float32')  # 100 micron intensity (MJy/sr)
 if mode == '2d':
-    i100 = np.load("/Users/blakechellew/Documents/DustProject/i100_tao.npy").astype('float32')
+    i100 = np.load("/Users/blakechellew/Documents/DustProject/i100_tao.npy").astype('float32')  #i100_tao.npy
 elif mode == 'iris':
     i100 = np.load("/Users/blakechellew/Documents/DustProject/i100_iris_tao.npy").astype('float32')
-else:
+elif mode == 'iris_1d':
+    i100 = np.load("/Users/blakechellew/Documents/DustProject/iris_i100_at_sfd.npy").astype('float32')
+elif mode == '1d':
     i100 = i100_old
+else:
+    print("Error: invalid mode")
 hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
 plate = np.array(hdulist[0].data)
 wavelength = np.array(hdulist[1].data)  # Angstroms
@@ -45,6 +44,8 @@ ivar[i100_old>10] = 0
 
 #convert ivar to ivar of y
 ivar /= np.power(wavelength, 2)
+
+print("loaded data")
 
 #calculate x, y, alpha. then plot alpha vs. wavelength
 def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
@@ -71,10 +72,11 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
 
     #x unit conversion
     x *= (1.617 * 10**-10)
-    if mode == '1d':
+    if mode == '1d' or mode == 'iris_1d':
         x = x.reshape(len(x), 1)
         
     #calculate alpha
+    print("calculating alphas")
     xx = np.multiply(x, x)
     yx = np.multiply(y, x)
     yxsig = np.multiply(yx, ivar)
@@ -85,8 +87,8 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     alpha_std = np.sqrt(1/sums2)
 
     #save alphas:
-    #np.save('alphas_iris.npy', alphas)
-    #np.save('alphas_iris_stds.npy', alpha_std)
+    #np.save('alphas_iris_1d.npy', alphas)
+    #np.save('alphas_iris_stds_1d.npy', alpha_std)
         
     if bin:
         #binning:
