@@ -23,109 +23,7 @@ if len(sys.argv) == 4:
     save = True
 else:
     save = False
-
     
-if boss:
-
-
-    fiberinfo = np.genfromtxt('../BrandtFiles/sky_radec.dat')
-    plate = fiberinfo[:,0]
-    mjd = fiberinfo[:,1]
-    #ra = fiberinfo[:,3]
-    #dec = fiberinfo[:,4]
-    plate = 10000*plate + mjd%10000 #plate is now a unique identifier
-
-    #get i100
-    i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2].astype('float32')
-    
-    if mode == '2d':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss.npy", mmap_mode='r') #type: float64
-    elif mode == 'iris':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r').astype('float32')
-    elif mode == 'iris_1d':
-        i100 = np.load("/Users/blakechellew/Documents/DustProject/IRIS/iris_i100_at_boss.npy", mmap_mode='r').astype('float32')
-    elif mode == '1d':
-        i100 = i100_old
-    else:
-        print("Error: invalid mode")
-        
-    #get flambda and ivar
-    flambda = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/padded_flams_boss.npy", mmap_mode='r') #type: float64
-
-    #make copy of ivar here because modified outside function
-    ivar_ = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/padded_ivars_boss.npy", mmap_mode='r') #type: float64
-
-    #UNCOMMENT THIS TO USE ALL LOCATIONS
-    '''
-    ivar = np.memmap('ivar_mem.dat', dtype=np.float32, mode='w+', shape=ivar_.shape)
-    for i in range(ivar.shape[0]):
-        ivar[i] = ivar_[i]
-    '''
-
-    #get wavelengths
-    hdulist = fits.open('../BrandtFiles/skyfibers_nativelam.fits')
-    #flambda is already padded so just use that shape
-    wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
-
-    #COMMENT THESE OUT TO USE ALL LOCATIONS
-    num_rows = 10000 #TEMP
-    start_idx = 0 #TEMP
-    i100 = i100[start_idx:start_idx+num_rows] #TEMP
-    flambda = flambda[start_idx:start_idx+num_rows] #TEMP
-    plate = plate[start_idx:start_idx+num_rows] #TEMP
-    ivar = np.zeros((num_rows, ivar_.shape[1])) #TEMP
-    ivar[:] = ivar_[start_idx:start_idx+num_rows] #TEMP
-   
-else:
-    #load data
-    fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
-    #l = np.array(fiberinfo[:, 2])     # Galactic longitude, degrees
-    #for i in range(len(l)): #convert l to range: -180 to 180
-    #    if l[i] > 180:
-    #        l[i] = l[i] - 360
-    #b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
-
-    #get i100
-    i100_old = np.array(fiberinfo[:, 4]).astype('float32')  # 100 micron intensity (MJy/sr)
-    if mode == '2d':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao.npy", mmap_mode='r').astype('float32')  #i100_tao.npy
-    elif mode == 'iris':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_iris_tao.npy", mmap_mode='r').astype('float32')
-    elif mode == 'iris_1d':
-        i100 = np.load("/Users/blakechellew/Documents/DustProject/npy_files/iris_i100_at_sfd.npy", mmap_mode='r').astype('float32')
-    elif mode == '1d':
-        i100 = i100_old
-    else:
-        print("Error: invalid mode")
-
-    #get flambda and ivar
-    hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
-    plate = np.array(hdulist[0].data)
-    wavelength = np.array(hdulist[1].data)  # Angstroms
-
-    #create memmaps of flambda and ivar:
-    flambda = np.memmap('flambda_mem.dat', dtype=np.float32, mode='w+', shape=hdulist[2].data.shape) # df/dlam, units of 1e-17 erg/s/cm^2/A
-    flambda[:] = hdulist[2].data[:]
-    ivar = np.memmap('ivar_mem.dat', dtype=np.float32, mode='w+', shape=hdulist[3].data.shape) # inverse variance, units of 1/flambda^2
-    ivar[:] = hdulist[3].data[:]
-    
-for i in range(ivar.shape[0]):
-    ivar[i] *= (ivar[i] > 0) #correct the negative values
-
-print("check 3")
-
-#new masking
-for i in range(ivar.shape[0]):
-    if i100_old[i] > 10:
-        ivar[i] = 0
-
-print("check 4")
-
-#convert ivar to ivar of y
-for i in range(ivar.shape[0]):
-    ivar[i] /= np.power(wavelength, 2)
-
-print("loaded data")
 
 #calculate x, y, alpha. then plot alpha vs. wavelength
 def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
@@ -226,7 +124,8 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
         np.save('../alphas_and_stds/alphas_1d_boss.npy', alphas)
         np.save('../alphas_and_stds/alphas_1d_boss_stds.npy', alpha_std)
         print("alphas saved")
-        
+
+    #MAKE THIS INTO ITS OWN FUNCTION
     if bin:
         #binning:
         binned_lambdas = np.arange(3900, 9000, 50)
@@ -255,6 +154,144 @@ def plot_alphas(i100, plate, flambda, ivar, color, bin=False):
     plt.xlabel("Wavelength")
     plt.ylabel("Alpha")
 
-#figure 3: 
-plot_alphas(i100, plate, flambda, ivar, 'k', bin=False) #switch Bin back to true
+    return alphas, alpha_std, wavelength
+
+
+#load data for BOSS
+if boss:
+
+    filenames = ['skyfibers_lam0.fits', 'skyfibers_lam1.fits', 'skyfibers_lam2.fits', 'skyfibers_lam3.fits', 'skyfibers_lam4.fits', \
+                 'skyfibers_lam5.fits', 'skyfibers_lam6.fits', 'skyfibers_lam7.fits', 'skyfibers_lam8.fits', 'skyfibers_lam9.fits']
+
+    #create unique plate identifier
+    hdulist = fits.open("/Volumes/TOSHIBA EXT/Dust_Overflow/" + filenames[0])
+    plate = hdulist[6].data
+    mjd = hdulist[5].data
+    plate = 10000*plate + mjd%10000 #plate is now a unique identifier
+    #RA and dec are hdulist[3] and hdulist[4]
+
+    #get i100
+    i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2].astype('float32')
+    if mode == '2d':
+        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss.npy", mmap_mode='r') #type: float64
+    elif mode == 'iris':
+        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r').astype('float32')
+    elif mode == 'iris_1d':
+        i100 = np.load("/Users/blakechellew/Documents/DustProject/IRIS/iris_i100_at_boss.npy", mmap_mode='r').astype('float32')
+    elif mode == '1d':
+        i100 = i100_old
+    else:
+        print("Error: invalid mode")
+
+#load data for SDSS
+else:
+    #load data
+    fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
+    #l = np.array(fiberinfo[:, 2])     # Galactic longitude, degrees
+    #for i in range(len(l)): #convert l to range: -180 to 180
+    #    if l[i] > 180:
+    #        l[i] = l[i] - 360
+    #b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
+
+    #get i100
+    i100_old = np.array(fiberinfo[:, 4]).astype('float32')  # 100 micron intensity (MJy/sr)
+    if mode == '2d':
+        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao.npy", mmap_mode='r').astype('float32')  #i100_tao.npy
+    elif mode == 'iris':
+        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_iris_tao.npy", mmap_mode='r').astype('float32')
+    elif mode == 'iris_1d':
+        i100 = np.load("/Users/blakechellew/Documents/DustProject/npy_files/iris_i100_at_sfd.npy", mmap_mode='r').astype('float32')
+    elif mode == '1d':
+        i100 = i100_old
+    else:
+        print("Error: invalid mode")
+
+    #get flambda and ivar
+    hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
+    plate = np.array(hdulist[0].data)
+    wavelength = np.array(hdulist[1].data)  # Angstroms
+
+    #create memmaps of flambda and ivar:
+    flambda = np.memmap('flambda_mem.dat', dtype=np.float32, mode='w+', shape=hdulist[2].data.shape) # df/dlam, units of 1e-17 erg/s/cm^2/A
+    flambda[:] = hdulist[2].data[:]
+    ivar = np.memmap('ivar_mem.dat', dtype=np.float32, mode='w+', shape=hdulist[3].data.shape) # inverse variance, units of 1/flambda^2
+    ivar[:] = hdulist[3].data[:]
+
+#plot_alphas(i100, plate, flambda, ivar, 'k', bin=True)
+#plt.show()
+
+
+
+alphas_10 = np.zeros(0)
+alpha_std_10 = np.zeros(0)
+wavelength_10 = np.zeros(0)
+
+if boss:
+    num_files = 10
+else:
+    num_files = 1
+
+
+for i in range(num_files):
+    hdulist = fits.open("/Volumes/TOSHIBA EXT/Dust_Overflow/" + filenames[i])
+    flambda = hdulist[0].data #type: float64
+    ivar = hdulist[1].data #type: float64
+    wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
+
+    #process ivar:
+    for i in range(ivar.shape[0]):
+        ivar[i] *= (ivar[i] > 0) #correct the negative values
+    #new masking
+    for i in range(ivar.shape[0]):
+        if i100_old[i] > 10:
+            ivar[i] = 0
+    #convert ivar to ivar of y
+    for i in range(ivar.shape[0]):
+        ivar[i] /= np.power(wavelength, 2)
+    print("loaded data")
+
+    alphas_i, alpha_std_i, wavelength_i = plot_alphas(i100, plate, flambda, ivar, 'k', bin=False)
+
+    plt.clf() #TEST
+    
+    alphas_10 = np.append(alphas_10, alphas_i)
+    
+    alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
+    wavelength_10 = np.append(wavelength_10, wavelength_i)
+
+np.save('../alphas_and_stds/alphas_1d_boss.npy', alphas_10)
+np.save('../alphas_and_stds/alphas_1d_boss_stds.npy', alpha_std_10)
+np.save('../alphas_and_stds/wavelength_boss_stds.npy', wavelength_10)
+print("alphas saved")
+    
+bin = True
+    
+if bin:
+    #binning:
+    binned_lambdas = np.arange(3900, 9000, 50)
+    binned_alphas = np.zeros(binned_lambdas.shape)
+    binned_std = np.zeros(binned_lambdas.shape)
+    for i, lmda in enumerate(binned_lambdas):
+        indices = np.where((wavelength_10 > lmda-25) & (wavelength_10 < lmda+25))[0]
+        relevant_alphas = alphas_10[indices]
+        relevant_stds = alpha_std_10[indices]
+        #weighted average:
+        variance = np.power(relevant_stds, 2)
+        numerator = np.sum(np.divide(relevant_alphas, variance))
+        denominator = np.sum(np.divide(1, variance))
+        avg1 = numerator / denominator
+        avg2 = 1 / denominator
+        binned_alphas[i] = avg1
+        binned_std[i] = np.sqrt(avg2)
+    #plot alpha vs. wavelength
+    plt.scatter(binned_lambdas, binned_alphas, s=5, c='k')
+    plt.scatter(binned_lambdas, binned_std, s=5, c='r')
+else: 
+    #plot alpha vs. wavelength
+    plt.scatter(wavelength[50:-100], alphas[50:-100], s=5, c='k')
+    plt.scatter(wavelength[50:-100], alpha_std[50:-100], s=5, c='r')
+
 plt.show()
+
+
+
