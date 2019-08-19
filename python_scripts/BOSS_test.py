@@ -1,5 +1,6 @@
 #read the BOSS wavelength arrays and see what they look like
-#and do some processing
+#and check whether all fibers on a plate start with same lambda
+#and histograms for SFD, ivar, and lambda
 
 #########
 # WARNING: THIS CODE IS NOW OUTDATED
@@ -153,17 +154,14 @@ def load_padded_arrs(flams, ivars, wavelengths):
 #exit(0)
 
 #check whether fibers on same plate start with same lambda:
-
-#lambda_0 = np.ones(flams.shape[0])
-#lambda_0[2:] = hdulist[2].data
-#lambda_0[:2] = lambda_0[2]
-
-lambda_0 = hdulist[2].data
-print(lambda_0.shape)
+'''
+lambda_0 = np.ones(flams.shape[0])
+lambda_0[2:] = hdulist[2].data
+lambda_0[:2] = lambda_0[2]
 
 fiberinfo = np.genfromtxt('../BrandtFiles/sky_radec.dat')
-plate = fiberinfo[:,0][:-2]
-mjd = fiberinfo[:,1][:-2]
+plate = fiberinfo[:,0]
+mjd = fiberinfo[:,1]
 plate = 10000*plate + mjd%10000 #plate is now a unique identifier
 print(plate.shape)
 print(mjd.shape)
@@ -173,14 +171,11 @@ unique_plates = np.unique(plate, return_index=True)[1] #2512 unique plates
 for i in unique_plates:
     p = fiberinfo[:,0][i]
     d = mjd[i]
-    l = lambda_0[(fiberinfo[:,0][:-2] == p) * (mjd == d)] #all the starting lambdas for the plate
+    l = lambda_0[(fiberinfo[:,0] == p) * (mjd == d)] #all the starting lambdas for the plate
     if len(np.unique(l)) != 1:
         print("fail")
         print(l)
-
-exit(0)
-
-
+'''
 
 #histograms of SFD i100 values for each set of locations:
 '''
@@ -212,6 +207,7 @@ plt.show()
 '''
 
 #histograms of flambda:
+'''
 flam = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/padded_flams_boss.npy", mmap_mode='r') #type: float64
 plt.hist(flam[:,1037:1132], bins=50, range=(-3, 4))
 plt.show()
@@ -220,23 +216,6 @@ hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_
 flam_boss = hdulist[2].data
 plt.hist(flam_boss[:,765:864], bins=50, range=(-3, 4))
 plt.show()
-
-
-
-exit(0)
-
-
-#figure out why the wavelength array has two less rows than flambda
-#update: no need, brandt figured it out
-'''
-def wavelength_missing_elements():
-    lams = hdulist[2].data
-    print(lams.shape)
-    fiberinfo = np.genfromtxt('./BrandtFiles/sky_radec.dat')
-    plates = fiberinfo[:,0]
-    print(plates.shape)
-
-wavelength_missing_elements()
 '''
 
     

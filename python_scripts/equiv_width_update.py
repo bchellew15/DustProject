@@ -1,4 +1,5 @@
 # calculations to find equivalent widths, line ratios, temperatures
+# also plot spectra (overall and certain sections) for comparison
 
 # ISSUES:
 # 5008 looks like double peak
@@ -16,27 +17,36 @@ import sys #for command line args
 import warnings
 warnings.simplefilter("ignore")
 
-#option to turn plots off
-plots_on = True
-if len(sys.argv) == 2:
-    if sys.argv[1] == "0":
-        plots_on = False
-    elif sys.argv[1] != 1:
-        print("Usage: equiv_width.py [plots_on]")
-        exit(0)
-
+#command line options
+if len(sys.argv) != 3:
+    print("Usage: equiv_width.py [boss: 0, 1] [plots_on: 0, 1]")
+    exit(0)
+    
+boss = int(sys.argv[1])
+plots_on = int(sys.argv[2])
+    
 # load wavelengths
-hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
-wavelength = np.array(hdulist[1].data)  # Angstroms
+if boss:
+    wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
+else:
+    hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
+    wavelength = np.array(hdulist[1].data)
+
 
 # load in npy files
 # original, tao, tao AND iris, iris
-num_arrays = 4
-num_regions = 8
-alphas = [np.load('alphas_and_stds/alphas_1d.npy'), np.load('alphas_and_stds/alphas_2d.npy'), \
-          np.load('alphas_and_stds/alphas_iris.npy'), np.load('alphas_and_stds/alphas_iris_1d.npy')]
-alpha_stds = [np.load('alphas_and_stds/alphas_1d_stds.npy'), np.load('alphas_and_stds/alphas_2d_stds.npy'), \
-              np.load('alphas_and_stds/alphas_iris_stds.npy'), np.load('alphas_and_stds/alphas_iris_stds_1d.npy')]
+if boss:
+    alphas = [np.load('../alphas_and_stds/alphas_1d_boss.npy'), np.load('../alphas_and_stds/alphas_2d_boss.npy'), \
+              np.load('../alphas_and_stds/alphas_iris_boss.npy'), np.load('../alphas_and_stds/alphas_iris_1d_boss.npy')]
+    alpha_stds = [np.load('../alphas_and_stds/alphas_1d_boss_stds.npy'), np.load('../alphas_and_stds/alphas_2d_boss_stds.npy'), \
+                  np.load('../alphas_and_stds/alphas_iris_boss_stds.npy'), np.load('../alphas_and_stds/alphas_iris_1d_boss_stds.npy')]
+else:
+    alphas = [np.load('../alphas_and_stds/alphas_1d.npy'), np.load('../alphas_and_stds/alphas_2d.npy'), \
+              np.load('../alphas_and_stds/alphas_iris.npy'), np.load('../alphas_and_stds/alphas_iris_1d.npy')]
+    alpha_stds = [np.load('../alphas_and_stds/alphas_1d_stds.npy'), np.load('../alphas_and_stds/alphas_2d_stds.npy'), \
+                  np.load('../alphas_and_stds/alphas_iris_stds.npy'), np.load('../alphas_and_stds/alphas_iris_stds_1d.npy')]
+num_arrays = len(alphas)
+num_regions = 8 #I think this is number of peaks to look at
 
 # integrate using 3 wavelength elements on either side
 def equiv_width2(peak_l, alphas, alpha_stds, cont, stdev):
