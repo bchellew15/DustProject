@@ -1,13 +1,12 @@
+#similar to reproduce_figs.py and reproduce_figs_boss.py
+#but find alpha at just one wavelength (avoid waiting such a long time)
+
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
 import sys
 from math import floor #for calculating bin ranges
-
-#reproduce figures 3-6 from the paper
-#see reproduce_figs.py
-#this is a modification that aims to use less RAM
 
 #command line args
 if len(sys.argv) != 4:
@@ -61,6 +60,32 @@ def calc_alphas(i100, plate, flambda, ivar):
     for i in range(flambda.shape[0]):
         y[i]  = np.multiply(flambda[i], wavelength, dtype='float32')
 
+
+    print("biggest and smallest y:")
+    print(y[np.argsort(y)[:10]])
+    print(y[np.argsort(y)[-10:]])
+    print("ivar of those indices:")
+    print(ivar[np.argsort(y)[:10]])
+    print(ivar[np.argsort(y)[-10:]])
+    
+
+
+    plt.hist(i100, bins=50, range=(0,10))
+    plt.show()
+    #plt.hist(flambda, bins=50, range=(-10, 10))
+    #plt.show()   
+    #plt.hist(y, bins=50, range=(-50000, 50000))
+    #plt.show()
+    #plt.hist(ivar, bins=50)
+    #plt.show()
+
+    print("i100:", i100[3178])
+    print("flam:", flambda[3178])
+    print("ivar:", ivar[3178])
+    print("y:", y[3178])
+
+    exit()
+        
     print("check 5")
         
     #calculate x
@@ -71,6 +96,8 @@ def calc_alphas(i100, plate, flambda, ivar):
     #copy i100:
     x1 = np.memmap('x1_mem.dat', dtype=np.float32, mode='w+', shape=i100.shape)
     x1[:] = i100[:]
+
+    
     
     print("check 6")
 
@@ -86,12 +113,30 @@ def calc_alphas(i100, plate, flambda, ivar):
     avgs = np.mean(x1[boundaries[-1]:], axis=0) #mean across plates, not wavelength
     x2[boundaries[-1]:] = avgs
 
+    print("x1:", x1[3178])
+    print("x2:", x2[3178])
+
+    print("all x1:", x1)
+    print("num larger x2:", len(np.unique(x2[x2>x2[3187]])))
+    print("num smaller x2:", len(np.unique(x2[x2<x2[3187]])))
+
+    #find std dev of elements on plate:
+    x_on_plate = x1[plate == plate[3178]]
+    print("all x1 on plate:", x_on_plate)
+    idx_on_plate = np.argsort(x_on_plate)
+    largest_on_plate = x_on_plate[idx_on_plate[-10:]]
+    smallest_on_plate = x_on_plate[idx_on_plate[:10]]
+    print("10 largest x1s:", largest_on_plate)
+    print("10 smallest x1s:", smallest_on_plate)
+    print("std on plate:", np.std(x_on_plate))
+    
+
     print("check 7")
     
     x = np.memmap('x_mem.dat', dtype=np.float32, mode='w+', shape=x1.shape)
     for i in range(x.shape[0]):
         x[i] = np.subtract(x1[i], x2[i])
-
+        
     print("check 8")
 
     #x unit conversion
@@ -103,6 +148,12 @@ def calc_alphas(i100, plate, flambda, ivar):
         x[i] *= unit_factor
     if mode == '1d' or mode == 'iris_1d':
         x = x.reshape(len(x), 1)
+
+    print("x:", x[3178])
+
+    plt.hist(x, bins=50, range=(-1000, 1000))
+    plt.show()
+    exit(0)
         
     #calculate alpha
     print("calculating alphas")
@@ -131,6 +182,8 @@ def calc_alphas(i100, plate, flambda, ivar):
 
     print("check 12")
 
+    #TEMP, uncomment this block, delete the one beneath
+    '''
     sums1 = np.zeros(yxsig.shape[1]) 
     for i in range(yxsig.shape[1]):
         sums1[i] = np.sum(yxsig[:,i])
@@ -139,6 +192,59 @@ def calc_alphas(i100, plate, flambda, ivar):
         sums2[i] = np.sum(xxsig[:,i])
     alphas = np.divide(sums1, sums2)
     alpha_std = np.sqrt(1/sums2)
+    '''
+
+    print("yxsig:", yxsig)
+    print("xxsig:", xxsig)
+    print("outside of range:", yxsig[(yxsig<-.1) * (yxsig>.1)])
+    print("outside of range:", xxsig[(xxsig<0) * (xxsig>.008)])
+
+    #histograms of xxsig and yxsig
+    '''
+    plt.hist(yxsig, bins=50, range=(-.1, .1))
+    plt.title("yxsig")
+    plt.show()
+
+    plt.hist(xxsig, bins=50, range=(0, .008))
+    plt.title("xxsig")
+    plt.show()
+    #see if some plates are contributing more:
+    #for each unique plates, get all the lambdas, see if any don't match
+    unique_plate_idces = np.unique(plate, return_index=True)[1] #2512 unique plates
+
+    yxsig_plate_means = []
+    xxsig_plate_means = []
+    for i in unique_plate_idces:
+        p = hdulist[6].data[i]
+        d = mjd[i]
+        idces =  np.nonzero((hdulist[6].data == p) * (mjd == d))[0] #indices of rows with this p and d
+
+        #yxsig and xxsig on this plate:
+        yxsig_sub = yxsig[idces]
+        yxsig_mean = np.mean(yxsig_sub)
+        yxsig_plate_means.append(yxsig_mean)
+        xxsig_sub = xxsig[idces]
+        xxsig_mean = np.mean(xxsig_sub)
+        xxsig_plate_means.append(xxsig_mean)
+    plt.hist(yxsig_plate_means, bins=50, range=(-.1, .1))
+    plt.title("yxsig plate means")
+    plt.show()
+    plt.hist(xxsig_plate_means, bins=50, range=(0, .002))
+    plt.title("xxsig plate means")
+    plt.show()
+    ''' 
+    
+    #save:
+    np.save("xxsig_iris_1d_82119.npy", xxsig)
+    np.save("yxsig_iris_1d_82119.npy", yxsig)
+    
+    sums1 = np.sum(yxsig)
+    sums2 = np.sum(xxsig)
+    alphas = np.divide(sums1, sums2)
+    alpha_std = np.sqrt(1/sums2)
+
+    print("sums 1:", sums1)
+    print("sums 2:", sums2)
 
     print("check 13")
 
@@ -221,13 +327,16 @@ alphas_10 = np.zeros(0)
 alpha_std_10 = np.zeros(0)
 wavelength_10 = np.zeros(0)
 
+num_files = 1 #TEMP, remove
+
 #preprocessing and calculate alphas for each file
 for j in range(num_files):
     if boss:
-        hdulist = fits.open("/Volumes/TOSHIBA EXT/Dust_Overflow/" + filenames[j])
-        flambda = hdulist[0].data #type: float64
-        ivar = hdulist[1].data #type: float64
-        wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
+        hdulist = fits.open("/Volumes/TOSHIBA EXT/Dust_Overflow/" + filenames[5]) #TEMP (5 -> j)
+        flambda = hdulist[0].data[:, 149] #TEMP: remove last brackets  #type: float64
+        ivar = hdulist[1].data[:,149] #TEMP: remove last brackets   #type: float64
+        #wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
+        wavelength = 6302.31347656 #TEMP, remove and uncomment prev line
 
     #process ivar:
     for i in range(ivar.shape[0]):
@@ -236,10 +345,11 @@ for j in range(num_files):
     for i in range(ivar.shape[0]):
         if i100_old[i] > 10: #10
             ivar[i] = 0
+
+    ivar[3178] = 0 #TEMP
         #if plate[i] == 72576658 or plate[i] == 72586605 or plate[i] == 72596603 \
         #   or plate[i] == 72606679 or plate[i] == 72626659 or plate[i] == 72626683:
         #    ivar[i] = 0
-    ivar[3178] = 0 #data at this location is bad
 
     #convert ivar to ivar of y
     for i in range(ivar.shape[0]):
@@ -261,13 +371,17 @@ for j in range(num_files):
     wavelength_10 = np.append(wavelength_10, wavelength_i)
 
 if save:
-    np.save('../alphas_and_stds/alphas_boss_iris_1d_82519_5.npy', alphas_10)
-    np.save('../alphas_and_stds/alphas_boss_iris_1d_stds_82519_5.npy', alpha_std_10)
+    np.save('../alphas_and_stds/alphas_boss_iris_1d_82019_5.npy', alphas_10)
+    np.save('../alphas_and_stds/alphas_boss_iris_1d_stds_82019_5.npy', alpha_std_10)
     #np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
     print("alphas saved")
 
 #plot
-plot_alphas(alphas_10, alpha_std_10, wavelength_10, bin=True)
-plt.show()
+#plot_alphas(alphas_10, alpha_std_10, wavelength_10, bin=True) #TEMP: uncomment these lines
+#plt.show()
+
+print("alpha:", alphas_10) #TEMP: remove these lines
+print("std:", alpha_std_10)
+
 
 

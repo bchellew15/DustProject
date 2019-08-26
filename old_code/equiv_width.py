@@ -1,11 +1,9 @@
-# load in alphas and make a scatterplot
-# also do calculations to find equivalent widths, line ratios, temperatures, etc.
+# calculations to find equivalent widths, line ratios, temperatures, etc.
 
-# ISSUES:
-# 5008 looks like double peak
-# error prop from H corrections? (can get error on 4000 A break)
-# investigate the integration warnings (now I am ignoring)
-# continuum: should use weighted mean?
+'''
+NOTE: this code is outdated.
+see equiv_width_updated.py
+'''
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +23,6 @@ if len(sys.argv) == 2:
     elif sys.argv[1] != 1:
         print("Usage: equiv_width.py [plots_on]")
         exit(0)
-
 
 # load wavelengths
 hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
@@ -322,7 +319,7 @@ if plots_on:
     plt.show()
     plot_emissions(alphas1, alphas4, "SFD", "With IRIS data")
     plt.show()
-    plot_emissions(alphas1, alphas2, "SFD", r"With $\tau$ and IRIS" )
+    plot_emissions(alphas1, alphas3, "SFD", r"With $\tau$ and IRIS" ) #this was wrong
     plt.show()
 
 
@@ -501,5 +498,7 @@ wavelength_diffs = [wavelength[i+1] - wavelength[i] for i in range(len(wavelengt
 plt.hist(wavelength_diffs)
 plt.show()
 '''
+
+print("WARNING: THIS CODE IS OUTDATED. USE EQUIV_WIDTH_UPDATED.PY")
 
 

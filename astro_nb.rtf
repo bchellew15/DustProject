@@ -1,17 +1,16 @@
 {\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf200
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\froman\fcharset0 Times-Roman;\f2\fnil\fcharset0 Menlo-Regular;
-\f3\fnil\fcharset0 HelveticaNeue;}
+\f3\fswiss\fcharset0 Helvetica-Bold;\f4\fnil\fcharset0 HelveticaNeue;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue0;\red0\green0\blue233;
-\red242\green242\blue242;}
+\red242\green242\blue242;\red251\green2\blue7;\red255\green255\blue255;}
 {\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\csgray\c0\c0;\cssrgb\c0\c0\c93333;
-\csgray\c95825;}
+\csgray\c95825;\cssrgb\c100000\c14913\c0;\cssrgb\c100000\c100000\c100000;}
 {\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
 {\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}
 {\list\listtemplateid3\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid201\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid3}
-{\list\listtemplateid4\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid301\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid4}
-{\list\listtemplateid5\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid401\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid5}}
-{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}{\listoverride\listid4\listoverridecount0\ls4}{\listoverride\listid5\listoverridecount0\ls5}}
-\margl1440\margr1440\vieww12380\viewh10040\viewkind0
+{\list\listtemplateid4\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid301\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid4}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}{\listoverride\listid4\listoverridecount0\ls4}}
+\margl1440\margr1440\vieww13560\viewh13060\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f0\fs24 \cf0 Astro Notebook\
@@ -161,8 +160,8 @@ some functions seem to not exist, and I don\'92t know which data files to use.\
 Try to get values from SFD maps\
 found fits files on Harvard Dataverse (
 \f1 \cf4 \cb1 \expnd0\expndtw0\kerning0
-\ul \ulc4 \CocoaLigature1 \outl0\strokewidth0 \strokec4 https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/EWCNL5
-\f0 \cf2 \cb3 \kerning1\expnd0\expndtw0 \ulnone \CocoaLigature0 \outl0\strokewidth0 \
+\ul \ulc4 \CocoaLigature1 https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/EWCNL5
+\f0 \cf2 \cb3 \kerning1\expnd0\expndtw0 \ulnone \CocoaLigature0 \
 along with C code, but the C code is not working\
 changed name of getline() function so compiler wouldn\'92t complain\
 changed void main -> int main, but those were just warnings.\
@@ -371,54 +370,409 @@ traced abort trap error to a sprintf() statement.\
 it was trying to assign 8-character string + null to 8-character char array\
 now pNaxis is correct, which is good. output is nonzero, but garbage\'85\
 \
-7/6/19\'94\
+7/6/19:\
 \
-removed check for \'93little_endian.\'94 output might be good now.\
+removed check for \'93little_endian.\'94\
+output is now good; see \'93verify_SFD_values.py\'94 for scatterplot.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f2\fs26 \cf5 \cb0 ./dust_getval infile=infile.txt outfile=outfile.txt map=I100 interp=y
+\f0\fs24 \cf2 \cb3 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \
+7/8/19:\
+updated equiv_width.py, not as many walls of code\
+found bug where wrong std devs were displaying for unbinned spectra.\
+Now IRIS errors are smaller, as expected.\
+used actual std devs for continuum AND peak; values still seem off\
+\
+7/9/19:\
+made text file with BOSS coordinates: BOSS_locations.txt\
+	(using coordinates from sky_radec.dat)\
+	(sky_radec.dat uses FK5 values, in degrees)\
+ran C code on it to get SFD i100 at BOSS locations\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f2\fs26 \cf5 \cb0 ./dust_getval infile=\cf6 BOSS_locations\cf5 .txt outfile=SFD_i100_at\cf2 _BOSS_locations.txt \cf5 map=I100 interp=y\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 	note: dust_getval takes galactic coordinates (l, b)\
+	ended up using BOSS_locations_galactic.txt in BrandtFiles folder\
+tried to get IRIS values at BOSS locations (iris_i100_at_boss.npy)\
+	Not consistent with the SFD values\'85\
+\
+7/10/19:\
+fixed so BOSS values look good for SFD and IRIS\
+(issues with coordinate conversion and bugs)\
+made scatterplots (boss_comparison_71019, 3 images)\
+	using verify_SFD_values.py\
+verified that the skyfibers.dat and skyfibers_nativelam.fits Brandt just sent me are the ones I already had\
+\
+7/11/19:\
+saved iris spectrum with correct std dev (iris_spectrum_71119.png)\
+\
+7/30/19\
+counted 238906 lines in sky_radec.dat and in skyfibers.dat\
+they seem to line up but the numbers in skyfibers.dat don\'92t even look like coordinates\
+\
+7/31/19:\
+lambdas are given by default as log_10(lambda)\
+spacing of start values is 10E-4, just like spacing within wavelength arrays\
+one of the arrays starts quite a bit higher than the rest\
+\
+8/1/19:\
+info on sky_radec.dat:\
+	cols (0, 1, 2, 3, 4) are (mjd, plate, fiber, ra, dec)\
+info on skyfibers.dat:\
+	cols(0, 1, 2, 5, 6) are (mjd, plate, fiber), then stuff with redshift\
+found error in my code to get taos for BOSS; was using wrong wavelength array\
+fixed it and ran get_optical_depth\
+	to get taos_boss.npy, optical depth at BOSS locations\
+	avg is 0.12, probably close enough to 0.3\
+\
+previous meeting:\
+drizzling: wavelength array is constant across a plate, so end up with ~4 spectra\
+	each one comes from a subset of the plates.\
+\
+meeting (8/1/19)\
+	drizzling: no need. looks like all the arrays line up\
+	tread same plate on different days as separate plate\
+\
+8/5/19:\
+using sky_radec.dat, NOT skyfibers.dat, because it doesn\'92t have coordinates\
+no need for drizzling because wavelength arrays are all evenly spaced\
+	(spacing within array is 10^-4 in log_lambda, same for spacing of first lambdas)\
+verified that there is data from same plate on different days\
+	lines 695, 696\
+	695: date 55179, plate 3615\
+	696: date 55208, plate 3615\
+verified (again?) that the file BOSS_radec.dat is same as the sky_radec I\'92m using\
+checked date range: 12-11-2009 to 06-29-2014 (about 1661 days)\
+checked plate range: 3586 to 7565 (3979)\
+\
+8/6/19:\
+created unique identifier: plate * 10000 + date mod 10000\
+ran i100_with_tao.py to get 2d i100 arrays for boss: SFD and IRIS\
+	i100_tao_boss.npy and i100_tao_boss_iris.npy\
+	avg of i100_tao_boss is 1.7\
+trying to create padded flambda array\
+	(because the arrays start at different wavelengths)\
+issue: flambda array has less rows than wavelength array (
+\f2\fs26 \cf5 \cb0 238904 vs 238906)
+\f0\fs24 \cf2 \cb3 \
+\
+8/7/19:\
+in the process of organizing dust project folder, moving large files to terabyte drive\
+	including i100_tao_small.npy and taos_small.npy, used to test limiting case of small taos (0.01)\
+Brandt says wavelength array is just missing first 2 elements, which are same as third element\
+padded array:\
+	(BOSS_test.py)\
+	pad flambdas with 0 so they don\'92t contribute to the sum\
+	pad ivar with 1 so no division by 0\
+	used numpy\'92s memmap to avoid filling up RAM\
+	padded_flams_boss.npy, padded_ivars_boss.npy\
+\
+8/8/19:\
+struggling with high memory usage in reproduce_figs.py;\
+trying to use np.memmap to get around it.\
+re-did the padding, made sure ivars padded with 1s\
+created separate file: reproduce_figs_boss.py\
+	verified that reproduce_figs.py still works after reversing changes\
+\
+8/9/19:\
+modifying reproduce_figs_boss so it should never exceed RAM\
+now works on non-BOSS data, doesn\'92t exceed 1.5 GB of RAM\
+compare time vs. original code for non-BOSS:\
+	1d: 1:22 vs. 0:52 (slower now)\
+	2d: 3:17 vs 2:40 (slower now), but old code hit 14 GB of RAM, new stays under 1.5 GB\
+ran 1d boss, got image\
+	boss_1st_attempt and boss_1d_1st_attempt\
+	again, clearly wrong.\
+\
+8/12/19:\
+checked that padded ivar and flambda arrays load properly\
+make histograms of SFD i100:\
+	i100 distributions check out (peak around 2, go to around 8-10)\
+histograms of ivar:\
+	looked at wavelengths 4500 - 4600\
+	(BOSS: peak around 6, go to 20-25)\
+	(SDSS: peak around 5, go to 15-20)\
+histograms of flamda:\
+	looked at wavelengths 4500 - 4600\
+	(BOSS: peak around 0, goes from -1 to 1.5)\
+	(SDSS: peak around 0, goes from -3 to 3)\
+\
+8/13/19:\
+trying some things in reproduce_figs_boss.py, using just 5 columns of the arrays (to make it faster)\
+also tried averaging the 5 columns, in case it is a resolution issue. No luck.\
+	also tried with 20 columns\
+tried shifting wavelength array back, virtually no difference.\
+tried changing threshold (currently 10)\
+	(using avg of 5 columns)\
+	change to 3: alpha went from -0.01 to -0.2\
+	change to 30: alpha went back to -.01\
+tried IRIS 1d instead of SFD, did not help\
+	(as expected, i100 values are close to the same)\
+verified SFD i100 values look good\
+note: log_10(lambda) goes from 3.5496 to 4.0463\
+tried chunks of rows\
+	boss_first_10000_81319, boss_start_100k_81319, boss_start_200k_81319\
+checked the padding, looks good\
+\
+8/14/19:\
+tested with subset (first 10000) of SDSS locations. much more blurry but looks ok.\
+ivar and flambda both have a bunch of elements =0, but shouldn\'92t be an issue\
+	because those terms will be zero in the calculations.\
+verified that starting lambda is constant across each plate\
+\
+8/15:\
+Brandt says there was an indexing issue, sent new data\
+	(skyfibers_lam0.fits - skyfibers_lam9.fits)\
+columns of new data:\
+	0: flambda\
+	1: ivar\
+	2: lambda\
+	3: RA\
+	4: dec\
+	5: mjd\
+	6: plate\
+	7: fiber\
+modifying reproduce_figs_boss to support the 10 separate files\
+alphas now positive, but still having issues\
+	they are mostly too small\
+note: only first file has correct RA, plate number, etc.\
+\
+meeting notes (8/15/19):\
+	we expect BOSS flambdas to be closer to 0 (by factor of 4/9) because the fibers\
+	are smaller. this is what we see.\
+\
+8/16/19:\
+RA and Dec values check out, i100 should be correct\
+modifications to reproduce_figs_boss.py\
+	now it works on the original SDSS data\
+	the plotting is its own function\
+got full spectrum for BOSS 1d\
+	boss_fig3_81619.png\
+tried removing memmaps; took up too much RAM\
+I expected higher errors towards the edges because less data there.\
+	this is what we see.\
+\
+8/19/19:\
+checked padding to make sure it\'92s the same for all fibers on a given plate.\
+ivar histogram:\
+	lots of variation between sections, but generally peaks at 5-10 and goes to 20-30\
+flambda histogram:\
+	all centered at 0, tails generally went a bit past -1 and 1\
+slight modifications to equiv_width so it works with BOSS\
+ran equiv_width_update.py to get zoomed-in spectra\
+	looks better than expected, makes me question the binned spectra\
+updated to use sections of i100 (because flambda is divided into sections)\
+save some figures:\
+	boss_spectra_tau_81919\
+	\
+8/20/19:\
+tried shifting the binning\
+	sometimes made one of the peaks smaller, but overall shape was same\
+found 6 plates with avg value >10:\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f2\fs26 \cf2 \cb7 	72576658, 72586605, 72596603, 72606679, 72626659, 72626683
+\f0\fs24 \cb3 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 tried removing plates with large values\
+	alphas_boss_82019, alphas_boss_iris_1d_82019, and corresponding stds\
+	didn\'92t have a big effect, doesn\'92t seem like bad plates are throwing off the results\
+	biggest spike: stays at 4.15\
+tried lowering masking to 5\
+	in case IRIS values are getting cut off because they are bigger\
+	same filenames as above, plus _2\
+more thresholds:\
+	15 is _3, 7.5 is _4, 12.5 is _5\
+moved plotting function from equiv_width.py to generate_plots.py\
+	\
+meeting notes 8/20/19:\
+	try different masking\
+	figure out which i100 values are causing the discrepancy\
+	look at typical star spectra for comparison\
+	doesn\'92t know where 2.96 arcsec came from\
+\
+8/21/19:\
+plotted 5 thresholds each for SFD and IRIS\
+	sfd_thresholds_82119, iris_thresholds_82119\
+	iris data has 3rd peak to left for all threshold values\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f2\fs26 \cf5 \cb0 6302.31347656
+\f0\fs24 \cf2 \cb3  is wavelength of biggest anomaly (index 2499)\
+	6th plate starts at index 2350, so index 149 of that file\
+ran reproduce_figs_boss on just this wavelength\
+	result: 4.15 alpha\
+	(for IRIS, alpha = -0.29)\
+	looked at histograms of xxsig and yxsig (and avgs over wavelength)\
+compared xxsig and yxsig between SFD and IRIS\
+	SFD histograms: xxsig_82119, xxsig_mean_82119, etc.\
+	no obvious difference in histograms of values or plate averages\
+looked at numerator and denominator for alpha\
+	denominator (sum 1) is bigger for IRIS, as expected (160 vs 140)\
+	numerator makes no sense: -47 for IRIS, 472 for SFD\
+saved xxsig and yxsig\
+	\cf2 \cb3 xxsig_82119.npy, \cf2 \cb3 xxsig_iris_1d_82119.npy, etc.\
+found at least one difference of >500 in numerator\
+	index: 3178\
+\
+8/22/19:\
+nothing special about this plate; 682 larger, 1763 smaller (similar for IRIS)\
+try removing negative i100 values\
+	didn\'92t have any effect\
+try setting ivars of just index 3178 to 0\
+	both ended up near 0.5\
+difference is not abnormally large (it\'92s 1; 2 would be a bit large)\
+	and both pretty close to the average for the respective data sets\
+try removing index 3178 for whole spectrum\
+	\cf2 \cb3 alphas_boss_82219.npy, \cf2 \cb3 alphas_boss_iris_1d_82219.npy, etc.\
+	looks like it worked; plotted binned and unbinned\
+y is large: -342000 (most y are between -3000 and 3000)\
+ivar is large: 930 x 10^-7 (most ivar are < 2x10^-7)\
+most x between -200 and 200, so -13.4 vs. 3.6 is relatively close\
+conclusion: an overly large value of flambda with overly small variance\
+looked at other large y-values\
+	5 are more extreme; all 10 highest and lowest had ivar < 3*10^-9 (some were 0)\
+double checked whether flambda values were anomalous\
+	flam was -57, most were in range -5 to 5\
+	i100 is 2.2, very typical\
+generate 2d plots (with and without IRIS):\
+	alphas_boss_2d_82219.npy\
+\
+8/23/19:\
+saved boss spectrum figures:\
+	boss_tau_spectrum_82319, boss_binned_spectra_82319, etc.\
+started generating 1d plots for various thresholds\
+	alphas_boss_82319_5.npy (threshold 5), etc.\
+	various_thresh_boss_82319.png\
+\
+8/25/19:\
+generated plots for IRIS at various thresholds\
+	various_thresh_boss_iris_82519\
+	look same as SFD plots\
+	the dip for threshold=5 does n ot appear to be an anomaly\
+	my interpretation: going right, correlation decreases because the model is worse.\
+		going left, correlation decreases because we mask areas with a lot of dust.\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\cf2 \cb3 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \cb3 remember to change the masking back to 10\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf2 	\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 brandt says MJD should be there in original data. look for it, re-run with UNIQUE identifier.\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf2 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 reproduce_figs_boss: 1d: why divis by 0?\
+	I hope just edge cases\'85\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf2 \
+masking:\cf2 \cb3 \
+	think of alternative ways to mask\
+	consider similar plot for 2D\
+\
+look at typical star spectrum for comparison\cf2 \cb3 \
+\
+later: check for bad y at other wavelengths\
+\
+remove large negative i100 values?\
+	doesn\'92t seem to have effect on overall spectrum\
+	what about i100 with large diffs? prob large errors, and masked\
+	check for other anomalous values?\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \
+code mods:\
+	clean up one_wavelength_boss\
+	structure generate_plots better\
+	reproduce_figs: changing mode from 1 to 0 changes binning; clean up, check for other bugs\
+	modify equiv_width to compare BOSS to non-BOSS\
+	make sure all scripts to work with the new file structure\
+	check through equiv_width, iris code\
+\
+new BOSS plots:\
+	fiddle with binning\
+	how do std devs compare?\
+\
+next steps:\
+	find equivalent widths, etc.\
+	verify that everything is good\
+	look at different regions of the sky \
+	what else?\
+\
+possible reasons for large alphas:\
+	better data leads to better correlation\
+	bias from the interpolation (read section 4)\
+\
+sanity checks: (esp. for 2D)\
+	verify that taos are correct by using small E(B-V)\
+	double check the other i100s (IRIS, etc.)\
+	also check that i100 are being divided properly\
+	verify code still produces same output for SDSS, etc.\
+\
+Astro textbook:\
+	stuff about relative line widths (see notes on paper)\
 \
 \
-what is little endian?\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f3\b \cf2 next meeting:
+\f0\b0 \
+	overview: one of the flambda values was very large, and its ivar was also too large\
+	[started looking at threshold, wasn\'92t changing discrepancies]\
+	[basically all the discrepancy was due to this one location]\
+	probably flambda or ivar because most of discrepancy was in numerator\
+		BUT there is a big discrepancy in x\'85\
+		checked IRIS and SFD to make sure, both pretty unremarkable, typical difference\
+		also the plate with the bad fiber was pretty average\
+		I think it only seemed big\
+	why would the new alphas be larger?\
+		systematics on the i100? or just different locations?\
+	interpretation of threshold plots\
+		why is there a dip?\
+	ask if any chance of a paper\
+		I can work from san jose on it if that is possible\'85\
 \
 \
-[next time: try using actual stds for everything instead of taking std of continuum.\
-probably will make errors even smaller\'85]\
 \
+question: flux conversion factor of 1.38?\
+next: clean up / organize \'93dust project\'94 folder\
+next: scale my alphas so they match ones from paper, try to replicate errors.\
+check through equiv_width code\
+next: clean up equiv_width and iris code\
 \
-\
-\
-\
-\
+ask: random errors in i100 values? something like sqrt(N), depends on processing?\
 \'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
 \
-\
 remember: check the coordinate transformations (euler())\
-remember: delete stored x, y, and ivar (files are big)\
 \
-plan: recalculate equivalent widths\
-\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
-\ls1\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}use correct std devs\
-{\listtext	\uc0\u8226 	}check that the binning is correct (use 6 bins, not 7\'85)\CocoaLigature0 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf2 \
+plan: check Q/A on drive\
+\
 plan: perform analysis on the BOSS code (see mtg notes in \'93questions\'94 sheet)\
 \pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
-\ls2\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}see BOSS email\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf2 \CocoaLigature0 \
-plan: be able to get SFD i100 values\
-\
-plan: IRIS code\
-\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
-\ls3\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 find out why changing WCS origin to 0 made it work.\
-\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 clean up code. also time and speed up. (checking for bad values\'85) (also clean up code for equiv_width)\
-\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 figure out why my ad2xy doesn\'92t work (it seemed to work for file 198\'85)\
-\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}figure out the cos(delta) thing\CocoaLigature0 \
-\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}[\CocoaLigature0 method: track one point over different files]\
+\ls1\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}see BOSS email\CocoaLigature0 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf2 \
+plan: IRIS code\
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 find out why changing WCS origin to 0 made it work.\
+\ls2\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 clean up code. also time and speed up. (checking for bad values\'85) (also clean up code for equiv_width)\
+\ls2\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 figure out why my ad2xy doesn\'92t work (it seemed to work for file 198\'85)\
+\ls2\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}figure out the cos(delta) thing\CocoaLigature0 \
+\ls2\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}[\CocoaLigature0 method: track one point over different files]\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \
+plan: read section 4 of paper\
+\
+plan: read carroll and ostlie\
+\
+plan: go back and check steradian calculation for sky fiber\
+\
 plan: verify combo 1d/2d code is good (check through it visually compared to old 1d and 2d code)\
 plan: look through onetab, get rid of excess tabs\
 plan: check if ok to use float32\
@@ -426,14 +780,14 @@ plan: follow up with some 134 stuff (see google drive, gauchospace)\
 \
 plan: understand paper\
 \pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
-\ls4\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 finish summarizing paper (sections 5 and 6)\
-\ls4\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}look through it some more
-\f3 \cf0 \cb1 \
+\ls3\ilvl0\cf2 \CocoaLigature1 {\listtext	\uc0\u8226 	}\CocoaLigature0 finish summarizing paper (sections 5 and 6) [see drive]\
+\ls3\ilvl0\CocoaLigature1 {\listtext	\uc0\u8226 	}look through it some more
+\f4 \cf0 \cb1 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \
 plan: review 250\
 \pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
-\ls5\ilvl0\cf0 {\listtext	\uc0\u8226 	}chai squared, max likelihood\'85
+\ls4\ilvl0\cf0 {\listtext	\uc0\u8226 	}chai squared, max likelihood\'85
 \f0 \cf2 \cb3 \CocoaLigature0 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf2 \

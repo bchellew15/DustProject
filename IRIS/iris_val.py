@@ -18,8 +18,8 @@ import astropy.wcs as wcs #for ad2xy
 
 #which file selection method (1 is mine, 0 is original)
 file_sel = 1
-#which coordinates (1 is actual, 0 is SFD)
-actual = 0
+#which coordinates (0 is SFD, 1 is IRIS example, 2 is BOSS)
+coords = 2
 
 start_idx_actual = 0
 end_idx_actual = 1000
@@ -30,12 +30,17 @@ end_idx_sfd = 91847
 #convert coordinates
 #result is in degrees
 def euler(alpha, delta):
-    if  not actual:
+    if coords == 0:
         c = SkyCoord(alpha, delta, frame='galactic', unit="deg")
         alpha = c.fk4.ra.deg
         delta = c.fk4.dec.deg
-    else:
+    elif coords == 1:
         c = SkyCoord(alpha, delta, frame='fk4', unit="deg")
+        alpha = c.fk4.ra.deg
+        delta = c.fk4.dec.deg
+    #fk5 is J2000
+    else:
+        c = SkyCoord(alpha, delta, frame='fk5', unit="deg")
         alpha = c.fk4.ra.deg
         delta = c.fk4.dec.deg
     return alpha, delta
@@ -247,7 +252,7 @@ def mosaique_iris(alpha, delta, direc):
 
 
 #check against actual IRIS values:
-if actual == 1:
+if coords == 1:
     #these are FK4 coordinates
     actual_IRIS = np.loadtxt("/Users/blakechellew/Documents/DustProject/IRIS/brandt_iris/IRIS_values_skyphot.dat")
     #these are same coordinates but FK5
@@ -281,7 +286,7 @@ if actual == 1:
     plt.show()
 
 #check against SFD values:
-else:
+elif coords == 0:
     a_b = np.load("/Users/blakechellew/Documents/DustProject/l_b_original.npy")
 
     start_idx = start_idx_sfd
@@ -295,7 +300,6 @@ else:
 
     #check correlation
     i100_original = np.load("/Users/blakechellew/Documents/DustProject/i100_1d.npy")[start_idx:end_idx]
-
     
     
     '''
@@ -324,7 +328,22 @@ else:
     plt.xlabel("SFD i100")
     plt.ylabel("IRIS i100")
     plt.show()
-    
+
+#get IRIS values at BOSS locations:
+else:
+    #load coordinates:
+    a_b = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations.txt")
+
+    a = a_b[:,0]
+    b = a_b[:,1] 
+
+    #get i100 values:
+    result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
+
+    #save i100 values:
+    np.save('iris_i100_at_boss.npy', result)
+
+    #check correlation with SFD BOSS values...
 
 
 

@@ -1,5 +1,5 @@
 # calculations to find equivalent widths, line ratios, temperatures
-# also plot spectra (overall and certain sections) for comparison
+# also plot spectra
 
 # ISSUES:
 # 5008 looks like double peak
@@ -18,12 +18,10 @@ import warnings
 warnings.simplefilter("ignore")
 
 #command line options
-if len(sys.argv) != 3:
-    print("Usage: equiv_width.py [boss: 0, 1] [plots_on: 0, 1]")
-    exit(0)
-    
+if len(sys.argv) != 2:
+    print("Usage: equiv_width.py [boss: 0, 1]")
+    exit(0)  
 boss = int(sys.argv[1])
-plots_on = int(sys.argv[2])
     
 # load wavelengths
 if boss:
@@ -40,6 +38,11 @@ if boss:
               np.load('../alphas_and_stds/alphas_iris_boss.npy'), np.load('../alphas_and_stds/alphas_iris_1d_boss.npy')]
     alpha_stds = [np.load('../alphas_and_stds/alphas_1d_boss_stds.npy'), np.load('../alphas_and_stds/alphas_2d_boss_stds.npy'), \
                   np.load('../alphas_and_stds/alphas_iris_boss_stds.npy'), np.load('../alphas_and_stds/alphas_iris_1d_boss_stds.npy')]
+
+    alphas = [np.load('../alphas_and_stds/alphas_boss_82019_2.npy'), np.load('../alphas_and_stds/alphas_2d_boss.npy'), \
+              np.load('../alphas_and_stds/alphas_boss_iris_1d_82019_2.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_82019_2.npy')]
+    alpha_stds = [np.load('../alphas_and_stds/alphas_boss_stds_82019_2.npy'), np.load('../alphas_and_stds/alphas_2d_boss_stds.npy'), \
+                  np.load('../alphas_and_stds/alphas_iris_boss_stds.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82019_2.npy')]
 else:
     alphas = [np.load('../alphas_and_stds/alphas_1d.npy'), np.load('../alphas_and_stds/alphas_2d.npy'), \
               np.load('../alphas_and_stds/alphas_iris.npy'), np.load('../alphas_and_stds/alphas_iris_1d.npy')]
@@ -189,51 +192,6 @@ for i in range(num_arrays):
     print("N to alpha: from", temp_ratio_Ns[i] - temp_ratio_N_errs[i], "to", temp_ratio_Ns[i] + temp_ratio_N_errs[i])
     print("S to alpha: from", temp_ratio_Ss[i] - temp_ratio_S_errs[i], "to", temp_ratio_Ss[i] + temp_ratio_S_errs[i])
 
-#plot unbinned spectra
-def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
-    plt.figure(figsize=(14, 6))
-
-    #plot 4830 - 5040
-    plt.subplot(1, 2, 1)
-    plt.plot(wavelength, alphas1, c='k', drawstyle='steps', label=label1)
-    plt.plot(wavelength, alpha_std1, c='k', drawstyle='steps')
-    plt.plot(wavelength, alphas2, c='r', drawstyle='steps', label=label2)
-    plt.plot(wavelength, alpha_std2, c='r', drawstyle='steps')
-
-    plt.xlabel(r"Wavelength ($\AA$)")
-    plt.ylabel(r"$\alpha_\lambda$")
-    plt.legend(loc='upper center', frameon=False)
-    plt.xlim(4830, 5040)
-    plt.ylim(0, 0.6)
-    xcoords = [4863, 4960, 5008]
-    for xc in xcoords:
-        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-
-    #plot 6530 - 6770 (original vs tao)
-    plt.subplot(1, 2, 2)
-    plt.plot(wavelength, alphas1, c='k', drawstyle='steps', label=label1)
-    plt.plot(wavelength, alpha_std1, c='k', drawstyle='steps')
-    plt.plot(wavelength, alphas2, c='r', drawstyle='steps', label=label2)
-    plt.plot(wavelength, alpha_std2, c='r', drawstyle='steps')
-
-    plt.xlabel(r"Wavelength ($\AA$)")
-    plt.ylabel(r"$\alpha_\lambda$")
-    plt.legend(loc='upper center', frameon=False)
-    plt.xlim(6530, 6770)
-    plt.ylim(0, 1.1)
-    xcoords = [6550, 6565, 6585, 6718, 6733]
-    for xc in xcoords:
-        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-
-#plot unbinned spectra:
-if plots_on:
-    plot_emissions(alphas[0], alphas[1], alpha_stds[0], alpha_stds[1], "SFD", r"With $\tau$ Correction")
-    plt.show()
-    plot_emissions(alphas[0], alphas[3], alpha_stds[0], alpha_stds[3], "SFD", "With IRIS data")
-    plt.show()
-    plot_emissions(alphas[0], alphas[2], alpha_stds[0], alpha_stds[2], "SFD", r"With $\tau$ and IRIS" )
-    plt.show()
-
 #remove this?
 '''
 from scipy import stats
@@ -245,90 +203,6 @@ plt.hlines(bin_means, bin_edges[:-1], bin_edges[1:], colors='g')
 if plots_on:
     plt.show()
 '''
-
-#plot binned alpha vs wavelength (original) 
-binned_lambdas = np.linspace(wavelength[0], wavelength[-1], 109) #108 bins
-binned_lambdas = np.arange(3900, 9200, 50)
-binned_alphas = []
-binned_stds = []
-
-for i in range(num_arrays):
-    binned_alpha_arr = np.zeros(binned_lambdas.shape)
-    binned_std_arr = np.zeros(binned_lambdas.shape)
-    for j, lmda in enumerate(binned_lambdas):
-        indices = np.where((wavelength > lmda) & (wavelength < lmda+50))[0]
-        relevant_alphas = alphas[i][indices]
-        relevant_stds = alpha_stds[i][indices]
-        #weighted average:
-        variance = np.power(relevant_stds, 2)
-        numerator = np.sum(np.divide(relevant_alphas, variance))
-        denominator = np.sum(np.divide(1, variance))
-        avg1 = numerator / denominator
-        avg2 = 1 / denominator
-        binned_alpha_arr[j] = avg1
-        binned_std_arr[j] = np.sqrt(avg2)
-    binned_alphas.append(binned_alpha_arr)
-    binned_stds.append(binned_std_arr)
-
-plt.figure(figsize=(6, 14))
-    
-plt.subplot(3, 1, 1)    
-#compare original to tao
-plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
-plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[1], c='r', drawstyle='steps', label=r'With $\tau$ Correction')
-plt.plot(binned_lambdas, binned_stds[1], c='r', drawstyle='steps')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(3850, 9200)
-plt.ylim(0, 0.4)
-plt.legend(frameon=False)
-
-plt.subplot(3, 1, 2)
-#compare original to iris
-plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
-plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[3], c='r', drawstyle='steps', label='With IRIS Data')
-plt.plot(binned_lambdas, binned_stds[3], c='r', drawstyle='steps')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(3850, 9200)
-plt.ylim(0, 0.4)
-plt.legend(frameon=False)
-
-plt.subplot(3, 1, 3)
-#compare original to tao AND iris
-plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
-plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[2], c='r', drawstyle='steps', label=r'With IRIS and $\tau$')
-plt.plot(binned_lambdas, binned_stds[2], c='r', drawstyle='steps')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(3850, 9200)
-plt.ylim(0, 0.4)
-plt.legend(frameon=False)
-
-plt.tight_layout()
-#plt.savefig("vert_3_panels.png")
-if plots_on:
-    plt.show()
-
-#all 4 together:
-plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
-plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[2], c='r', drawstyle='steps', label=r'With IRIS and $\tau$')
-plt.plot(binned_lambdas, binned_stds[2], c='r', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[1], c='b', drawstyle='steps', label='With tao corr.')
-plt.plot(binned_lambdas, binned_stds[1], c='b', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[3], c='g', drawstyle='steps', label=r'with IRIS')
-plt.plot(binned_lambdas, binned_stds[3], c='g', drawstyle='steps')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(3850, 9200)
-plt.ylim(0, 0.4)
-plt.legend(frameon=False)
-if plots_on:
-    plt.show()
 
 
 '''
