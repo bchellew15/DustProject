@@ -8,10 +8,11 @@ import sys #for command line args
 from math import floor #for binning range
 
 #command line options
-if len(sys.argv) != 2:
-    print("Usage: equiv_width.py [boss: 0, 1]")
+if len(sys.argv) != 3:
+    print("Usage: equiv_width.py [boss: 0, 1] [save: 0, 1]")
     exit(0)
 boss = int(sys.argv[1])
+save = int(sys.argv[2])
 
 # load wavelengths
 if boss:
@@ -35,17 +36,18 @@ alphas_sdss = [np.load('../alphas_and_stds/alphas_1d.npy'), np.load('../alphas_a
 alpha_stds_sdss = [np.load('../alphas_and_stds/alphas_1d_stds.npy'), np.load('../alphas_and_stds/alphas_2d_stds.npy'), \
               np.load('../alphas_and_stds/alphas_iris_stds.npy'), np.load('../alphas_and_stds/alphas_iris_stds_1d.npy')]
 
+alphas_sdss[3] = np.load('../alphas_and_stds/alphas_sdss_82919.npy')
+
 #other alphas:
 alphas_misc = [np.load('../alphas_and_stds/alphas_boss_82319_5.npy'), np.load('../alphas_and_stds/alphas_boss_82319_75.npy'), \
                np.load('../alphas_and_stds/alphas_boss_82219.npy'), np.load('../alphas_and_stds/alphas_boss_82319_125.npy'), \
                np.load('../alphas_and_stds/alphas_boss_82319_15.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_82519_5.npy'), \
                np.load('../alphas_and_stds/alphas_boss_iris_1d_82519_75.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_82219.npy'), \
                np.load('../alphas_and_stds/alphas_boss_iris_1d_82519_125.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_82519_15.npy')]
-#note: I used _2 twice here, other one was overwritten
 alpha_stds_misc = [np.load('../alphas_and_stds/alphas_boss_stds_82319_5.npy'), np.load('../alphas_and_stds/alphas_boss_stds_82319_75.npy'), \
                    np.load('../alphas_and_stds/alphas_boss_stds_82219.npy'), np.load('../alphas_and_stds/alphas_boss_stds_82319_125.npy'), \
                    np.load('../alphas_and_stds/alphas_boss_stds_82319_15.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82519_5.npy'), \
-                   np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82519_75.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82219.npy'),
+                   np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82519_75.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82219.npy'), \
                    np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82519_125.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82519_15.npy')]
 
 if boss:
@@ -56,23 +58,6 @@ else:
     alpha_stds = alpha_stds_sdss
 
 num_arrays = len(alphas)
-
-
-#find wavelength of anomaly
-'''
-#sfd: alphas_boss[0]
-#iris: alphas_boss[3]
-large_indices = np.argwhere((alphas_boss[0] > 4) * (wavelength > 5000) * (wavelength < 8000))
-small_indices = np.argwhere((alphas_boss[3] < -0.2) * (wavelength > 5000) * (wavelength < 8000))
-
-print("index:", large_indices)
-print(wavelength[large_indices])
-print(wavelength[small_indices])
-exit(0)
-'''
-
-
-
 
 
 #plot unbinned spectra (wavelength ranges from paper)
@@ -123,9 +108,7 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength):
     #plot binned alpha vs wavelength (original)
     lambda_range = wavelength[-1] - wavelength[0]
     left_over = lambda_range - 50*floor(lambda_range / 50)  
-    binned_lambdas = np.arange(wavelength[0]+left_over/2, wavelength[-1], 50) #the +10 is not supposed to be here
-    #binned_lambdas = np.linspace(wavelength[0], wavelength[-1], 109) #108 bins #old version
-    #binned_lambdas = np.arange(3900, 9200, 50)
+    binned_lambdas = np.arange(wavelength[0]+left_over/2, wavelength[-2], 50) #[-2] to avoid going over the edge
     binned_alphas = []
     binned_stds = []
 
@@ -199,7 +182,8 @@ plt.ylim(0, y_max)
 plt.legend(frameon=False)
 
 plt.tight_layout()
-plt.savefig("../boss_binned_spectra_82319.png")
+if save:
+    plt.savefig("../boss_binned_spectra_82319.png")
 plt.show()
 
 plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
@@ -216,10 +200,12 @@ plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 plt.legend(frameon=False)
 plt.show()
-    
+
+'''
 #plot several thresholds side by side:
 
 binned_lambdas, binned_alphas, binned_stds = generate_binned_alphas(alphas_misc, alpha_stds_misc, wavelength)
+
 
 #5 plots for SFD:
 plt.figure(figsize=(14, 6))
@@ -331,5 +317,5 @@ plt.legend(frameon=False)
 plt.tight_layout()
 #plt.savefig("../boss_spectra_overall.png")
 plt.show()
-
+'''
 

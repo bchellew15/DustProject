@@ -154,8 +154,8 @@ print(yx_difs[0:10])
 print(yx_difs[-1])
 '''
 
-
 #compare SFD and IRIS at same index:
+'''
 i100_sfd = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2].astype('float32')
 i100_iris = np.load("/Users/blakechellew/Documents/DustProject/IRIS/iris_i100_at_boss.npy", mmap_mode='r').astype('float32')
 diffs = i100_iris - i100_sfd
@@ -170,8 +170,6 @@ big_diffs = diffs[diffs>2]
 print("sfd value:", i100_sfd[3178])
 print("iris value:", i100_iris[3178])
 
-
-
 print(diffs[3178])
 
 print("neg_diffs")
@@ -182,5 +180,38 @@ print(np.sort(big_diffs))
 
 plt.hist(diffs, bins=50, range=(0, 2))
 plt.title("IRIS - SFD i100")
+plt.show()
+'''
+
+#look at flambda, ivar at index 3178 for other wavelengths
+'''
+hdulist = fits.open("/Volumes/TOSHIBA EXT/Dust_Overflow/" + filenames[0])
+flam_3178 = hdulist[0].data[3178]
+print(flam_3178)
+ivar_3178 = hdulist[1].data[3178]
+print(ivar_3178)
+'''
+
+#scatterplot to compare SFD and IRIS i100 values
+
+i100_sfd = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
+i100_iris = np.load("/Users/blakechellew/Documents/DustProject/IRIS/iris_i100_at_boss.npy", mmap_mode='r')
+#2D:
+i100_sfd_2d = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss.npy", mmap_mode='r')
+i100_iris_2d = i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
+
+idx = 1000
+num_elements = 238000
+
+#get tao for color coding:
+taos_iris_boss = np.load('/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss_iris.npy', mmap_mode='r')[:,idx][:num_elements]
+taos_iris_boss = np.clip(taos_iris_boss, a_min=None, a_max = np.mean(taos_iris_boss)+3*np.std(taos_iris_boss))
+
+plt.scatter(i100_iris[:num_elements], i100_iris_2d[:,idx][:num_elements], marker='.', s=100, c=taos_iris_boss, cmap='cool')
+plt.plot(np.arange(0, 4, 0.1), np.arange(0, 4, 0.1), 'r')
+plt.xlabel("old i100")
+plt.ylabel("corrected i100")
+plt.xlim(0, 30)
+plt.ylim(0, 30)
 plt.show()
 

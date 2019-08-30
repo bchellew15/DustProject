@@ -25,12 +25,12 @@ def plot_alphas(alphas, alpha_std, wavelength, color1='k', color2='r', bin=False
         #calculate bin ranges
         lambda_range = wavelength[-1] - wavelength[0]
         left_over = lambda_range - 50*floor(lambda_range / 50)
-        
-        binned_lambdas = np.arange(wavelength[0]+left_over/2, wavelength[-1], 50)
+        binned_lambdas = np.arange(wavelength[0]+left_over/2, wavelength[-2], 50)
+
         binned_alphas = np.zeros(binned_lambdas.shape)
         binned_std = np.zeros(binned_lambdas.shape)
         for i, lmda in enumerate(binned_lambdas):
-            indices = np.where((wavelength > lmda-25) & (wavelength < lmda+25))[0]
+            indices = np.where((wavelength > lmda) & (wavelength < lmda+50))[0]
             relevant_alphas = alphas[indices]
             relevant_stds = alpha_std[indices]
             #weighted average:
@@ -52,18 +52,17 @@ def plot_alphas(alphas, alpha_std, wavelength, color1='k', color2='r', bin=False
     plt.xlabel("Wavelength")
     plt.ylabel("Alpha")
     
-#calculate x, y, alpha. then plot alpha vs. wavelength
+#calculate x, y, alpha, then plot alpha vs. wavelength
 def calc_alphas(i100, plate, flambda, ivar):
 
+    print("calculating x and y")
+    
     #calculate y
-
     y = np.memmap('y_mem.dat', dtype=np.float32, mode='w+', shape=flambda.shape)
     for i in range(flambda.shape[0]):
         y[i]  = np.multiply(flambda[i], wavelength, dtype='float32')
-
-    print("check 5")
         
-    #calculate x
+    #100 micron frequency
     lam100 = 100 * pow(10,-6) #100 microns
     c = 2.998 * pow(10, 8) #speed of light
     freq100 = c / lam100
@@ -72,11 +71,10 @@ def calc_alphas(i100, plate, flambda, ivar):
     x1 = np.memmap('x1_mem.dat', dtype=np.float32, mode='w+', shape=i100.shape)
     x1[:] = i100[:]
     
-    print("check 6")
-
+    #calculate x1 and x2
     for i in range(x1.shape[0]):
         x1[i] *= freq100
-    #avg x1 over plates (assuming in ascending order)
+    #avg x1 over plates (assuming grouped together)
     x2 = np.memmap('x2_mem.dat', dtype=np.float32, mode='w+', shape=x1.shape) #x2 will be array of averages
     boundaries = np.sort(np.unique(plate, return_index=True)[1])
     for idx, b in enumerate(boundaries[:-1]):
@@ -86,17 +84,14 @@ def calc_alphas(i100, plate, flambda, ivar):
     avgs = np.mean(x1[boundaries[-1]:], axis=0) #mean across plates, not wavelength
     x2[boundaries[-1]:] = avgs
 
-    print("check 7")
-    
+    #calculate x
     x = np.memmap('x_mem.dat', dtype=np.float32, mode='w+', shape=x1.shape)
     for i in range(x.shape[0]):
         x[i] = np.subtract(x1[i], x2[i])
 
-    print("check 8")
-
     #x unit conversion
     if boss:
-        unit_factor = 7.392 * 10**-11
+        unit_factor = 7.384 * 10**-11
     else:
         unit_factor = 1.617 * 10**-10
     for i in range(x.shape[0]):
@@ -104,44 +99,39 @@ def calc_alphas(i100, plate, flambda, ivar):
     if mode == '1d' or mode == 'iris_1d':
         x = x.reshape(len(x), 1)
         
-    #calculate alpha
     print("calculating alphas")
-    
+
+    #calculate alpha
     xx = np.memmap('xx_mem.dat', dtype=np.float32, mode='w+', shape=x.shape)
     for i in range(x.shape[0]):
         xx[i] = np.multiply(x[i], x[i])
-
-    print("check 9")
-
     yx = np.memmap('yx_mem.dat', dtype=np.float32, mode='w+', shape=y.shape)
     for i in range(y.shape[0]):
         yx[i] = np.multiply(y[i], x[i])
-
-    print("check 10")
-    
     yxsig = np.memmap('yxsig_mem.dat', dtype=np.float32, mode='w+', shape=yx.shape)
     for i in range(yx.shape[0]):
         yxsig[i] = np.multiply(yx[i], ivar[i])
-
-    print("check 11")
-    
     xxsig = np.memmap('xxsig_mem.dat', dtype=np.float32, mode='w+', shape=y.shape)
     for i in range(xx.shape[0]):
         xxsig[i] = np.multiply(xx[i], ivar[i])
-
-    print("check 12")
-
     sums1 = np.zeros(yxsig.shape[1]) 
     for i in range(yxsig.shape[1]):
         sums1[i] = np.sum(yxsig[:,i])
     sums2 = np.zeros(xxsig.shape[1])
     for i in range(xxsig.shape[1]):
         sums2[i] = np.sum(xxsig[:,i])
+
+    #check for division by 0
+    for i in range(len(sums1)):
+        if sums1[i] == 0 and sums2[i] == 0:
+            sums1[i] = np.nan
+            sums2[i] = np.nan
+            print("sums1 and sums2 are both 0 at this wavelength")
+        
     alphas = np.divide(sums1, sums2)
     alpha_std = np.sqrt(1/sums2)
 
-    print("check 13")
-
+    print("finished calculating alphas")
     return alphas, alpha_std, wavelength
 
 
@@ -165,16 +155,15 @@ if boss:
     plate = hdulist[6].data
     mjd = hdulist[5].data
     plate = 10000*plate + mjd%10000 #plate is now a unique identifier
-    #RA and dec are hdulist[3] and hdulist[4]
 
-    #get i100
-    i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2].astype('float32')
+    #get i100 (type: float64)
+    i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
     if mode == '2d':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss.npy", mmap_mode='r') #type: float64
+        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss.npy", mmap_mode='r')
     elif mode == 'iris':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r').astype('float32')
+        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
     elif mode == 'iris_1d':
-        i100 = np.load("/Users/blakechellew/Documents/DustProject/IRIS/iris_i100_at_boss.npy", mmap_mode='r').astype('float32')
+        i100 = np.load("/Users/blakechellew/Documents/DustProject/IRIS/iris_i100_at_boss.npy", mmap_mode='r')
     elif mode == '1d':
         i100 = i100_old
     else:
@@ -192,19 +181,19 @@ else:
     #        l[i] = l[i] - 360
     #b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
 
-    #get i100
-    i100_old = np.array(fiberinfo[:, 4]).astype('float32')  # 100 micron intensity (MJy/sr)
+    #get i100 (type: float64)
+    i100_old = np.array(fiberinfo[:, 4])# 100 micron intensity (MJy/sr)
     if mode == '2d':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao.npy", mmap_mode='r').astype('float32')  #i100_tao.npy
+        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao.npy", mmap_mode='r') #i100_tao.npy
     elif mode == 'iris':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_iris_tao.npy", mmap_mode='r').astype('float32')
+        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_iris_tao.npy", mmap_mode='r')
     elif mode == 'iris_1d':
-        i100 = np.load("/Users/blakechellew/Documents/DustProject/npy_files/iris_i100_at_sfd.npy", mmap_mode='r').astype('float32')
+        i100 = np.load("/Users/blakechellew/Documents/DustProject/npy_files/iris_i100_at_sfd.npy", mmap_mode='r')
     elif mode == '1d':
         i100 = i100_old
     else:
         print("Error: invalid mode")
-
+        
     #get flambda and ivar
     hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
     plate = np.array(hdulist[0].data)
@@ -232,15 +221,58 @@ for j in range(num_files):
     #process ivar:
     for i in range(ivar.shape[0]):
         ivar[i] *= (ivar[i] > 0) #correct the negative values
-    #new masking (threshold 10)
-    for i in range(ivar.shape[0]):
-        if i100_old[i] > 10: #10
-            ivar[i] = 0
-        #if plate[i] == 72576658 or plate[i] == 72586605 or plate[i] == 72596603 \
-        #   or plate[i] == 72606679 or plate[i] == 72626659 or plate[i] == 72626683:
-        #    ivar[i] = 0
-    ivar[3178] = 0 #data at this location is bad
+    #masking
+    #for i in range(ivar.shape[0]):
+    #    if i100_old[i] > 10: #10
+    #        ivar[i] = 0
+        #if i100_old[i] > 15:
+        #    ivar[plate==plate[i]] = 0 #mask all on plate
 
+    #mask plates with large averages
+    #for p in np.unique(plate):
+    #    if np.mean(i100[plate==p]) > 15:
+    #        ivar[plate==p] = 0
+    #        print("masking whole plate")
+
+    #mask only plates with biggest averages
+    '''
+    unique_plates = np.unique(plate)
+    plate_avgs = np.zeros(len(unique_plates))
+    for i, p in enumerate(unique_plates):
+        plate_avgs[i] = np.mean(i100[plate==p])
+    sorted_plate_idx = np.argsort(plate_avgs)
+    sorted_plates = unique_plates[sorted_plate_idx]
+    for i in range(50): #determines number of largest plates to remove
+        plate_mean = np.mean(i100[plate==sorted_plates[-i-1]])
+        if plate_mean > 10:
+            print("plate:", sorted_plates[-i-1])
+            print("plate mean:", plate_mean)
+        
+            #ivar[plate==sorted_plates[-i-1]] = 0
+    '''     
+    '''
+    #mask only plates with biggest values
+    unique_plates = np.unique(plate)
+    plate_maxs = np.zeros(len(unique_plates))
+    for i, p in enumerate(unique_plates):
+        plate_maxs[i] = np.max(i100_old[plate == p])
+    sorted_plate_idx = np.argsort(plate_maxs)
+    sorted_plates = unique_plates[sorted_plate_idx]
+    print("plate_maxs:", plate_maxs)
+    print(np.max(plate_maxs))
+    for i in range(len(plate_maxs)): #determines number of plates to remove
+        #ivar[plate==sorted_plates[-i-1]] = 0
+        if plate_maxs[-i-1] > 10:
+            plate_mean = np.mean(i100[plate==sorted_plates[-i-1]])
+            print("plate max:", plate_maxs[-i-1])
+            print("plate mean:", plate_mean)
+    '''
+        
+        
+
+    if boss:
+        ivar[3178] = 0 #data at this location is bad
+    
     #convert ivar to ivar of y
     for i in range(ivar.shape[0]):
         ivar[i] /= np.power(wavelength, 2)
@@ -250,7 +282,7 @@ for j in range(num_files):
     if boss and (mode == '2d' or mode == 'iris'):
         start_idx =  num_columns[j][0]
         num_elements = num_columns[j][1]
-        i100_sub = i100[:, start_idx:start_idx+num_elements]
+        i100_sub = i100[:, start_idx:start_idx+num_elements]        
     else:
         i100_sub = i100
 
@@ -261,8 +293,8 @@ for j in range(num_files):
     wavelength_10 = np.append(wavelength_10, wavelength_i)
 
 if save:
-    np.save('../alphas_and_stds/alphas_boss_iris_1d_82519_5.npy', alphas_10)
-    np.save('../alphas_and_stds/alphas_boss_iris_1d_stds_82519_5.npy', alpha_std_10)
+    np.save('../alphas_and_stds/alphas_sdss_82919.npy', alphas_10)
+    np.save('../alphas_and_stds/alphas_sdss_stds_82919.npy', alpha_std_10)
     #np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
     print("alphas saved")
 

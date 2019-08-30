@@ -4,12 +4,15 @@ import matplotlib.pyplot as plt
 from time import time
 import sys
 
+'''
+IMPORTANT: THIS CODE IS NO LONGER RELEVANT
+SEE REPRODUCE_FIGS_BOSS FOR UPDATED VERSION
+THIS CODE WAS CLEANER BUT COULD NOT HANDLE LARGE FILES
+'''
+
 #reproduce figures 3-6 from the paper
-
 #2d: uses correction factor for i100 to account for tao (optical depth)
-#so far, does not include BOSS i100 values
 
-#notes:
 #BOSS stuff has not been tested, and does not support separating by sky position yet. 
 
 #command line args
