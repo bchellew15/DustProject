@@ -225,14 +225,16 @@ for j in range(num_files):
     #for i in range(ivar.shape[0]):
     #    if i100_old[i] > 10: #10
     #        ivar[i] = 0
-        #if i100_old[i] > 15:
+        #if i100_old[i] > 20:
         #    ivar[plate==plate[i]] = 0 #mask all on plate
 
+    '''
     #mask plates with large averages
-    #for p in np.unique(plate):
-    #    if np.mean(i100[plate==p]) > 15:
-    #        ivar[plate==p] = 0
-    #        print("masking whole plate")
+    for p in np.unique(plate):
+        if np.mean(i100[plate==p]) > 10:
+            ivar[plate==p] = 0
+            print("masking whole plate")
+    '''
 
     #mask only plates with biggest averages
     '''

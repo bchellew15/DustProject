@@ -36,7 +36,35 @@ alphas_sdss = [np.load('../alphas_and_stds/alphas_1d.npy'), np.load('../alphas_a
 alpha_stds_sdss = [np.load('../alphas_and_stds/alphas_1d_stds.npy'), np.load('../alphas_and_stds/alphas_2d_stds.npy'), \
               np.load('../alphas_and_stds/alphas_iris_stds.npy'), np.load('../alphas_and_stds/alphas_iris_stds_1d.npy')]
 
-alphas_sdss[3] = np.load('../alphas_and_stds/alphas_sdss_82919.npy')
+alphas_sdss[0] = [0.18972603, 0.18287671, 0.1630137, 0.14657534, 0.09863014, 0.1609589, 0.18150685, 0.1890411, 0.16986301, 0.17328767, \
+                  0.20547945, 0.20205479, 0.20205479, 0.23835616, 0.26438356, 0.24383562, 0.20136986, 0.16986301, 0.1390411, 0.13630137, 0.17876712, \
+                  0.1739726, 0.28150685, 0.53835616, 0.61438356, 0.49452055, 0.31780822, 0.17465753, 0.19041096, 0.16643836, 0.16849315, \
+                  0.16164384, 0.19383562, 0.19520548, 0.1760274, 0.18356164, 0.24109589, 0.33630137, 0.44315068, 0.4, 0.25, 0.20616438, \
+                  0.1760274, 0.16780822, 0.17123288, 0.16712329, 0.17671233, 0.17260274, 0.17328767, 0.20205479, 0.17671233, 0.17191781, \
+                  0.17808219, 0.20479452, 0.19383562, 0.1739726, 0.19383562, 0.19863014, 0.18630137, 0.19109589, 0.19246575, 0.18013699, \
+                  0.17945205, 0.17671233, 0.16917808, 0.17260274, 0.16369863, 0.17671233, 0.18013699, 0.19726027, 0.16643836, 0.18561644, \
+                  0.1739726, 0.17123288, 0.16712329, 0.18219178, 0.18630137, 0.17945205, 0.18287671, 0.17808219, 0.1760274, 0.19383562, \
+                  0.16506849, 0.14931507, 0.16506849, 0.16575342, 0.17671233, 0.18630137, 0.18356164, 0.17534247, 0.18561644, 0.1869863, \
+                  0.1609589, 0.17808219, 0.19109589, 0.18561644, 0.13424658, 0.17191781, 0.17945205, 0.18561644, 0.17534247, 0.1869863, \
+                  0.17945205, 0.17739726, 0.17808219, 0.18630137, 0.18356164, 0.19726027, 0.20342466, 0.17739726, 0.15890411, 0.17260274, \
+                  0.17945205, 0.17534247, 0.18082192, 0.16849315, 0.18219178, 0.20205479, 0.19794521, 0.16712329, 0.16849315, 0.18493151, \
+                  0.17808219, 0.19520548, 0.17876712, 0.18835616, 0.19246575, 0.26712329, 0.37671233, 0.40410959, 0.3239726, 0.21849315, \
+                  0.17465753, 0.19041096, 0.19383562, 0.18287671, 0.20273973, 0.26643836, 0.33972603, 0.34383562, 0.26712329, 0.19863014, \
+                  0.17945205, 0.1869863, 0.19657534, 0.17260274, 0.18493151, 0.16369863, 0.17876712, 0.20273973, 0.20890411, 0.1869863, \
+                  0.18013699, 0.16849315, 0.16643836, 0.18493151, 0.19041096, 0.17260274, 0.17739726, 0.17328767, 0.15958904, 0.18287671, \
+                  0.19657534, 0.18561644, 0.19178082] #from Brandt paper
+alphas_sdss[0] = np.pad(alphas_sdss[0], pad_width=((2449, 1386)), mode='constant')
+alphas_sdss[3] = np.load('../alphas_and_stds/alphas_sdss_83019.npy') /1.38
+
+print("lengths:")
+print(len(alphas_sdss[0]))
+print(len(alphas_sdss[3]))
+#index 2487 is the NII peak
+#it is index 37 in the new array
+#pad with 2450 zeros at beginning
+#lengths: 164 vs 4000 -> 3836 difference
+# -> pad with 1386 zeros at the end
+
 
 #other alphas:
 alphas_misc = [np.load('../alphas_and_stds/alphas_boss_82319_5.npy'), np.load('../alphas_and_stds/alphas_boss_82319_75.npy'), \
@@ -79,6 +107,11 @@ def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
    xcoords = [4863, 4960, 5008]
    for xc in xcoords:
        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
+       
+   #line from 03 continuum::
+   plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
+   #actual continuum for NII:
+   plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
 
    #plot 6530 - 6770 (original vs tao)
    plt.subplot(1, 2, 2)
@@ -86,7 +119,7 @@ def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
    plt.plot(wavelength, alpha_std1, c='k', drawstyle='steps')
    plt.plot(wavelength, alphas2, c='r', drawstyle='steps', label=label2)
    plt.plot(wavelength, alpha_std2, c='r', drawstyle='steps')
-
+   
    plt.xlabel(r"Wavelength ($\AA$)")
    plt.ylabel(r"$\alpha_\lambda$")
    plt.legend(loc='upper center', frameon=False)
@@ -95,6 +128,11 @@ def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
    xcoords = [6550, 6565, 6585, 6718, 6733]
    for xc in xcoords:
        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
+
+   #line from 03 continuum::
+   plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
+   #actual continuum for NII:
+   plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
        
 #plot unbinned spectra:
 plot_emissions(alphas[0], alphas[1], alpha_stds[0], alpha_stds[1], "SFD", r"With $\tau$ Correction")
