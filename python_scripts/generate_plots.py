@@ -36,7 +36,7 @@ alphas_sdss = [np.load('../alphas_and_stds/alphas_1d.npy'), np.load('../alphas_a
 alpha_stds_sdss = [np.load('../alphas_and_stds/alphas_1d_stds.npy'), np.load('../alphas_and_stds/alphas_2d_stds.npy'), \
               np.load('../alphas_and_stds/alphas_iris_stds.npy'), np.load('../alphas_and_stds/alphas_iris_stds_1d.npy')]
 
-alphas_sdss[0] = [0.18972603, 0.18287671, 0.1630137, 0.14657534, 0.09863014, 0.1609589, 0.18150685, 0.1890411, 0.16986301, 0.17328767, \
+alphas_sdss[3] = [0.18972603, 0.18287671, 0.1630137, 0.14657534, 0.09863014, 0.1609589, 0.18150685, 0.1890411, 0.16986301, 0.17328767, \
                   0.20547945, 0.20205479, 0.20205479, 0.23835616, 0.26438356, 0.24383562, 0.20136986, 0.16986301, 0.1390411, 0.13630137, 0.17876712, \
                   0.1739726, 0.28150685, 0.53835616, 0.61438356, 0.49452055, 0.31780822, 0.17465753, 0.19041096, 0.16643836, 0.16849315, \
                   0.16164384, 0.19383562, 0.19520548, 0.1760274, 0.18356164, 0.24109589, 0.33630137, 0.44315068, 0.4, 0.25, 0.20616438, \
@@ -53,8 +53,13 @@ alphas_sdss[0] = [0.18972603, 0.18287671, 0.1630137, 0.14657534, 0.09863014, 0.1
                   0.17945205, 0.1869863, 0.19657534, 0.17260274, 0.18493151, 0.16369863, 0.17876712, 0.20273973, 0.20890411, 0.1869863, \
                   0.18013699, 0.16849315, 0.16643836, 0.18493151, 0.19041096, 0.17260274, 0.17739726, 0.17328767, 0.15958904, 0.18287671, \
                   0.19657534, 0.18561644, 0.19178082] #from Brandt paper
-alphas_sdss[0] = np.pad(alphas_sdss[0], pad_width=((2449, 1386)), mode='constant')
-alphas_sdss[3] = np.load('../alphas_and_stds/alphas_sdss_83019.npy') /1.38
+alphas_sdss[3] = np.pad(alphas_sdss[0], pad_width=((2449, 1386)), mode='constant')
+alphas_sdss[0] = np.load('../alphas_and_stds/alphas_sdss_83019.npy') /1.38
+
+
+print("wavelength and alphas:")
+print(wavelength)
+print(alphas_sdss[0])
 
 print("lengths:")
 print(len(alphas_sdss[0]))

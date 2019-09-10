@@ -13,6 +13,8 @@ from scipy import interpolate
 from scipy import integrate
 import sys #for command line args
 from scipy.optimize import curve_fit #for fitting gaussian to equiv width
+from numpy.linalg import lstsq #for fitting gaussian
+from scipy.integrate import quad
 
 import warnings
 warnings.simplefilter("ignore")
@@ -82,8 +84,8 @@ def equiv_width2(peak_l, alphas, alpha_stds, cont, stdev):
     
     bars = (alphas-cont)/cont * delta_lambda
     
-    l_off = -2 #-2 or -3
-    r_off = 4 #4 or 3
+    l_off = -2 # -2: this is shifter half-unit to the right
+    r_off = 4 #l_off + 6
 
     '''
     #peak fit:
@@ -119,6 +121,56 @@ def equiv_width2(peak_l, alphas, alpha_stds, cont, stdev):
     plt.axhline(y=cont)
     plt.show()
     '''
+
+    #better peak fitting: (move this outside of this function)
+    def linear_fit(rel_alphas, rel_lambdas, rel_sigmas, a3, a4):
+
+        rel_ivars = 1 / np.power(rel_sigmas, 2)
+        y = np.exp(-np.power(rel_lambdas-a3, 2)/(2*a4**2))
+        A = [[np.sum(rel_ivars), np.sum(np.multiply(y, rel_ivars))], \
+             [np.sum(np.multiply(y, rel_ivars)), np.sum(np.multiply(np.power(y, 2), rel_ivars))]]
+        b = [np.sum(np.multiply(rel_alphas, rel_ivars)), np.sum(np.multiply(np.multiply(rel_alphas, y), rel_ivars))]
+        
+        a1, a2 = lstsq(A, b)[0]
+        return a1, a2, y
+
+    def nonlinear_helper(alphas, sigmas):
+        def nonlinear_fit(rel_lambdas, a3, a4):
+            rel_sigmas = sigmas
+            rel_alphas = alphas
+            a1, a2, y = linear_fit(rel_alphas, rel_lambdas, rel_sigmas, a3, a4)
+            return a1 + a2*y
+        return nonlinear_fit
+
+    #guesses?
+    #try it just for a couple lines
+    #6585 nII peak (tall one): 6574.6 to 6708
+    n2_left_idx = np.argmin(np.abs(wavelength-6574.6))
+    n2_right_idx = np.argmin(np.abs(wavelength-6708))
+    rel_alphas = alphas[n2_left_idx:n2_right_idx+1]
+    rel_sigmas = alpha_stds[n2_left_idx:n2_right_idx+1]
+    rel_lambdas = wavelength[n2_left_idx:n2_right_idx+1]
+    popt,pcov = curve_fit(nonlinear_helper(rel_alphas, rel_sigmas), rel_lambdas, rel_alphas, p0=[6580, 10], sigma=rel_sigmas)
+
+    #recover a1 and a2:
+    a1, a2, y = linear_fit(rel_alphas, rel_lambdas, rel_sigmas, popt[0], popt[1])
+
+    print("params:", a1, a2, popt[0], popt[1])
+
+    x_range = np.arange(6550, 6750, .01)
+    y = np.exp(-np.power(x_range-popt[0], 2)/(2*popt[1]**2))
+    alpha_pred = a1+a2*y
+    plt.plot(x_range, alpha_pred, '.')
+    plt.plot(rel_lambdas, rel_alphas, 'r.')
+    plt.show()
+
+    #now integrate (over about 3 sigma I think)
+    width = quad(lambda x: nonlinear_helper(rel_alphas, rel_sigmas)(x, popt[0], popt[1]) - a1, popt[0]-100*popt[1], popt[0] + 100*popt[1])
+    print("n2 width:")
+    print(width)
+    
+
+    exit(0)
     
     width = np.sum(bars[left_peak_idx+l_off:left_peak_idx+r_off])
 
@@ -154,29 +206,30 @@ continuum_o3_stds = np.zeros(num_arrays)
 for i in range(num_arrays): 
     # noise for 6600 range:
     alphas_in_range = alphas[i][(wavelength>6600) * (wavelength < 6700)]
-    continuum_6600s[i] = np.mean(alphas_in_range)
-    continuum_6600_stds[i] = np.sqrt(np.sum(np.power(alpha_stds[i][(wavelength>6600) * (wavelength < 6700)], 2))) / len(alphas_in_range)   
+    stds_in_range = alpha_stds[i][(wavelength>6600) * (wavelength < 6700)]
+    continuum_6600s[i] = np.average(alphas_in_range, weights = 1/np.power(stds_in_range, 2))
+    continuum_6600_stds[i] = np.sqrt(np.sum(np.power(stds_in_range, 2))) / len(alphas_in_range)   
     #np.std(alphas_in_range, ddof=1)
     # noise for H-beta
     alphas_in_range = alphas[i][(wavelength>4829)*(wavelength<4858) + (wavelength>4864)*(wavelength<4893)]
-    continuum_4800s[i] = np.mean(alphas_in_range)
-    continuum_4800_stds[i] = np.sqrt(np.sum(np.power(alpha_stds[i][(wavelength>4829)*(wavelength<4858) + \
-                                                                   (wavelength>4864)*(wavelength<4893)], 2))) / len(alphas_in_range) 
+    stds_in_range = alpha_stds[i][(wavelength>4829)*(wavelength<4858) + (wavelength>4864)*(wavelength<4893)]
+    continuum_4800s[i] = np.average(alphas_in_range, weights = 1/np.power(stds_in_range, 2))
+    continuum_4800_stds[i] = np.sqrt(np.sum(np.power(stds_in_range, 2))) / len(alphas_in_range) 
     #np.std(alphas_in_range, ddof=1)
     # noise for OIII
     alphas_in_range = alphas[i][(wavelength>4900)*(wavelength<4958) + (wavelength>4963)*(wavelength<5000)]
-    continuum_o3s[i] = np.mean(alphas_in_range)
-    continuum_o3_stds[i] = np.sqrt(np.sum(np.power(alpha_stds[i][(wavelength>4900)*(wavelength<4958) + \
-                                                                 (wavelength>4963)*(wavelength<5000)], 2))) / len(alphas_in_range)  
+    stds_in_range = alpha_stds[i][(wavelength>4900)*(wavelength<4958) + (wavelength>4963)*(wavelength<5000)]
+    continuum_o3s[i] = np.average(alphas_in_range, weights = 1/np.power(stds_in_range, 2))
+    continuum_o3_stds[i] = np.sqrt(np.sum(np.power(stds_in_range, 2))) / len(alphas_in_range)  
     #np.std(alphas_in_range, ddof=1)
     
 
     #Updated O3 range:
     alphas_in_range = alphas[i][(wavelength>4914)*(wavelength<4957) + (wavelength>4963)*(wavelength<5000)] #temp
+    stds_in_range = alpha_stds[i][(wavelength>4914)*(wavelength<4957) + (wavelength>4963)*(wavelength<5000)]
     #in original o3 range it should be 4957, I think
-    continuum_o3s[i] = np.mean(alphas_in_range) #temp
-    continuum_o3_stds[i] = np.sqrt(np.sum(np.power(alpha_stds[i][(wavelength>4914)*(wavelength<4957) + \
-                                                                 (wavelength>4963)*(wavelength<5000)], 2))) / len(alphas_in_range)
+    continuum_o3s[i] = np.average(alphas_in_range, weights = 1/np.power(stds_in_range, 2)) #temp
+    continuum_o3_stds[i] = np.sqrt(np.sum(np.power(stds_in_range, 2))) / len(alphas_in_range)
     
     #continuum_o3s[i] = 0.147
     #continuum_4800s[i] = 0.136
