@@ -48,6 +48,7 @@ else:
                   np.load('../alphas_and_stds/alphas_iris_stds.npy'), np.load('../alphas_and_stds/alphas_iris_stds_1d.npy')]
 
     alphas[0] = np.load('../alphas_and_stds/alphas_sdss_83019.npy') / 1.38 #temp
+    alpha_stds[0] = np.load('../alphas_and_stds/alphas_sdss_stds_83019.npy') / 1.38 #temp
 
     alphas[1] = [0.18972603, 0.18287671, 0.1630137, 0.14657534, 0.09863014, 0.1609589, 0.18150685, 0.1890411, 0.16986301, 0.17328767, \
                   0.20547945, 0.20205479, 0.20205479, 0.23835616, 0.26438356, 0.24383562, 0.20136986, 0.16986301, 0.1390411, 0.13630137, 0.17876712, \
@@ -87,41 +88,15 @@ def equiv_width2(peak_l, alphas, alpha_stds, cont, stdev):
     l_off = -2 # -2: this is shifter half-unit to the right
     r_off = 4 #l_off + 6
 
-    '''
-    #peak fit:
-    def gaus(x, a, x0, sigma):
-        return a*np.exp(-(x-x0)**2/(2*sigma**2))
-
-    #def gaus(x, a, x0, sigma):
-    #    return a*sigma/2/((x-x0)**2 + (sigma/2)**2)
-
-    #set k to continuum
     
-    mean = wavelength[left_peak_idx] #guess
-    sigma = 10 #guess
+    #peak fitting
     
-    try:
-        popt,pcov = curve_fit(gaus, wavelength[left_peak_idx+l_off:left_peak_idx+r_off], bars[left_peak_idx+l_off:left_peak_idx+r_off], p0=[0.5,mean,sigma])
-    except:
-        print("fitting error at wavelength", peak_l)
-        popt, pcov = (0.5, 1000, 10), 0
-        
-    left_bound = popt[1] - np.sqrt(-2*popt[2]*popt[2]*np.log(cont/popt[0]))
-    right_bound = popt[1] + np.sqrt(-2*popt[2]*popt[2]*np.log(cont/popt[0]))
+    def gaussian_func(x, a1, a2, a3, a4):
+        return a1 + a2* np.exp(-np.power(x-a3, 2)/(2*a4**2))
 
-    #left_bound = wavelength[left_peak_idx+l_off]
-    #right_bound = wavelength[left_peak_idx+r_off]
+    def width_helper(x, a1, a2, a3, a4):
+        return (gaussian_func(x, a1, a2, a3, a4) - a1) / a1
     
-    width = integrate.quad(gaus, left_bound, right_bound, args=(popt[0], popt[1], popt[2]))[0]
-    width -= cont*(wavelength[left_peak_idx+r_off] - wavelength[left_peak_idx+l_off])
-
-    #plot:
-    plt.plot(wavelength[left_peak_idx+l_off:left_peak_idx+r_off], bars[left_peak_idx+l_off:left_peak_idx+r_off], '.')
-    plt.plot(np.arange(wavelength[left_peak_idx+l_off], wavelength[left_peak_idx+r_off], 0.1), gaus(np.arange(wavelength[left_peak_idx+l_off], wavelength[left_peak_idx+r_off], 0.1), popt[0], popt[1], popt[2]))
-    plt.axhline(y=cont)
-    plt.show()
-    '''
-
     #better peak fitting: (move this outside of this function)
     def linear_fit(rel_alphas, rel_lambdas, rel_sigmas, a3, a4):
 
@@ -164,11 +139,15 @@ def equiv_width2(peak_l, alphas, alpha_stds, cont, stdev):
     plt.plot(rel_lambdas, rel_alphas, 'r.')
     plt.show()
 
+    print("left:")
+    print(popt[0] - 3*popt[1])
+    print("right:")
+    print(popt[0] + 3*popt[1])
+    
     #now integrate (over about 3 sigma I think)
-    width = quad(lambda x: nonlinear_helper(rel_alphas, rel_sigmas)(x, popt[0], popt[1]) - a1, popt[0]-100*popt[1], popt[0] + 100*popt[1])
+    width = quad(width_helper, popt[0]-10*popt[1], popt[0] + 10*popt[1], args=(a1, a2, popt[0], popt[1]))
     print("n2 width:")
     print(width)
-    
 
     exit(0)
     
@@ -231,9 +210,8 @@ for i in range(num_arrays):
     continuum_o3s[i] = np.average(alphas_in_range, weights = 1/np.power(stds_in_range, 2)) #temp
     continuum_o3_stds[i] = np.sqrt(np.sum(np.power(stds_in_range, 2))) / len(alphas_in_range)
     
-    #continuum_o3s[i] = 0.147
-    #continuum_4800s[i] = 0.136
-    #o3 continuum value: 0.14898818311840933
+    print("n2 continuum;")
+    print(continuum_6600s[i])
     
 
 # calculate 4000 A break

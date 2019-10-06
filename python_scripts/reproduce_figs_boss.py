@@ -9,14 +9,20 @@ from math import floor #for calculating bin ranges
 #see reproduce_figs.py
 #this is a modification that aims to use less RAM
 
+#IMPORTANT: this code does NOT divide by flux conversion factor. For SDSS this is 1.38.
+
 #command line args
-if len(sys.argv) != 4:
-    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris, iris_1d] [boss: 0, 1] [save: 0, 1]")
+if len(sys.argv) < 4 or len(sys.argv) > 5:
+    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10]")
     exit(0)
+if len(sys.argv) == 5:
+    threshold = float(sys.argv[4]) #masking threshold
+else:
+    threshold = 10 #default
 
 mode = sys.argv[1]
 boss = int(sys.argv[2])
-save = int(sys.argv[3])
+save = sys.argv[3]
     
 #create scatterplot
 def plot_alphas(alphas, alpha_std, wavelength, color1='k', color2='r', bin=False):
@@ -121,6 +127,12 @@ def calc_alphas(i100, plate, flambda, ivar):
     for i in range(xxsig.shape[1]):
         sums2[i] = np.sum(xxsig[:,i])
 
+    print("sums shapes:", sums1.shape, sums2.shape)
+    print("other shapes:", xx.shape, yx.shape, yxsig.shape, xxsig.shape)
+    print(sums1)
+    print(sums2)
+    
+        
     #check for division by 0
     for i in range(len(sums1)):
         if sums1[i] == 0 and sums2[i] == 0:
@@ -145,13 +157,13 @@ if boss:
     #get dimensions for selecting i100s:
     num_columns = np.zeros(num_files)
     for i in range(num_files):
-        hdulist = fits.open("/Volumes/TOSHIBA EXT/Dust_Overflow/" + filenames[i])
+        hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + filenames[i])
         num_columns[i] = hdulist[0].data.shape[1]
     #elements of num_columns will be tuples: (start_idx, num_elements)
     num_columns = [(np.sum(num_columns[:i], dtype=np.int32), int(n)) for (i, n) in enumerate(num_columns)]
 
     #create unique plate identifier
-    hdulist = fits.open("/Volumes/TOSHIBA EXT/Dust_Overflow/" + filenames[0])
+    hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + filenames[0])
     plate = hdulist[6].data
     mjd = hdulist[5].data
     plate = 10000*plate + mjd%10000 #plate is now a unique identifier
@@ -159,9 +171,9 @@ if boss:
     #get i100 (type: float64)
     i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
     if mode == '2d':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss.npy", mmap_mode='r')
+        i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss.npy", mmap_mode='r')
     elif mode == 'iris':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
+        i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
     elif mode == 'iris_1d':
         i100 = np.load("/Users/blakechellew/Documents/DustProject/IRIS/iris_i100_at_boss.npy", mmap_mode='r')
     elif mode == '1d':
@@ -184,9 +196,9 @@ else:
     #get i100 (type: float64)
     i100_old = np.array(fiberinfo[:, 4])# 100 micron intensity (MJy/sr)
     if mode == '2d':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_tao.npy", mmap_mode='r') #i100_tao.npy
+        i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao.npy", mmap_mode='r') #i100_tao.npy
     elif mode == 'iris':
-        i100 = np.load("/Volumes/TOSHIBA EXT/Dust_Overflow/i100_iris_tao.npy", mmap_mode='r')
+        i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_iris_tao.npy", mmap_mode='r')
     elif mode == 'iris_1d':
         i100 = np.load("/Users/blakechellew/Documents/DustProject/npy_files/iris_i100_at_sfd.npy", mmap_mode='r')
     elif mode == '1d':
@@ -213,65 +225,23 @@ wavelength_10 = np.zeros(0)
 #preprocessing and calculate alphas for each file
 for j in range(num_files):
     if boss:
-        hdulist = fits.open("/Volumes/TOSHIBA EXT/Dust_Overflow/" + filenames[j])
+        hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + filenames[j])
         flambda = hdulist[0].data #type: float64
         ivar = hdulist[1].data #type: float64
         wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
-
+        
     #process ivar:
     for i in range(ivar.shape[0]):
         ivar[i] *= (ivar[i] > 0) #correct the negative values
     #masking
-    #for i in range(ivar.shape[0]):
-    #    if i100_old[i] > 10: #10
-    #        ivar[i] = 0
-        #if i100_old[i] > 20:
-        #    ivar[plate==plate[i]] = 0 #mask all on plate
-
-    '''
+    for i in range(ivar.shape[0]):
+        if i100_old[i] > threshold: #10
+            ivar[i] = 0
     #mask plates with large averages
     for p in np.unique(plate):
-        if np.mean(i100[plate==p]) > 10:
+        if np.mean(i100_old[plate==p]) > threshold:
             ivar[plate==p] = 0
             print("masking whole plate")
-    '''
-
-    #mask only plates with biggest averages
-    '''
-    unique_plates = np.unique(plate)
-    plate_avgs = np.zeros(len(unique_plates))
-    for i, p in enumerate(unique_plates):
-        plate_avgs[i] = np.mean(i100[plate==p])
-    sorted_plate_idx = np.argsort(plate_avgs)
-    sorted_plates = unique_plates[sorted_plate_idx]
-    for i in range(50): #determines number of largest plates to remove
-        plate_mean = np.mean(i100[plate==sorted_plates[-i-1]])
-        if plate_mean > 10:
-            print("plate:", sorted_plates[-i-1])
-            print("plate mean:", plate_mean)
-        
-            #ivar[plate==sorted_plates[-i-1]] = 0
-    '''     
-    '''
-    #mask only plates with biggest values
-    unique_plates = np.unique(plate)
-    plate_maxs = np.zeros(len(unique_plates))
-    for i, p in enumerate(unique_plates):
-        plate_maxs[i] = np.max(i100_old[plate == p])
-    sorted_plate_idx = np.argsort(plate_maxs)
-    sorted_plates = unique_plates[sorted_plate_idx]
-    print("plate_maxs:", plate_maxs)
-    print(np.max(plate_maxs))
-    for i in range(len(plate_maxs)): #determines number of plates to remove
-        #ivar[plate==sorted_plates[-i-1]] = 0
-        if plate_maxs[-i-1] > 10:
-            plate_mean = np.mean(i100[plate==sorted_plates[-i-1]])
-            print("plate max:", plate_maxs[-i-1])
-            print("plate mean:", plate_mean)
-    '''
-        
-        
-
     if boss:
         ivar[3178] = 0 #data at this location is bad
     
@@ -294,14 +264,15 @@ for j in range(num_files):
     alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
     wavelength_10 = np.append(wavelength_10, wavelength_i)
 
-if save:
-    np.save('../alphas_and_stds/alphas_sdss_82919.npy', alphas_10)
-    np.save('../alphas_and_stds/alphas_sdss_stds_82919.npy', alpha_std_10)
+if save != '0':
+    np.save('../alphas_and_stds/alphas_' + save + '.npy', alphas_10)
+    np.save('../alphas_and_stds/alpha_stds_' + save + '.npy', alpha_std_10)
     #np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
     print("alphas saved")
 
 #plot
-plot_alphas(alphas_10, alpha_std_10, wavelength_10, bin=True)
-plt.show()
+if save == '0':
+    plot_alphas(alphas_10, alpha_std_10, wavelength_10, bin=True)
+    plt.show()
 
 
