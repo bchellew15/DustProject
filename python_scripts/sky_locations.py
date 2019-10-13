@@ -11,7 +11,7 @@ from mpl_toolkits.basemap import Basemap
 if len(sys.argv) != 4:
     print("Usage: sky_locations [boss: 0, 1] [save (1), load (0)] [weighted: 0, 1]")
     exit(0)
-
+        
 boss = int(sys.argv[1])
 save = int(sys.argv[2])
 weighted = int(sys.argv[3])
@@ -30,6 +30,8 @@ new_cmap = truncate_colormap(cmap, 0.2, 1)
 if boss: 
     coords = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations_galactic.txt")
     i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
+    i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
+    i100 = i100[:,235] #around the halfway point
 
     hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + 'skyfibers_lam0.fits')
     plate = hdulist[6].data
@@ -40,6 +42,7 @@ else:
     coords = np.loadtxt('/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/infile.txt')
     fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
     i100_old = np.array(fiberinfo[:, 4])
+    i100 = i100_old
 
     hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
     plate = np.array(hdulist[0].data)
@@ -49,15 +52,12 @@ else:
 #"mask' is the indices of masked elements
 threshold = 10
 mask = np.where(i100_old>threshold)[0]
-print(type(mask))
 #mask plates with large averages
 for p in np.unique(plate):
     if np.mean(i100_old[plate==p]) > threshold:
         mask = np.append(mask, np.where(plate==p)[0])
 if boss:
     mask = np.append(mask, 3178) #data at this location is bad
-
-print(mask)
     
 longs = coords[:,0]
 lats = coords[:,1]
@@ -83,7 +83,9 @@ elif not save and not weighted:
 elif save and weighted:
     
     var_p = np.zeros(longs.shape[0]) #variance on a plate
-    print(var_p.shape)
+    #print(var_p.shape)
+    print(plate.shape)
+    print(i100.shape)
     for p in np.unique(plate):
         i100_p = i100[plate == p]
         i100_sqr_p = np.power(i100_p, 2)
@@ -91,17 +93,17 @@ elif save and weighted:
         var_p[plate==p] = var
         
     avg_var = np.mean(np.unique(var_p))
-    print("avg var:", avg_var)
-    print("median var:", np.median(np.unique(var_p)))
-    big_vars = var_p[var_p > avg_var]
-    print(len(big_vars))
-    print(len(var_p))
+    #print("avg var:", avg_var)
+    #print("median var:", np.median(np.unique(var_p)))
+    #big_vars = var_p[var_p > avg_var]
+    #print(len(big_vars))
+    #print(len(var_p))
 
     densities = np.zeros(len(longs))
     for i in range(len(longs)):
         densities[i] = np.sum((longs > longs[i] - 1) * (longs < longs[i] + 1) * (lats > lats[i] - 1) * (lats < lats[i] + 1))
         densities[i] *= var_p[i] / avg_var
-        print("weight:", var_p[i] / avg_var)
+        #print("weight:", var_p[i] / avg_var)
         
     densities[densities>128] = 128 #max on scale
     densities[densities<1] = 1 #min on scale
@@ -145,36 +147,40 @@ longs = np.subtract(360, longs)
 
 #use basemap for projection
 m = Basemap(projection='moll', lon_0=0) #TEST
+
+#text (gridline labels)
+text_xs = np.array([-60, -120, 0, 60, 120, 0, 0, 0])
+text_ys = np.array([0, 0, 0, 0, 0, 30, -30, -60])
+text_xs += 1
+text_ys += 1
+x, y = m(text_xs, text_ys)
+plt.text(x[0], y[0], '60', fontsize=10)
+plt.text(x[1], y[1], '120', fontsize=10)
+plt.text(x[2], y[2], '0', fontsize=10)
+plt.text(x[3], y[3], '-60', fontsize=10)
+plt.text(x[4], y[4], '-120', fontsize=10)
+plt.text(x[5], y[5], '30', fontsize=10)
+plt.text(x[6], y[6], '-30', fontsize=10)
+plt.text(x[7], y[7], '-60', fontsize=10)
+
+#transform data coordinates
 x, y = m(longs,lats)
 
 m.drawmapboundary()
-m.drawmeridians(np.arange(0,360,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray', labels=[0, 0, 0.5, 0], fontsize=10)
-m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray', labels=[1, 0, 0, 0], fontsize=10)
+m.drawmeridians(np.arange(0,360,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
+m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
-cb = m.colorbar(location='bottom', label='Sky Fiber Density')
+if weighted:
+    cb = m.colorbar(location='bottom', label=r'Sky Fiber Density (deg$^{-2}$)')
+else:
+    cb = m.colorbar(location='bottom', label=r'Weighted Sky Fiber Density (deg$^{-2}$)')
 cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
-cb.set_ticklabels([1, 2, 4, 8, 16, 32, 64, 128])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
+if weighted:
+    tick_labels[0] = '<1'
+cb.set_ticklabels(tick_labels)
 
 #plt.title("Sky Fiber Density")
-plt.show()
-exit(0)
-
-
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='mollweide')
-ax.set_axisbelow(True)
-ax.grid(True)
-
-#print("longs and lats with density 1:")
-#print(longs[densities==1.0])
-#print(lats[densities==1.0])
-#exit(0)
-
-
-
-plot = ax.scatter(longs, lats, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())#, projection='mollweide') #colormap was nipy_spectral
-fig.colorbar(plot, orientation='horizontal', label='Sky Fiber Density')
-
 plt.show()
