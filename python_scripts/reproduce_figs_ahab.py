@@ -2,27 +2,46 @@ from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
+from time import sleep
 import sys
 from math import floor #for calculating bin ranges
 
 #for tracking RAM:
 import os
 import psutil
-process = psutil.Process(os.getpid())
-print("memory: ", process.memory_info().rss / 1e9)  # in bytes
+import threading
+import _thread #older version
+
+#run continuously to make sure the program is not using too much RAM:
+def check_memory():
+    while True:
+        process = psutil.Process(os.getpid())
+        mem_usage = process.memory_info().rss / 1e9
+        print("memory: ", mem_usage)  # in bytes
+        if mem_usage > 28:
+            print("exiting due to excessive RAM usage")
+            _thread.interrupt_main()   #threading.currentThread()
+        sleep(4)
+        
+thr1 = threading.Thread(target = check_memory, daemon=True)
+thr1.start()
 
 #see reproduce_figs.py and reproduce_figs_boss.py
 #this version uses a lot more RAM and is made to work on AHAB
 #bootstrapping will be implemented using this file
 
 #command line args
-if len(sys.argv) < 4 or len(sys.argv) > 5:
-    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10]")
+if len(sys.argv) < 4 or len(sys.argv) > 6:
+    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [bootstrap=0]")
     exit(0)
-if len(sys.argv) == 5:
+if len(sys.argv) >= 5:
     threshold = float(sys.argv[4]) #masking threshold
 else:
     threshold = 10 #default
+if len(sys.argv) == 6:
+    bootstrap = int(sys.argv[5])
+else:
+    bootstrap = 0 #default
 
 mode = sys.argv[1]
 boss = int(sys.argv[2])
@@ -113,6 +132,9 @@ def calc_alphas(i100, plate, flambda, ivar):
     sums1 = np.sum(yxsig, axis=0)
     sums2 = np.sum(xxsig, axis=0)
 
+    if bootstrap:
+        return np.sum(yxsig, axis=0), np.sum(xxsig, axis=0)
+
     #check for division by 0
     for i in range(len(sums1)):
         if sums1[i] == 0 and sums2[i] == 0:
@@ -125,6 +147,7 @@ def calc_alphas(i100, plate, flambda, ivar):
 
     print("finished calculating alphas")
     return alphas, alpha_std, wavelength
+    
 
 
 #load data for BOSS
@@ -194,13 +217,47 @@ else:
     #create memmaps of flambda and ivar:
     flambda = hdulist[2].data
     ivar = hdulist[3].data
-
-print("memory: ", process.memory_info().rss / 1e9)  # in bytes
     
 #compute alphas separately for each file, then combine
 alphas_10 = np.zeros(0)
 alpha_std_10 = np.zeros(0)
 wavelength_10 = np.zeros(0)
+
+if bootstrap:
+    unique_plates = np.unique(plate)
+    print("number of unique plates:")
+
+    #set up arrays for xxsig and yxsig. each unique plate has an entry at each wavelength
+    yxsigs_bootstrap = np.zeros((len(unique_plates), 0))
+    xxsigs_bootstrap = np.zeros((len(unique_plates), 0))
+
+    #print("shapes before:")
+    #print(i100_old.shape)
+    #print(i100.shape)
+    #print(plate.shape)
+
+    #bootstrap_indices = np.random.choice([i for i in range(i100_old.shape[0]) if i != 3178], i100_old.shape[0])
+    #bootstrap_indices = np.array([i for i in range(i100_old.shape[0]) if i != 3178])
+    #bootstrap_indices = np.append(bootstrap_indices, bootstrap_indices[-1]) #to make it the right length                   
+    #np.random.shuffle(bootstrap_indices)
+    #plate_temp = plate[bootstrap_indices]
+    #bootstrap_indices = bootstrap_indices[np.argsort(plate_temp)]
+    #bootstrap_indices = np.array(range(i100_old.shape[0])) #test
+    #bootstrap_indices[:10000] = bootstrap_indices[30000:40000]
+    #print("bootstrap indices:", bootstrap_indices)
+
+    #i100_old = i100_old[bootstrap_indices]
+    #i100 = i100[bootstrap_indices]
+    #plate = plate[bootstrap_indices]
+
+    #print("shapes after:")
+    #print(i100_old.shape)
+    #print(i100.shape)
+    #print(plate.shape)
+    
+#bootstrap code:
+#btw stds prob irrelevant
+
 
 #preprocessing and calculate alphas for each file
 for j in range(num_files):
@@ -209,6 +266,18 @@ for j in range(num_files):
         flambda = hdulist[0].data #type: float64
         ivar = hdulist[1].data #type: float64
         wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
+
+    #if bootstrap:
+    #    print("shapes before:")
+    #    print(flambda.shape)
+    #    print(ivar.shape)
+    #        
+    #    flambda = flambda[bootstrap_indices]
+    #    ivar = ivar[bootstrap_indices]
+    #        
+    #    print("shapes after:")
+    #    print(flambda.shape)
+    #    print(ivar.shape)
 
     #process ivar:
     ivar *= (ivar > 0)
@@ -220,11 +289,9 @@ for j in range(num_files):
         if np.mean(i100_old[plate==p]) > threshold:
             ivar[plate==p] = 0
             print("masking whole plate")        
- 
-    if boss:
+            
+    if boss: # and not bootstrap: #TEMP might have to change this
         ivar[3178] = 0 #data at this location is bad
-
-    print("memory: ", process.memory_info().rss / 1e9)  # in bytes
         
     #convert ivar to ivar of y
     ivar /= np.power(wavelength, 2)
@@ -238,21 +305,59 @@ for j in range(num_files):
     else:
         i100_sub = i100
 
-    #calculate alphas
-    alphas_i, alpha_std_i, wavelength_i = calc_alphas(i100_sub, plate, flambda, ivar)
-    alphas_10 = np.append(alphas_10, alphas_i)
-    alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
-    wavelength_10 = np.append(wavelength_10, wavelength_i)
+    if bootstrap:
+        yxsig_partial = np.zeros(0)
+        xxsig_partial = np.zeros(0)
+        for p in unique_plates:
+            i100_sub_p = i100_sub[plate==p]
+            plate_p = plate[plate==p]
+            flambda_p = flambda[plate==p]
+            ivar_p = ivar[plate==p]
+            print("shapes before calc_alphas:")
+            print(i100_sub_p.shape)
+            print(plate_p.shape)
+            print(flambda_p.shape)
+            print(ivar_p.shape)
+            yxsig_p, xxsig_p = calc_alphas(i100_sub_p, plate_p, flambda_p, ivar_p)
+            print(yxsig_p.shape)
+            if len(yxsig_partial) == 0:
+                yxsig_partial = yxsig_p.reshape(1, yxsig_p.shape[0])
+                xxsig_partial = xxsig_p.reshape(1, xxsig_p.shape[0])
+            else:
+                yxsig_partial = np.append(yxsig_partial, yxsig_p.reshape(1, yxsig_p.shape[0]), axis=0)
+                xxsig_partial = np.append(xxsig_partial, xxsig_p.reshape(1, xxsig_p.shape[0]), axis=0)
+                print("shape:", yxsig_partial.shape)
+        yxsigs_bootstrap = np.append(yxsigs_bootstrap, yxsig_partial, axis=1)
+        xxsigs_bootstrap = np.append(xxsigs_bootstrap, xxsig_partial, axis=1)
+        print("bigger shape:", yxsigs_bootstrap.shape)
 
-print("memory: ", process.memory_info().rss / 1e9)  # in bytes
+    else:
+        #calculate alphas
+        alphas_i, alpha_std_i, wavelength_i = calc_alphas(i100_sub, plate, flambda, ivar)
+        alphas_10 = np.append(alphas_10, alphas_i)
+        alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
+        wavelength_10 = np.append(wavelength_10, wavelength_i)
+
+if bootstrap:
+    np.save('yx_bootstrap_' + save, yxsigs_bootstrap)
+    np.save('xx_bootstrap_' + save, xxsigs_bootstrap)
     
-if save != '0':
-    
+if save != '0' and not bootstrap:
     #np.save('../alphas_and_stds/alphas_test.npy', alphas_10)
     np.save('../alphas_and_stds/alphas_' + save + '.npy', alphas_10)
     np.save('../alphas_and_stds/alpha_stds_' + save + '.npy', alpha_std_10)
     #np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
     print("alphas saved")
+
+'''
+if bootstrap:
+    if os.path.isfile(save):
+        bootstrap_alphas = np.load(save)  
+        print("bootstrap alphas shape:", bootstrap_alphas.shape)
+        np.save(save, np.append(bootstrap_alphas, alphas_10.reshape(1, len(alphas_10)), axis=0))
+    else:
+        np.save(save, alphas_10.reshape(1, len(alphas_10)))
+'''
 
 
 

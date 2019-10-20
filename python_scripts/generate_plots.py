@@ -8,12 +8,13 @@ import sys #for command line args
 from math import floor #for binning range
 
 #command line options
-if len(sys.argv) != 4:
-    print("Usage: equiv_width.py [boss: 0, 1] [save: 0, 1] [save_thresh: 0, 1]")
+if len(sys.argv) != 5:
+    print("Usage: equiv_width.py [boss: 0, 1] [save: 0, 1] [save_thresh: 0, 1] [bootstrap: 0, 1]")
     exit(0)
 boss = int(sys.argv[1])
 save = int(sys.argv[2])
 save_thresh = int(sys.argv[3])
+bootstrap = int(sys.argv[4])
 
 # load wavelengths
 if boss:
@@ -31,15 +32,20 @@ alphas_boss = [np.load('../alphas_and_stds/alphas_boss_82219.npy'), np.load('../
 alpha_stds_boss = [np.load('../alphas_and_stds/alphas_boss_stds_82219.npy'), np.load('../alphas_and_stds/alphas_boss_2d_stds_82219.npy'), \
               np.load('../alphas_and_stds/alphas_boss_iris_stds_82219.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82219.npy')]
 
-#sdss alphas
-alphas_sdss = [np.load('../alphas_and_stds/alphas_1d.npy'), np.load('../alphas_and_stds/alphas_2d.npy'), \
+#sdss alphas (need to update to correct masking)
+alphas_sdss = [np.load('../alphas_and_stds/alphas_91019_10.npy'), np.load('../alphas_and_stds/alphas_2d.npy'), \
           np.load('../alphas_and_stds/alphas_iris.npy'), np.load('../alphas_and_stds/alphas_iris_1d.npy')]
 alpha_stds_sdss = [np.load('../alphas_and_stds/alphas_1d_stds.npy'), np.load('../alphas_and_stds/alphas_2d_stds.npy'), \
               np.load('../alphas_and_stds/alphas_iris_stds.npy'), np.load('../alphas_and_stds/alphas_iris_stds_1d.npy')]
 
+bootstrap_alphas = np.load('../alphas_and_stds/bootstrap_alphas_sdss_1d_101819.npy')
+print("number of bootstrap samples:")
+print(bootstrap_alphas.shape)
+
 #testing:
 alphas_boss[0] = np.load('../alphas_and_stds/alphas_boss_91119_10.npy')
 alphas_boss[1] = np.load('../alphas_and_stds/alphas_test.npy')
+alphas_sdss[1] = bootstrap_alphas[-1]
 
 #flux conversion factor:
 alphas_sdss = [a/1.38 for a in alphas_sdss]
@@ -58,6 +64,17 @@ else:
 num_arrays = len(alphas)
 
 
+#calculate bootstrap upper / lower bounds
+#sdss 1d: alphas_boss_91119_10
+#bootstrap samples: bootstrap_alphas_sdss_1d_101819.npy
+bootstrap_lower_bound = np.percentile(bootstrap_alphas, 5, axis=0) / 1.38
+bootstrap_upper_bound = np.percentile(bootstrap_alphas, 95, axis=0) / 1.38
+#bootstrap estimate of std dev, for comparison:
+bootstrap_std = (np.percentile(bootstrap_alphas, 84, axis=0) - np.percentile(bootstrap_alphas, 16, axis=0)) / 1.38
+
+
+
+
 #plot unbinned spectra (wavelength ranges from paper)
 def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
    plt.figure(figsize=(14, 6))
@@ -66,8 +83,16 @@ def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
    plt.subplot(1, 2, 1)
    plt.plot(wavelength, alphas1, c='k', drawstyle='steps', label=label1)
    plt.plot(wavelength, alpha_std1, c='k', drawstyle='steps')
-   plt.plot(wavelength, alphas2, c='r', drawstyle='steps', label=label2)
-   plt.plot(wavelength, alpha_std2, c='r', drawstyle='steps')
+
+   if not bootstrap:
+       plt.plot(wavelength, alphas2, c='r', drawstyle='steps', label=label2)
+       plt.plot(wavelength, alpha_std2, c='r', drawstyle='steps')
+
+   if bootstrap:
+       plt.fill_between(wavelength, bootstrap_lower_bound, bootstrap_upper_bound, alpha=0.5, step='pre')
+       #plt.plot(wavelength, bootstrap_lower_bound, c='m', drawstyle='steps')
+       #plt.plot(wavelength, bootstrap_upper_bound, c='m', drawstyle='steps')
+       plt.plot(wavelength, bootstrap_std, c='m', drawstyle='steps')
 
    plt.xlabel(r"Wavelength ($\AA$)")
    plt.ylabel(r"$\alpha_\lambda$")
@@ -79,9 +104,9 @@ def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
        
    #line from 03 continuum::
-   plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
+   #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
    #actual continuum for NII:
-   plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
+   #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
 
    #plot 6530 - 6770 (original vs tao)
    plt.subplot(1, 2, 2)
@@ -100,9 +125,9 @@ def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
 
    #line from 03 continuum::
-   plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
+   #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
    #actual continuum for NII:
-   plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
+   #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
        
 #plot unbinned spectra:
 plot_emissions(alphas[0], alphas[1], alpha_stds[0], alpha_stds[1], "SFD", r"With $\tau$ Correction")
@@ -128,6 +153,7 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength):
             indices = np.where((wavelength > lmda) & (wavelength < lmda+50))[0]
             relevant_alphas = alphas[i][indices]
             relevant_stds = alpha_stds[i][indices]
+ 
             #weighted average:
             variance = np.power(relevant_stds, 2)
             numerator = np.sum(np.divide(relevant_alphas, variance))
@@ -141,8 +167,15 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength):
 
     return binned_lambdas, binned_alphas, binned_stds
 
-'''
+
 binned_lambdas, binned_alphas, binned_stds = generate_binned_alphas(alphas, alpha_stds, wavelength)
+if bootstrap:
+    _, bootstrap_binned_lower, bootstrap_binned_stds = generate_binned_alphas([bootstrap_lower_bound], [bootstrap_std], wavelength)
+    _, bootstrap_binned_upper, _ = generate_binned_alphas([bootstrap_upper_bound], [bootstrap_std], wavelength)
+    bootstrap_binned_lower = bootstrap_binned_lower[0]
+    bootstrap_binned_upper = bootstrap_binned_upper[0]
+    bootstrap_binned_stds = bootstrap_binned_stds[0]
+    
 
 plt.figure(figsize=(6, 14))
 if boss:
@@ -153,13 +186,15 @@ else:
     y_max = 0.4
     x_min = 3850
     x_max = 9200
-
+    
 plt.subplot(3, 1, 1)    
 #compare original to tao
 plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
 plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
 plt.plot(binned_lambdas, binned_alphas[1], c='r', drawstyle='steps', label=r'With $\tau$ Correction')
 plt.plot(binned_lambdas, binned_stds[1], c='r', drawstyle='steps')
+plt.fill_between(binned_lambdas, bootstrap_binned_lower, bootstrap_binned_upper, alpha=0.5, step='pre')
+plt.plot(binned_lambdas, bootstrap_binned_stds, c='m', drawstyle='steps')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
@@ -209,7 +244,7 @@ plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 plt.legend(frameon=False)
 plt.show()
-'''
+
 
 
 if boss:
