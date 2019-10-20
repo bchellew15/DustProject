@@ -7,7 +7,7 @@
 \csgray\c95825;\cssrgb\c100000\c14913\c0;\cssrgb\c100000\c100000\c100000;}
 {\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
 {\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
-\margl1440\margr1440\vieww20980\viewh13180\viewkind0
+\margl1440\margr1440\vieww20980\viewh13060\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f0\fs24 \cf0 Astro Notebook\
@@ -913,18 +913,79 @@ made new threshold plots (threshold between 10 and 30)\
 	I initially included threshold 30 in the plot but it didn\'92t add anything; now 4 panels each\
 \
 10/6/19:\
-density plots: masking fibers in same way as reproduce_figs\
-then I\'92ll use a representative wavelength for the weighting.\
-	\
+density plots: masked fibers in same way as reproduce_figs\
+added text labels\
+for boss, I\'92ll used the variance at a representative wavelength: middle of wavelength range\
+	
+\f2\fs26 \cf5 \cb0 3741.9683
+\f0\fs24 \cf2 \cb3  at index 235	\
+sky_locations_4plot.py\
+	python script to put all 4 sky density plots on the same figure\
 \
+10/7/19:\
+fixed spacing on 4-panel fiber density plot\
+	(skyfibers_4plot_10619)\
+	uploaded it to overleaf\
+modifying threshold plot to be 2-panel (multiply spectra on each plot)\
+	sdss_thresholds_2panel_10719\
+\
+10/13/19:\
+created modified version of reproduce_figs for ahab\
+	editing on my computer and transfering updates using rsync\
+	
+\f2\fs26 \cf5 \cb0 rsync reproduce_figs_ahab.py blakechellew@ahab.physics.ucsb.edu:python_scripts/reproduce_figs_boss.py
+\f0\fs24 \cf2 \cb3 \
+added functionality (using multithreading) where the program will exit if it exceeds 28 GB of RAM\
+\
+10/15/19:\
+added code to randomize fiber locations for bootstrapping\
+	it runs now but correlation is 0, so something is wrong\
+	I also realized I meant to choose plates randomly, not fibers\
+the bug: I was assuming \'93plate\'94 array was sorted\
+\
+10/16/19:\
+I realized I can find the sums that appear in the expression for alpha separately for each plate\
+	Then I can randomize the plates without running the whole thing over and over\
+\
+10/18/19\
+2503 unique plates\
+bootstrap samples:\
+	bootstrap_alphas_sdss_1d_101819\
+tried 100 bootstrap samples. seems to work but very noisy.\
+plotted 90 percent envelope, as well as std dev estimate\
+plots of error as number of samples increases:\
+	bootstrap_errs_1000_101819\
+	bootstrap_errs_11000_101819\
+\
+10/19/19\
+was able to get 10 thousand bootstrap samples. looks pretty indistinguishable from 1000, which is good.\
+trying out formatting options for bootstrap envelope\
+	\
 \'97\'97\'97\'97\'97\'97\'97\'97\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf2 remember to change the masking back to 10\
 remember to scale the boss plots with flux calibration factor\
 \
+\
+next (10/20/19):\
+	look at some histograms\
+	decide which plots to make\
+\
+today (10/18/19)\
+	finish adapting generate_plots to work with bootstrap\
+	figure out which plots to apply bootstrap to\
+	generate the bootstrap samples\
+\
+today (10/15/19):\
+	finish writing bootstrapping code and start running it\
+	look at bootstrap histogram\
+	look at GREP fellowship requirements, start writing proposal\
+	see notes from other meetings (and consolidate)\
+	start writing some stuff on the paper\
+	add figures from my paper\
+\
 next:\
 	read through overleaf\
-	sky fiber density plot\
 	try to speed up code on ahab (prob will slow down bc of random selection)\
 	bootstrapping\
 		deciding #samples\
@@ -935,22 +996,29 @@ next:\
 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf2 threshold plots\
-	consider only 3 or 4 panels, I think 5 is too much.\
+	double check the BOSS spectra. something seems off.\
+	tick marks inside\'85\
+	label standard devs?\
+	maybe no bold text\
+	also need to scale by flux calibration factor\
 	do I even need to talk about lower threshold? I don\'92t think so.\
-	try slightly higher thresholds\
 	which parameters?\
 		I can first show effect of tao with sdss data\
 		then just say, \'93and similar results for boss/iris\'94\
-	choosing masking values\
 	clean up code for these plots. it\'92s not very scalable\
 	use same masking: mask >10 and avg >10\
 	1d plots: correlation gets worse as raise mask. we know bc of tau bc one side drops faster.\
 	2d plots: we should see these effects reduce\
 		then maybe we can increase the threshold	\
+	quantitatively compare left/right panels?\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf2 \
+sky fiber density plot\
+	consider smaller text for upper left\
+	border of ellipses not completely solid\
+	maybe grayscale is better?\
+\
 brandt suggested:\
-	applying for NSF\
 	looking into Arizona (both) and UNMLV\
 \
 next steps:\
@@ -998,40 +1066,36 @@ set up computer\
 \f0\fs24 \cf2 \cb3 \
 	saving public key:\
 		eval \'91ssh-agent\'92\
-		ssh-add]\
+		ssh-add\
 	activate conda environment:\
 		conda activate blake_conda\
 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf2 bootstrapping:\
+	choosing number of samples:\
+		for test at .05 level, paper recommends >= 399 samples (so 1000 should be fine)\
+		look at the histogram to make sure it looks good (symmetric, etc.)\
+		and look for convergence (plot estimate vs. number of iterations)\
+		error should go like 1/sqrt(N) (proof?)	\
+\
 	still use max likelihood estimator, but use bootstrap to get confidence interval, right?\
 	selecting random sample:\
 		sample before masking, then it includes the random error introduced by masking\
-	look into: binning first (then can do more trials)\
-	choosing plates vs. fibers\
-	\
 	which plots to bootstrap?\
-	[mask whole plates or individual fibers?]\
+	mask whole plates or individual fibers?\
 		brandt says whole plates\
 		I can do some tests to show most of the effect is from plates, not fibers (on 1d SDSS data)\
-	figure out which variant is the best\
 	find an example of it being used for astronomy\
 	figure out if/why it is the best option for calculating errors\
 	why better than other errors? (because we don\'92t know how those were calculated?)\
 		(or, probably: those errors are for THOSE locations. we want to know what\
 		would happen if we chose different locations)\
-		(but is it actually better regardless?)\
-	understand the theory (when it it justified; reliablility) (see \'93numerical recipes\'94)\
-	decide how many samples to take \
-		(100 is probably computationally prohibitive, depending on how many per sample)\
-		try it on a few wavelengths, see how it scales/\
-	[need block bootstraping to avoid destroying correlation?]\
-	check out the bootstrap textbook and Efron\'92s 1979 paper\
-	brandt: \
-		bootstrap should converge like sqrt(n) (verify)\
+	understand the theory\
+		when it it justified; reliablility) (see \'93numerical recipes\'94)\
+	check out Efron\'92s 1979 paper\
+	brandt:	\
 		might be fine to do every 10th wavelength or so\
 		consider binning first, see how accurate that would be\
-	correlation not an issue right? \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf2 		\
 look at typical star spectrum for comparison\
@@ -1089,19 +1153,53 @@ IRIS code\
 \
 Meetings:\
 \
+group meeting 10/15:\
+	trying to start wrapping everything up\
+	currently working on bootstrapping\
+		found shortcut\
+	fiber map figure\
+	see notes from past few weeks\
+\
+for wednesday 10/15:\
+	GRE and job interview . . . busy week\
+	set up bootstrap code to shut off if starts using too much RAM\
+	most of the way done setting up the bootstrapping\
+	I think I can speed it up (calculate sums for each plate)\
+	use bootstrap estimators for alphas? probably not . . .\
+notes:\
+	probably 10000 is a good number of samples\
+	probably use max likelihood est. still\
+\
+for tuesday 10/8:\
+	figures:\
+		fiber map:\
+			I used middle wavelength as \'93representative\'94 wavelength\
+			I\'92m using IRIS i100 for boss and sfd for sdss, does it matter? trying to be consistent with prev. paper.\
+		plots with changing thresholds:\
+			I would just put BOSS\
+			looks a bit off, I want to double check (recalculate and find some intermediate stuff)\
+	topic:\
+		figuring out reason for spatial variation in the correlation spectrum\
+		something else with SDSS (that requires a lot of computational power)\
+	questions:\
+		why larger variance -> more weight?\
+	SB\
+		Is there a group meeting next wednesday? I could show up to that.\
+\
+minus signs TEX style\
+ynglbu, cubehelix\
+consistency: mask the emission lines for these figures (weights to 0 near emission lines for bining)\
+rep. wavelength: middle of range\
+maybe use updated model\
+topic: as long as it satisfies the criteria\
+measure quasar redshift, check consistency across different pops of quasars. sdss range covers different emission lines for quasars at different redshifts. is there a way to smoothly check that consistency. what kind of systematics.\
+start writing text\
+	figure captions now\
+\
 for tuesday 10/1:\
-	continuing work:\
-		I don\'92t anticipate anything until january; I\'92d like to work on this part time\
-		do I need to be on campus? bc I was thinking I could show up for meetings if I know about them in advance\
-	fellowship:\
-		I think it make more sense to apply for DoD NDSEG fellowship (NSF: outreach, deadline)\
-		(can apply to future NSF)\
-		I\'92ll try to think of a project by next week\
 	weighted sky fiber map:\
-		works for SDSS, not for BOSS (almost all weighted values are small)\
 		should probably mask fibers and plates for the map as well\'85\
-		(variance on some plates is very high, bringing up avg (~10^5))\
-		why does larger variance -> more weight?\
+		why does larger variance -> more weight? (get it from alpha expression)\
 	threshold plots: they look good again\
 	overleaf: arctan model\
 	[I\'92l start on bootstrap pretty soon]\
@@ -1116,10 +1214,6 @@ figure out how old the stellar population is (divide one spectrum by another)\
 don\'92t use more than 30 GB of RAM\
 timeframe: start mid-october, currently through mid-december but possible extension\
 \
-\
-for tuesday 10/8:\
-	so far I\'92m using IRIS for boss and sfd for SDSS. does it matter? trying to be consistent with prev. paper.\
-		\
 \
 meeting 9/12/19:\
 	sky map plots\
