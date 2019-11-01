@@ -1,3 +1,10 @@
+#see reproduce_figs.py and reproduce_figs_boss.py
+#this version uses a lot more RAM and is made to work on AHAB
+
+#for bootstrapping:
+# 
+
+
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,10 +32,6 @@ def check_memory():
         
 thr1 = threading.Thread(target = check_memory, daemon=True)
 thr1.start()
-
-#see reproduce_figs.py and reproduce_figs_boss.py
-#this version uses a lot more RAM and is made to work on AHAB
-#bootstrapping will be implemented using this file
 
 #command line args
 if len(sys.argv) < 4 or len(sys.argv) > 6:
@@ -350,6 +353,7 @@ if save != '0' and not bootstrap:
     print("alphas saved")
 
 '''
+#for if I want to bootstrap by fiber
 if bootstrap:
     if os.path.isfile(save):
         bootstrap_alphas = np.load(save)  

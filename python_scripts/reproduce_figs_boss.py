@@ -168,6 +168,10 @@ if boss:
     mjd = hdulist[5].data
     plate = 10000*plate + mjd%10000 #plate is now a unique identifier
 
+    #sdss website says fiber 840 is bad
+    #http://www.sdss3.org/dr9/spectro/caveats.php#flux_cal
+    fiber_id = hdulist[7].data
+    
     #get i100 (type: float64)
     i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
     if mode == '2d':
@@ -244,6 +248,7 @@ for j in range(num_files):
             print("masking whole plate")
     if boss:
         ivar[3178] = 0 #data at this location is bad
+        ivar[fiber_id == 840] = 0
     
     #convert ivar to ivar of y
     for i in range(ivar.shape[0]):

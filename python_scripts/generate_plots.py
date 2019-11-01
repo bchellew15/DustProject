@@ -1,11 +1,14 @@
 #generate plots of correlation spectra (overall and certain sections) for comparison
 #this functionality was previously part of equiv_width_update.py
 
+#flux conversion factor is handled here, not in reproduce_figs
+
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
 import sys #for command line args
 from math import floor #for binning range
+from scipy.optimize import curve_fit #for checking if bootstrap histogram is gaussian
 
 #command line options
 if len(sys.argv) != 5:
@@ -27,72 +30,81 @@ else:
 # original, tao, tao AND iris, iris
 
 #boss alphas:
-alphas_boss = [np.load('../alphas_and_stds/alphas_boss_82219.npy'), np.load('../alphas_and_stds/alphas_boss_2d_82219.npy'), \
-          np.load('../alphas_and_stds/alphas_boss_iris_82219.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_82219.npy')]
-alpha_stds_boss = [np.load('../alphas_and_stds/alphas_boss_stds_82219.npy'), np.load('../alphas_and_stds/alphas_boss_2d_stds_82219.npy'), \
-              np.load('../alphas_and_stds/alphas_boss_iris_stds_82219.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_stds_82219.npy')]
+alphas_boss = [np.load('../alphas_and_stds/alphas_boss_102019.npy'), np.load('../alphas_and_stds/alphas_boss_2d_102019.npy'), \
+               np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')]
+alpha_stds_boss = [np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy'), \
+                   np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy')]
+bootstrap_alphas_boss = [np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy'), np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
+                         np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy')]
+bootstrap_lower_boss = [np.percentile(b, 5, axis=0) for b in bootstrap_alphas_boss] #90 percent confidence interval
+bootstrap_upper_boss = [np.percentile(b, 95, axis=0) for b in bootstrap_alphas_boss]
+bootstrap_stds_boss= [(np.percentile(b, 84, axis=0) - np.percentile(b, 16, axis=0)) / 2 for b in bootstrap_alphas_boss]
 
 #sdss alphas (need to update to correct masking)
-alphas_sdss = [np.load('../alphas_and_stds/alphas_91019_10.npy'), np.load('../alphas_and_stds/alphas_2d.npy'), \
-          np.load('../alphas_and_stds/alphas_iris.npy'), np.load('../alphas_and_stds/alphas_iris_1d.npy')]
-alpha_stds_sdss = [np.load('../alphas_and_stds/alphas_1d_stds.npy'), np.load('../alphas_and_stds/alphas_2d_stds.npy'), \
-              np.load('../alphas_and_stds/alphas_iris_stds.npy'), np.load('../alphas_and_stds/alphas_iris_stds_1d.npy')]
+alphas_sdss = [np.load('../alphas_and_stds/alphas_91019_10.npy'), np.load('../alphas_and_stds/alphas_2d_91119_10.npy'), \
+          np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy'), np.load('../alphas_and_stds/alphas_sdss_iris_1d_102019.npy')]
+alpha_stds_sdss = [np.load('../alphas_and_stds/alpha_stds_91019_10.npy'), np.load('../alphas_and_stds/alpha_stds_2d_91119_10.npy'), \
+              np.load('../alphas_and_stds/alpha_stds_sdss_iris_2d_102019.npy'), np.load('../alphas_and_stds/alpha_stds_sdss_iris_1d_102019.npy')]
+bootstrap_alphas_sdss = [np.load('../alphas_and_stds/bootstrap_alphas_sdss_1d_101819.npy'), np.load('../alphas_and_stds/bootstrap_alphas_sdss_2d_102019.npy'), \
+                         np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_2d_102019.npy'), np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_1d_102019.npy')]
 
-bootstrap_alphas = np.load('../alphas_and_stds/bootstrap_alphas_sdss_1d_101819.npy')
-print("number of bootstrap samples:")
-print(bootstrap_alphas.shape)
+#histogram (verify that this is the MLE gaussian)
+data_hist = bootstrap_alphas_sdss[0][int(bootstrap_alphas_sdss[0].shape[1]/2)]
+data_hist = data_hist[(data_hist>0)*(data_hist<1)]
 
-#testing:
-alphas_boss[0] = np.load('../alphas_and_stds/alphas_boss_91119_10.npy')
-alphas_boss[1] = np.load('../alphas_and_stds/alphas_test.npy')
-alphas_sdss[1] = bootstrap_alphas[-1]
+avg_hist = np.mean(data_hist)
+var_hist = np.var(data_hist)
+pdf_x = np.linspace(0, 0.4, 100)
+pdf_y = 1.0/np.sqrt(2*np.pi*var_hist)*np.exp(-0.5*(pdf_x-avg_hist)**2/var_hist)
+
+h = plt.hist(data_hist, bins=50, range=(0, 0.4)) #,normed=True)
+plt.plot(pdf_x, np.max(h[0])/np.max(pdf_y)*pdf_y, 'k--')
+plt.show()
+
+#plt.hist(bootstrap_alphas_sdss[0][:int(bootstrap_alphas_sdss[0].shape[1]/2)], bins=50)
+
+#plt.show()
+exit(0)
+
+bootstrap_lower_sdss = [np.percentile(b, 5, axis=0) / 1.38 for b in bootstrap_alphas_sdss] #90 percent confidence interval
+bootstrap_upper_sdss = [np.percentile(b, 95, axis=0) / 1.38 for b in bootstrap_alphas_sdss]
+bootstrap_stds_sdss = [(np.percentile(b, 84, axis=0) - np.percentile(b, 16, axis=0)) / 2 for b in bootstrap_alphas_sdss]
 
 #flux conversion factor:
 alphas_sdss = [a/1.38 for a in alphas_sdss]
 
-print("wavelength and alphas:")
-print(wavelength)
-print(alphas_sdss[0])
-
 if boss:
     alphas = alphas_boss
     alpha_stds = alpha_stds_boss
+    bootstrap_lower = bootstrap_lower_boss
+    bootstrap_upper = bootstrap_upper_boss
+    bootstrap_stds = bootstrap_stds_boss
 else:
     alphas = alphas_sdss
     alpha_stds = alpha_stds_sdss
+    bootstrap_lower = bootstrap_lower_sdss
+    bootstrap_upper = bootstrap_upper_sdss
+    bootstrap_stds = bootstrap_stds_sdss
 
 num_arrays = len(alphas)
 
 
-#calculate bootstrap upper / lower bounds
-#sdss 1d: alphas_boss_91119_10
-#bootstrap samples: bootstrap_alphas_sdss_1d_101819.npy
-bootstrap_lower_bound = np.percentile(bootstrap_alphas, 5, axis=0) / 1.38
-bootstrap_upper_bound = np.percentile(bootstrap_alphas, 95, axis=0) / 1.38
-#bootstrap estimate of std dev, for comparison:
-bootstrap_std = (np.percentile(bootstrap_alphas, 84, axis=0) - np.percentile(bootstrap_alphas, 16, axis=0)) / 1.38
-
-
-
-
 #plot unbinned spectra (wavelength ranges from paper)
-def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
+def plot_emissions(idx1, idx2, label1, label2):
    plt.figure(figsize=(14, 6))
 
    #plot 4830 - 5040
    plt.subplot(1, 2, 1)
-   plt.plot(wavelength, alphas1, c='k', drawstyle='steps', label=label1)
-   plt.plot(wavelength, alpha_std1, c='k', drawstyle='steps')
-
-   if not bootstrap:
-       plt.plot(wavelength, alphas2, c='r', drawstyle='steps', label=label2)
-       plt.plot(wavelength, alpha_std2, c='r', drawstyle='steps')
+   plt.plot(wavelength, alphas[idx1], c='k', drawstyle='steps', label=label1)
+   plt.plot(wavelength, alpha_stds[idx1], c='k', drawstyle='steps')
+   plt.plot(wavelength, alphas[idx2], c='r', drawstyle='steps', label=label2)
+   plt.plot(wavelength, alpha_stds[idx2], c='r', drawstyle='steps')
 
    if bootstrap:
-       plt.fill_between(wavelength, bootstrap_lower_bound, bootstrap_upper_bound, alpha=0.5, step='pre')
-       #plt.plot(wavelength, bootstrap_lower_bound, c='m', drawstyle='steps')
-       #plt.plot(wavelength, bootstrap_upper_bound, c='m', drawstyle='steps')
-       plt.plot(wavelength, bootstrap_std, c='m', drawstyle='steps')
+       plt.fill_between(wavelength, bootstrap_lower[idx1], bootstrap_upper[idx1], linewidth=0.0, color='k', alpha=0.5, step='pre')
+       plt.plot(wavelength, bootstrap_stds[idx1], c='m', drawstyle='steps')
+       plt.fill_between(wavelength, bootstrap_lower[idx2], bootstrap_upper[idx2], linewidth=0.0, color='r', alpha=0.5, step='pre')
+       plt.plot(wavelength, bootstrap_stds[idx2], c='m', drawstyle='steps')
 
    plt.xlabel(r"Wavelength ($\AA$)")
    plt.ylabel(r"$\alpha_\lambda$")
@@ -110,10 +122,16 @@ def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
 
    #plot 6530 - 6770 (original vs tao)
    plt.subplot(1, 2, 2)
-   plt.plot(wavelength, alphas1, c='k', drawstyle='steps', label=label1)
-   plt.plot(wavelength, alpha_std1, c='k', drawstyle='steps')
-   plt.plot(wavelength, alphas2, c='r', drawstyle='steps', label=label2)
-   plt.plot(wavelength, alpha_std2, c='r', drawstyle='steps')
+   plt.plot(wavelength, alphas[idx1], c='k', drawstyle='steps', label=label1)
+   plt.plot(wavelength, alpha_stds[idx1], c='k', drawstyle='steps')
+   plt.plot(wavelength, alphas[idx2], c='r', drawstyle='steps', label=label2)
+   plt.plot(wavelength, alpha_stds[idx2], c='r', drawstyle='steps')
+
+   if bootstrap:
+       plt.fill_between(wavelength, bootstrap_lower[idx1], bootstrap_upper[idx1], linewidth=0.0, color='k', alpha=0.5, step='pre')
+       plt.plot(wavelength, bootstrap_stds[idx1], c='m', drawstyle='steps')
+       plt.fill_between(wavelength, bootstrap_lower[idx2], bootstrap_upper[idx2], linewidth=0.0, color='r', alpha=0.5, step='pre')
+       plt.plot(wavelength, bootstrap_stds[idx2], c='m', drawstyle='steps')
    
    plt.xlabel(r"Wavelength ($\AA$)")
    plt.ylabel(r"$\alpha_\lambda$")
@@ -130,11 +148,11 @@ def plot_emissions(alphas1, alphas2, alpha_std1, alpha_std2, label1, label2):
    #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
        
 #plot unbinned spectra:
-plot_emissions(alphas[0], alphas[1], alpha_stds[0], alpha_stds[1], "SFD", r"With $\tau$ Correction")
+plot_emissions(0, 1, "SFD", r"With $\tau$ Correction")
 plt.show()
-plot_emissions(alphas[0], alphas[3], alpha_stds[0], alpha_stds[3], "SFD", "With IRIS data")
+plot_emissions(0, 3, "SFD", "With IRIS data")
 plt.show()
-plot_emissions(alphas[0], alphas[2], alpha_stds[0], alpha_stds[2], "SFD", r"With $\tau$ and IRIS" )
+plot_emissions(0, 2, "SFD", r"With $\tau$ and IRIS" )
 plt.show()
        
 def generate_binned_alphas(alphas, alpha_stds, wavelength):
@@ -169,12 +187,10 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength):
 
 
 binned_lambdas, binned_alphas, binned_stds = generate_binned_alphas(alphas, alpha_stds, wavelength)
+
 if bootstrap:
-    _, bootstrap_binned_lower, bootstrap_binned_stds = generate_binned_alphas([bootstrap_lower_bound], [bootstrap_std], wavelength)
-    _, bootstrap_binned_upper, _ = generate_binned_alphas([bootstrap_upper_bound], [bootstrap_std], wavelength)
-    bootstrap_binned_lower = bootstrap_binned_lower[0]
-    bootstrap_binned_upper = bootstrap_binned_upper[0]
-    bootstrap_binned_stds = bootstrap_binned_stds[0]
+    _, bootstrap_binned_lower, bootstrap_binned_stds = generate_binned_alphas(bootstrap_lower, bootstrap_stds, wavelength)
+    _, bootstrap_binned_upper, _ = generate_binned_alphas(bootstrap_upper, bootstrap_stds, wavelength)
     
 
 plt.figure(figsize=(6, 14))
@@ -193,8 +209,11 @@ plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD'
 plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
 plt.plot(binned_lambdas, binned_alphas[1], c='r', drawstyle='steps', label=r'With $\tau$ Correction')
 plt.plot(binned_lambdas, binned_stds[1], c='r', drawstyle='steps')
-plt.fill_between(binned_lambdas, bootstrap_binned_lower, bootstrap_binned_upper, alpha=0.5, step='pre')
-plt.plot(binned_lambdas, bootstrap_binned_stds, c='m', drawstyle='steps')
+if bootstrap:
+    plt.fill_between(binned_lambdas, bootstrap_binned_lower[0], bootstrap_binned_upper[0], linewidth=0.0, color='k', alpha=0.5, step='pre')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[0], c='m', drawstyle='steps')
+    plt.fill_between(binned_lambdas, bootstrap_binned_lower[1], bootstrap_binned_upper[1], linewidth=0.0, color='r', alpha=0.5, step='pre')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[1], c='m', drawstyle='steps')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
@@ -207,6 +226,11 @@ plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD'
 plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
 plt.plot(binned_lambdas, binned_alphas[3], c='r', drawstyle='steps', label='With IRIS Data')
 plt.plot(binned_lambdas, binned_stds[3], c='r', drawstyle='steps')
+if bootstrap:
+    plt.fill_between(binned_lambdas, bootstrap_binned_lower[0], bootstrap_binned_upper[0], linewidth=0.0, color='k', alpha=0.5, step='pre')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[0], c='m', drawstyle='steps')
+    plt.fill_between(binned_lambdas, bootstrap_binned_lower[3], bootstrap_binned_upper[3], linewidth=0.0, color='r', alpha=0.5, step='pre')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[3], c='m', drawstyle='steps')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
@@ -219,6 +243,11 @@ plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD'
 plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
 plt.plot(binned_lambdas, binned_alphas[2], c='r', drawstyle='steps', label=r'With IRIS and $\tau$')
 plt.plot(binned_lambdas, binned_stds[2], c='r', drawstyle='steps')
+if bootstrap:
+    plt.fill_between(binned_lambdas, bootstrap_binned_lower[0], bootstrap_binned_upper[0], linewidth=0.0, color='k', alpha=0.5, step='pre')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[0], c='m', drawstyle='steps')
+    plt.fill_between(binned_lambdas, bootstrap_binned_lower[2], bootstrap_binned_upper[2], linewidth=0.0, color='r', alpha=0.5, step='pre')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='m', drawstyle='steps')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
@@ -227,7 +256,7 @@ plt.legend(frameon=False)
 
 plt.tight_layout()
 if save:
-    plt.savefig("../boss_binned_spectra_82319.png")
+    plt.savefig("../bootstrap_sdss_binned_102919.png")
 plt.show()
 
 plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')

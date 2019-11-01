@@ -19,7 +19,7 @@ xxsig_bootstrap = np.load('xx_bootstrap_' + save_key + '.npy')
 print(yxsig_bootstrap)
 print(xxsig_bootstrap)
 
-save_path = 'bootstrap_alphas_' + save_key + '.npy'
+save_path = '../data/bootstrap_alphas_' + save_key + '.npy'
 
 #check sizes:
 #print("check sizes")
