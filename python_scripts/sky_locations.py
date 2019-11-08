@@ -31,7 +31,7 @@ if boss:
     coords = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations_galactic.txt")
     i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
     i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
-    i100 = i100[:,235] #around the halfway point
+    i100 = i100[:,2941] #around the halfway point
 
     hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + 'skyfibers_lam0.fits')
     plate = hdulist[6].data
@@ -66,7 +66,6 @@ if save and not weighted:
     densities = np.zeros(len(longs))
     for i in range(len(longs)):
         densities[i] = np.sum((longs > longs[i] - 1) * (longs < longs[i] + 1) * (lats > lats[i] - 1) * (lats < lats[i] + 1))
-    densities[densities>128] = 128 #max on scale
 
     #apply mask:
     densities = np.delete(densities, mask)
@@ -75,6 +74,9 @@ if save and not weighted:
         np.save('../alphas_and_stds/boss_skyfiber_densities.npy', densities)
     else:
         np.save('../alphas_and_stds/sdss_skyfiber_densities.npy', densities)
+
+    densities[densities>256] = 256 #max on scale
+    
 elif not save and not weighted:
     if boss:
         densities = np.load('../alphas_and_stds/boss_skyfiber_densities.npy')
@@ -104,9 +106,6 @@ elif save and weighted:
         densities[i] = np.sum((longs > longs[i] - 1) * (longs < longs[i] + 1) * (lats > lats[i] - 1) * (lats < lats[i] + 1))
         densities[i] *= var_p[i] / avg_var
         #print("weight:", var_p[i] / avg_var)
-        
-    densities[densities>128] = 128 #max on scale
-    densities[densities<1] = 1 #min on scale
 
     #apply mask:
     densities = np.delete(densities, mask)
@@ -115,6 +114,10 @@ elif save and weighted:
         np.save('../alphas_and_stds/boss_skyfiber_densities_weighted.npy', densities)
     else:
         np.save('../alphas_and_stds/sdss_skyfiber_densities_weighted.npy', densities)
+
+    densities[densities>256] = 256 #max on scale
+    densities[densities<1] = 1 #min on scale
+    
 elif not save and weighted:
     if boss:
         densities = np.load('../alphas_and_stds/boss_skyfiber_densities_weighted.npy')
@@ -176,8 +179,8 @@ if weighted:
     cb = m.colorbar(location='bottom', label=r'Sky Fiber Density (deg$^{-2}$)')
 else:
     cb = m.colorbar(location='bottom', label=r'Weighted Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 if weighted:
     tick_labels[0] = '<1'
 cb.set_ticklabels(tick_labels)

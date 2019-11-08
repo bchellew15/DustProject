@@ -9,6 +9,12 @@ import matplotlib #for lognorm
 from astropy.io import fits
 from mpl_toolkits.basemap import Basemap
 
+#command line args:
+if len(sys.argv) == 2:
+    save = int(sys.argv[1])
+else:
+    save = 0
+
 #truncate colormap (https://stackoverflow.com/questions/18926031/how-to-extract-a-subset-of-a-colormap-as-a-new-colormap-in-matplotlib)
 import matplotlib.colors as colors 
 
@@ -17,8 +23,17 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
         cmap(np.linspace(minval, maxval, n)))
     return new_cmap
-cmap = plt.get_cmap('Blues')
-new_cmap = truncate_colormap(cmap, 0.2, 1)
+
+trunc_map = True
+if not trunc_map:
+    #new_cmap = plt.get_cmap('YlGnBu')
+    new_cmap = plt.get_cmap('magma_r')
+    
+else:
+    #cmap = plt.get_cmap('cubehelix_r')
+    #cmap = plt.get_cmap('BuPu')
+    cmap = plt.get_cmap('PuBuGn')
+    new_cmap = truncate_colormap(cmap, 0.1, 1)
 
 #boss:
 coords = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations_galactic.txt")
@@ -41,20 +56,19 @@ for p in np.unique(plate):
         mask = np.append(mask, np.where(plate==p)[0])
 mask = np.append(mask, 3178) #data at this location is bad
 
-#12, 8 is too small
-#54, 36 is too big
+
 fig = plt.figure(figsize=(12, 8), dpi=200)
 fig.subplots_adjust(hspace=0.1) # height spaces
 fig.subplots_adjust(wspace=0.15) # width spaces
 plt.tight_layout()
 
-#plt.subplot(2, 2, 2)
 ax = fig.add_subplot(222)
 
 #boss unweighted
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
 densities = np.load('../alphas_and_stds/boss_skyfiber_densities.npy')
+densities[densities>256] = 256 #max on scale
 
 #mask coordinates:
 longs = np.delete(longs, mask)
@@ -86,20 +100,20 @@ plt.text(x[4], y[4], '-120', fontsize=10)
 plt.text(x[5], y[5], '30', fontsize=10)
 plt.text(x[6], y[6], '-30', fontsize=10)
 plt.text(x[7], y[7], '-60', fontsize=10)
-plt.text(0, 1, 'BOSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=20)
+plt.text(0, 1, 'BOSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=18)
 
 #transform data coordinates
 x, y = m(longs,lats)
 
-m.drawmapboundary()
+m.drawmapboundary(linewidth=1, zorder=-1)
 m.drawmeridians(np.arange(0,360,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
 cb = m.colorbar(location='bottom', label=r'Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 cb.set_ticklabels(tick_labels)
 
 #plt.title("Sky Fiber Density")
@@ -110,6 +124,8 @@ ax = fig.add_subplot(224)
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
 densities = np.load('../alphas_and_stds/boss_skyfiber_densities_weighted.npy')
+densities[densities>256] = 256 #max on scale
+densities[densities<1] = 1 #min on scale
 
 #mask coordinates:
 longs = np.delete(longs, mask)
@@ -141,20 +157,20 @@ plt.text(x[4], y[4], '-120', fontsize=10)
 plt.text(x[5], y[5], '30', fontsize=10)
 plt.text(x[6], y[6], '-30', fontsize=10)
 plt.text(x[7], y[7], '-60', fontsize=10)
-plt.text(0, 1, 'BOSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=20)
+plt.text(0, 1, 'BOSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=18)
 
 #transform data coordinates
 x, y = m(longs,lats)
 
-m.drawmapboundary()
+m.drawmapboundary(linewidth=1, zorder=-1)
 m.drawmeridians(np.arange(0,360,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
 cb = m.colorbar(location='bottom', label=r'Weighted Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 tick_labels[0] = '<1'
 cb.set_ticklabels(tick_labels)
 
@@ -186,6 +202,7 @@ ax = fig.add_subplot(221)
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
 densities = np.load('../alphas_and_stds/sdss_skyfiber_densities.npy')
+densities[densities>256] = 256 #max on scale
 
 #mask coordinates:
 longs = np.delete(longs, mask)
@@ -217,20 +234,20 @@ plt.text(x[4], y[4], '-120', fontsize=10)
 plt.text(x[5], y[5], '30', fontsize=10)
 plt.text(x[6], y[6], '-30', fontsize=10)
 plt.text(x[7], y[7], '-60', fontsize=10)
-plt.text(0, 1, 'SDSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=20)
+plt.text(0, 1, 'SDSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=18)
 
 #transform data coordinates
 x, y = m(longs,lats)
 
-m.drawmapboundary()
+m.drawmapboundary(linewidth=1, zorder=-1)
 m.drawmeridians(np.arange(0,360,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
 cb = m.colorbar(location='bottom', label=r'Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 cb.set_ticklabels(tick_labels)
 
 #plt.title("Sky Fiber Density")
@@ -242,6 +259,8 @@ ax = fig.add_subplot(223)
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
 densities = np.load('../alphas_and_stds/sdss_skyfiber_densities_weighted.npy')
+densities[densities>256] = 256 #max on scale
+densities[densities<1] = 1 #min on scale
 
 #mask coordinates:
 longs = np.delete(longs, mask)
@@ -273,25 +292,26 @@ plt.text(x[4], y[4], '-120', fontsize=10)
 plt.text(x[5], y[5], '30', fontsize=10)
 plt.text(x[6], y[6], '-30', fontsize=10)
 plt.text(x[7], y[7], '-60', fontsize=10)
-plt.text(0, 1, 'SDSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=20)
+plt.text(0, 1, 'SDSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=18)
 
 #transform data coordinates
 x, y = m(longs,lats)
 
-m.drawmapboundary()
+m.drawmapboundary(linewidth=1, zorder=-1)
 m.drawmeridians(np.arange(0,360,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
 cb = m.colorbar(location='bottom', label=r'Weighted Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 tick_labels[0] = '<1'
 cb.set_ticklabels(tick_labels)
 
 #plt.title("Sky Fiber Density")
 
-plt.savefig('../skyfibers_4plot_10719.png', bbox_inches='tight')#, pad_inches=0)
+if save:
+    plt.savefig('../skyfibers_4plot_110219.png', bbox_inches='tight')
 plt.show()
 

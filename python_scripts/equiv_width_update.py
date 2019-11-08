@@ -1,4 +1,4 @@
-# calculations to find equivalent widths, line ratios, temperatures
+ to find equivalent widths, line ratios, temperatures
 
 # ISSUES:
 # 5008 looks like double peak

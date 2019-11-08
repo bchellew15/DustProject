@@ -2,7 +2,7 @@
 #this version uses a lot more RAM and is made to work on AHAB
 
 #for bootstrapping:
-# 
+#saves sums of yx and xx (for each plate)
 
 
 from astropy.io import fits

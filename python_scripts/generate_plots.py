@@ -20,71 +20,99 @@ save_thresh = int(sys.argv[3])
 bootstrap = int(sys.argv[4])
 
 # load wavelengths
+wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
+hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
+wavelength_sdss = np.array(hdulist[1].data)
 if boss:
-    wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
+    wavelength = wavelength_boss
 else:
-    hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
-    wavelength = np.array(hdulist[1].data)
+    wavelength = wavelength_sdss
+
+sdss_fluxfactor = 1.38
+boss_fluxfactor = 1.38
 
 # load in npy files
 # original, tao, tao AND iris, iris
 
 #boss alphas:
-alphas_boss = [np.load('../alphas_and_stds/alphas_boss_102019.npy'), np.load('../alphas_and_stds/alphas_boss_2d_102019.npy'), \
-               np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')]
-alpha_stds_boss = [np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy')]
-bootstrap_alphas_boss = [np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy'), np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
-                         np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy')]
-bootstrap_lower_boss = [np.percentile(b, 5, axis=0) for b in bootstrap_alphas_boss] #90 percent confidence interval
-bootstrap_upper_boss = [np.percentile(b, 95, axis=0) for b in bootstrap_alphas_boss]
-bootstrap_stds_boss= [(np.percentile(b, 84, axis=0) - np.percentile(b, 16, axis=0)) / 2 for b in bootstrap_alphas_boss]
+alphas_boss = [np.load('../alphas_and_stds/alphas_boss_102019.npy'), \
+               np.load('../alphas_and_stds/alphas_boss_2d_102019.npy'), \
+               np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
+               np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')]
+alpha_stds_boss = [np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), \
+                   np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy'), \
+                   np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
+                   np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy')]
+if bootstrap:
+    bootstrap_alphas_boss = [np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy')]
+    bootstrap_lower_boss = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss] #90 percent confidence interval
+    bootstrap_upper_boss = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
+    bootstrap_stds_boss= [(np.percentile(b, 84, axis=0) - np.percentile(b, 16, axis=0)) / 2 for b in bootstrap_alphas_boss]
 
 #sdss alphas (need to update to correct masking)
-alphas_sdss = [np.load('../alphas_and_stds/alphas_91019_10.npy'), np.load('../alphas_and_stds/alphas_2d_91119_10.npy'), \
-          np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy'), np.load('../alphas_and_stds/alphas_sdss_iris_1d_102019.npy')]
-alpha_stds_sdss = [np.load('../alphas_and_stds/alpha_stds_91019_10.npy'), np.load('../alphas_and_stds/alpha_stds_2d_91119_10.npy'), \
-              np.load('../alphas_and_stds/alpha_stds_sdss_iris_2d_102019.npy'), np.load('../alphas_and_stds/alpha_stds_sdss_iris_1d_102019.npy')]
-bootstrap_alphas_sdss = [np.load('../alphas_and_stds/bootstrap_alphas_sdss_1d_101819.npy'), np.load('../alphas_and_stds/bootstrap_alphas_sdss_2d_102019.npy'), \
-                         np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_2d_102019.npy'), np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_1d_102019.npy')]
+alphas_sdss = [np.load('../alphas_and_stds/alphas_91019_10.npy'), \
+               np.load('../alphas_and_stds/alphas_2d_91119_10.npy'), \
+               np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy'), \
+               np.load('../alphas_and_stds/alphas_sdss_iris_1d_102019.npy'), \
+               np.load('../alphas_and_stds/alphas_boss_102019.npy')]
+alpha_stds_sdss = [np.load('../alphas_and_stds/alpha_stds_91019_10.npy'), \
+                   np.load('../alphas_and_stds/alpha_stds_2d_91119_10.npy'), \
+                   np.load('../alphas_and_stds/alpha_stds_sdss_iris_2d_102019.npy'), \
+                   np.load('../alphas_and_stds/alpha_stds_sdss_iris_1d_102019.npy'), \
+                   np.load('../alphas_and_stds/alpha_stds_boss_102019.npy')]
+if bootstrap:
+    bootstrap_alphas_sdss = [np.load('../alphas_and_stds/bootstrap_alphas_sdss_1d_101819.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alphas_sdss_2d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_2d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_1d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy')]
 
-#histogram (verify that this is the MLE gaussian)
-data_hist = bootstrap_alphas_sdss[0][int(bootstrap_alphas_sdss[0].shape[1]/2)]
-data_hist = data_hist[(data_hist>0)*(data_hist<1)]
+    '''
+    #histogram (verify that this is the MLE gaussian)
+    data_hist = bootstrap_alphas_sdss[0][2473]     #[int(bootstrap_alphas_sdss[0].shape[1]/2)]
+    data_hist = data_hist[(data_hist>0)*(data_hist<1)]
 
-avg_hist = np.mean(data_hist)
-var_hist = np.var(data_hist)
-pdf_x = np.linspace(0, 0.4, 100)
-pdf_y = 1.0/np.sqrt(2*np.pi*var_hist)*np.exp(-0.5*(pdf_x-avg_hist)**2/var_hist)
+    avg_hist = np.mean(data_hist)
+    var_hist = np.var(data_hist)
+    pdf_x = np.linspace(0, 0.4, 100)
+    pdf_y = 1.0/np.sqrt(2*np.pi*var_hist)*np.exp(-0.5*(pdf_x-avg_hist)**2/var_hist)
 
-h = plt.hist(data_hist, bins=50, range=(0, 0.4)) #,normed=True)
-plt.plot(pdf_x, np.max(h[0])/np.max(pdf_y)*pdf_y, 'k--')
-plt.show()
+    h = plt.hist(data_hist, bins=50, range=(0, 0.4)) #,normed=True)
+    plt.plot(pdf_x, np.max(h[0])/np.max(pdf_y)*pdf_y, 'k--')
+    plt.show()
 
-#plt.hist(bootstrap_alphas_sdss[0][:int(bootstrap_alphas_sdss[0].shape[1]/2)], bins=50)
+    #plt.hist(bootstrap_alphas_sdss[0][:int(bootstrap_alphas_sdss[0].shape[1]/2)], bins=50)
 
-#plt.show()
-exit(0)
+    plt.show()
+    exit(0)
+    '''
+    
 
-bootstrap_lower_sdss = [np.percentile(b, 5, axis=0) / 1.38 for b in bootstrap_alphas_sdss] #90 percent confidence interval
-bootstrap_upper_sdss = [np.percentile(b, 95, axis=0) / 1.38 for b in bootstrap_alphas_sdss]
-bootstrap_stds_sdss = [(np.percentile(b, 84, axis=0) - np.percentile(b, 16, axis=0)) / 2 for b in bootstrap_alphas_sdss]
-
+    bootstrap_lower_sdss = [np.percentile(b, 16, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss] #90 percent confidence interval
+    bootstrap_upper_sdss = [np.percentile(b, 84, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
+    bootstrap_stds_sdss = [(np.percentile(b, 84, axis=0) - np.percentile(b, 16, axis=0)) / 2 for b in bootstrap_alphas_sdss]
+    
 #flux conversion factor:
-alphas_sdss = [a/1.38 for a in alphas_sdss]
+alphas_sdss = [a/sdss_fluxfactor for a in alphas_sdss]
+alphas_boss = [a/sdss_fluxfactor for a in alphas_boss] #test
 
 if boss:
     alphas = alphas_boss
     alpha_stds = alpha_stds_boss
-    bootstrap_lower = bootstrap_lower_boss
-    bootstrap_upper = bootstrap_upper_boss
-    bootstrap_stds = bootstrap_stds_boss
+    if bootstrap:
+        bootstrap_lower = bootstrap_lower_boss
+        bootstrap_upper = bootstrap_upper_boss
+        bootstrap_stds = bootstrap_stds_boss
 else:
     alphas = alphas_sdss
     alpha_stds = alpha_stds_sdss
-    bootstrap_lower = bootstrap_lower_sdss
-    bootstrap_upper = bootstrap_upper_sdss
-    bootstrap_stds = bootstrap_stds_sdss
+    if bootstrap:
+        bootstrap_lower = bootstrap_lower_sdss
+        bootstrap_upper = bootstrap_upper_sdss
+        bootstrap_stds = bootstrap_stds_sdss
 
 num_arrays = len(alphas)
 
@@ -155,14 +183,28 @@ plt.show()
 plot_emissions(0, 2, "SFD", r"With $\tau$ and IRIS" )
 plt.show()
        
-def generate_binned_alphas(alphas, alpha_stds, wavelength):
+def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None):
     #plot binned alpha vs wavelength (original)
-    lambda_range = wavelength[-1] - wavelength[0]
+    #wavelength_all is the one that determines the binned lambdas
+
+    if wavelength is None:
+        wavelength = wavelength_all
+    
+    lambda_range = wavelength_all[-1] - wavelength_all[0]
     left_over = lambda_range - 50*floor(lambda_range / 50)  
-    binned_lambdas = np.arange(wavelength[0]+left_over/2, wavelength[-2], 50) #[-2] to avoid going over the edge
+    binned_lambdas = np.arange(wavelength_all[0]+left_over/2, wavelength_all[-2], 50) #[-2] to avoid going over the edge
     binned_alphas = []
     binned_stds = []
 
+    emission_line_mask = np.zeros(len(wavelength), dtype=int)
+    emission_lines = [4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
+    for line in emission_lines:
+        peak_idx = np.argmin(np.abs(wavelength-line))
+        emission_line_mask[peak_idx-2:peak_idx+3] = 1
+    #if boss, 3727
+    print("mask")
+    print(emission_line_mask)
+    
     for i in range(len(alphas)):
 
         binned_alpha_arr = np.zeros(binned_lambdas.shape)
@@ -174,6 +216,7 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength):
  
             #weighted average:
             variance = np.power(relevant_stds, 2)
+            variance[emission_line_mask] = np.inf #mask emission lines
             numerator = np.sum(np.divide(relevant_alphas, variance))
             denominator = np.sum(np.divide(1, variance))
             avg1 = numerator / denominator
@@ -187,13 +230,21 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength):
 
 
 binned_lambdas, binned_alphas, binned_stds = generate_binned_alphas(alphas, alpha_stds, wavelength)
+if not boss: #calculate binned spectrum for 1d boss
+    binned_lambdas_boss, binned_alphas_boss, binned_stds_boss = generate_binned_alphas([alphas[-1]], [alpha_stds[-1]], wavelength, wavelength_boss)
 
 if bootstrap:
     _, bootstrap_binned_lower, bootstrap_binned_stds = generate_binned_alphas(bootstrap_lower, bootstrap_stds, wavelength)
     _, bootstrap_binned_upper, _ = generate_binned_alphas(bootstrap_upper, bootstrap_stds, wavelength)
-    
+    if not boss:
+        #first arg is arvitrary for binned_stds.
+        _, _, bootstrap_binned_stds_boss = generate_binned_alphas([alphas[-1]], [bootstrap_stds[-1]], wavelength, wavelength_boss)
+        _, bootstrap_binned_lower_boss, _ = generate_binned_alphas([bootstrap_lower_boss[0]], [bootstrap_stds[-1]], wavelength, wavelength_boss)
+        _, bootstrap_binned_upper_boss, _ = generate_binned_alphas([bootstrap_upper_boss[0]], [bootstrap_stds[-1]], wavelength, wavelength_boss)
+        bootstrap_binned_lower_boss = bootstrap_binned_lower_boss[0]
+        bootstrap_binned_upper_boss = bootstrap_binned_upper_boss[0]
 
-plt.figure(figsize=(6, 14))
+
 if boss:
     y_max = 0.55
     x_min = 3700
@@ -202,6 +253,53 @@ else:
     y_max = 0.4
     x_min = 3850
     x_max = 9200
+
+
+#2-panel plot, BOSS compared to SDSS (both 1d, etc.)
+
+if not boss and bootstrap:
+    plt.figure(figsize=(14, 6))
+
+    plt.subplot(1, 2, 1)
+
+    plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
+    plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[0], c='m', drawstyle='steps')
+    plt.fill_between(binned_lambdas, bootstrap_binned_lower[0], bootstrap_binned_upper[0], linewidth=0.0, color='k', alpha=0.2, step='pre')
+
+    plt.legend(frameon=False)
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.xlim(x_min, x_max)
+    plt.ylim(0, y_max)
+
+    plt.subplot(1, 2, 2)
+
+    plt.plot(binned_lambdas_boss, binned_alphas_boss[0], c='k', drawstyle='steps', label='BOSS')
+    plt.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='k', drawstyle='steps')
+    plt.plot(binned_lambdas_boss, binned_stds_boss[0], c='m', drawstyle='steps')
+    plt.fill_between(binned_lambdas, bootstrap_binned_lower_boss, bootstrap_binned_upper_boss, linewidth=0.0, color='k', alpha=0.2, step='pre')
+
+    temp = y_max
+    y_max = 0.3
+    plt.legend(frameon=False)
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.xlim(x_min, x_max)
+    plt.ylim(0, y_max)
+
+    plt.tight_layout()
+    plt.show()
+    y_max = temp
+    
+
+    
+
+    
+'''
+#vertical plot: 3 mods
+    
+plt.figure(figsize=(6, 14))
     
 plt.subplot(3, 1, 1)    
 #compare original to tao
@@ -239,6 +337,7 @@ plt.legend(frameon=False)
 
 plt.subplot(3, 1, 3)
 #compare original to tao AND iris
+#(or for SDSS, compare to BOSS)
 plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
 plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
 plt.plot(binned_lambdas, binned_alphas[2], c='r', drawstyle='steps', label=r'With IRIS and $\tau$')
@@ -258,23 +357,51 @@ plt.tight_layout()
 if save:
     plt.savefig("../bootstrap_sdss_binned_102919.png")
 plt.show()
+'''
+
+
+'''
+#plot original with all 3 modifications, all on one plot
+#new model, IRIS, and BOSS
 
 plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
-plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[2], c='r', drawstyle='steps', label=r'With IRIS and $\tau$')
-plt.plot(binned_lambdas, binned_stds[2], c='r', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[1], c='b', drawstyle='steps', label='With tao corr.')
-plt.plot(binned_lambdas, binned_stds[1], c='b', drawstyle='steps')
-plt.plot(binned_lambdas, binned_alphas[3], c='g', drawstyle='steps', label=r'with IRIS')
-plt.plot(binned_lambdas, binned_stds[3], c='g', drawstyle='steps')
+plt.plot(binned_lambdas, binned_alphas[1], c='r', drawstyle='steps', label=r'$\tau$ Correction')
+plt.plot(binned_lambdas, binned_alphas[3], c='b', drawstyle='steps', label='IRIS')
+if boss:
+    plt.plot(binned_lambdas, binned_alphas[2], c='g', drawstyle='steps', label=r'IRIS and $\tau$')
+else:
+    plt.plot(binned_lambdas_boss, binned_alphas_boss[0], c='g', drawstyle='steps', label='BOSS')
+
+if bootstrap:
+    plt.plot(binned_lambdas, bootstrap_binned_stds[0], c='k', drawstyle='steps')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[1], c='r', drawstyle='steps')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[3], c='b', drawstyle='steps')
+    if boss:
+        plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='g', drawstyle='steps')
+    else:
+        plt.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='g', drawstyle='steps')
+else:
+    plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
+    plt.plot(binned_lambdas, binned_stds[1], c='r', drawstyle='steps')
+    plt.plot(binned_lambdas, binned_stds[3], c='b', drawstyle='steps')
+    if boss:
+        plt.plot(binned_lambdas, binned_stds[2], c='g', drawstyle='steps')
+    else:
+        plt.plot(binned_lambdas_boss, binned_stds_boss[0], c='g', drawstyle='steps')
+
+temp = y_max
+y_max = 0.35     
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 plt.legend(frameon=False)
 plt.show()
+y_max = temp
+'''
 
-
+'''
+#threshold plots:
 
 if boss:
     #alphas with various thresholds (BOSS, 1d, IRIS)
@@ -450,4 +577,5 @@ if save_thresh:
     else:
         plt.savefig("../sdss_thresholds_2panel_10719.png")
 plt.show()
+'''
 
