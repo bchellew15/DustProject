@@ -196,27 +196,25 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None):
     binned_alphas = []
     binned_stds = []
 
+    #mask emission lines
     emission_line_mask = np.zeros(len(wavelength), dtype=int)
     emission_lines = [4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
     for line in emission_lines:
         peak_idx = np.argmin(np.abs(wavelength-line))
         emission_line_mask[peak_idx-2:peak_idx+3] = 1
     #if boss, 3727
-    print("mask")
-    print(emission_line_mask)
     
     for i in range(len(alphas)):
 
         binned_alpha_arr = np.zeros(binned_lambdas.shape)
         binned_std_arr = np.zeros(binned_lambdas.shape)
         for j, lmda in enumerate(binned_lambdas):
-            indices = np.where((wavelength > lmda) & (wavelength < lmda+50))[0]
+            indices = np.where((wavelength > lmda) & (wavelength < lmda+50) & np.logical_not(emission_line_mask))[0] #test
             relevant_alphas = alphas[i][indices]
             relevant_stds = alpha_stds[i][indices]
  
             #weighted average:
             variance = np.power(relevant_stds, 2)
-            variance[emission_line_mask] = np.inf #mask emission lines
             numerator = np.sum(np.divide(relevant_alphas, variance))
             denominator = np.sum(np.divide(1, variance))
             avg1 = numerator / denominator
@@ -254,7 +252,7 @@ else:
     x_min = 3850
     x_max = 9200
 
-
+'''
 #2-panel plot, BOSS compared to SDSS (both 1d, etc.)
 
 if not boss and bootstrap:
@@ -291,7 +289,7 @@ if not boss and bootstrap:
     plt.tight_layout()
     plt.show()
     y_max = temp
-    
+'''
 
     
 
@@ -360,34 +358,34 @@ plt.show()
 '''
 
 
-'''
+
 #plot original with all 3 modifications, all on one plot
 #new model, IRIS, and BOSS
 
 plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
 plt.plot(binned_lambdas, binned_alphas[1], c='r', drawstyle='steps', label=r'$\tau$ Correction')
 plt.plot(binned_lambdas, binned_alphas[3], c='b', drawstyle='steps', label='IRIS')
-if boss:
-    plt.plot(binned_lambdas, binned_alphas[2], c='g', drawstyle='steps', label=r'IRIS and $\tau$')
-else:
-    plt.plot(binned_lambdas_boss, binned_alphas_boss[0], c='g', drawstyle='steps', label='BOSS')
+#if boss:
+#    plt.plot(binned_lambdas, binned_alphas[2], c='g', drawstyle='steps', label=r'IRIS and $\tau$')
+#else:
+#    plt.plot(binned_lambdas_boss, binned_alphas_boss[0], c='g', drawstyle='steps', label='BOSS')
 
 if bootstrap:
     plt.plot(binned_lambdas, bootstrap_binned_stds[0], c='k', drawstyle='steps')
     plt.plot(binned_lambdas, bootstrap_binned_stds[1], c='r', drawstyle='steps')
     plt.plot(binned_lambdas, bootstrap_binned_stds[3], c='b', drawstyle='steps')
-    if boss:
-        plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='g', drawstyle='steps')
-    else:
-        plt.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='g', drawstyle='steps')
+#    if boss:
+#        plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='g', drawstyle='steps')
+#    else:
+#        plt.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='g', drawstyle='steps')
 else:
     plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
     plt.plot(binned_lambdas, binned_stds[1], c='r', drawstyle='steps')
     plt.plot(binned_lambdas, binned_stds[3], c='b', drawstyle='steps')
-    if boss:
-        plt.plot(binned_lambdas, binned_stds[2], c='g', drawstyle='steps')
-    else:
-        plt.plot(binned_lambdas_boss, binned_stds_boss[0], c='g', drawstyle='steps')
+#    if boss:
+#        plt.plot(binned_lambdas, binned_stds[2], c='g', drawstyle='steps')
+#    else:
+#        plt.plot(binned_lambdas_boss, binned_stds_boss[0], c='g', drawstyle='steps')
 
 temp = y_max
 y_max = 0.35     
@@ -398,7 +396,7 @@ plt.ylim(0, y_max)
 plt.legend(frameon=False)
 plt.show()
 y_max = temp
-'''
+
 
 '''
 #threshold plots:
