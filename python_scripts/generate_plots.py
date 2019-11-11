@@ -177,6 +177,7 @@ def plot_emissions(idx1, idx2, label1, label2):
        
 #plot unbinned spectra:
 plot_emissions(0, 1, "SFD", r"With $\tau$ Correction")
+plt.savefig('test.pdf')
 plt.show()
 plot_emissions(0, 3, "SFD", "With IRIS data")
 plt.show()
@@ -192,13 +193,13 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None):
     
     lambda_range = wavelength_all[-1] - wavelength_all[0]
     left_over = lambda_range - 50*floor(lambda_range / 50)  
-    binned_lambdas = np.arange(wavelength_all[0]+left_over/2, wavelength_all[-2], 50) #[-2] to avoid going over the edge
+    binned_lambdas = np.arange(wavelength_all[1]+left_over/2, wavelength_all[-1], 50) #[1] to avoid going over left edge
     binned_alphas = []
     binned_stds = []
 
     #mask emission lines
     emission_line_mask = np.zeros(len(wavelength), dtype=int)
-    emission_lines = [4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
+    emission_lines = [3727, 4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
     for line in emission_lines:
         peak_idx = np.argmin(np.abs(wavelength-line))
         emission_line_mask[peak_idx-2:peak_idx+3] = 1
@@ -209,7 +210,7 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None):
         binned_alpha_arr = np.zeros(binned_lambdas.shape)
         binned_std_arr = np.zeros(binned_lambdas.shape)
         for j, lmda in enumerate(binned_lambdas):
-            indices = np.where((wavelength > lmda) & (wavelength < lmda+50) & np.logical_not(emission_line_mask))[0] #test
+            indices = np.where((wavelength > lmda-50) & (wavelength < lmda) & np.logical_not(emission_line_mask))[0] #test
             relevant_alphas = alphas[i][indices]
             relevant_stds = alpha_stds[i][indices]
  
@@ -248,11 +249,11 @@ if boss:
     x_min = 3700
     x_max = 10000
 else:
-    y_max = 0.4
+    y_max = 0.3
     x_min = 3850
     x_max = 9200
 
-'''
+
 #2-panel plot, BOSS compared to SDSS (both 1d, etc.)
 
 if not boss and bootstrap:
@@ -289,7 +290,7 @@ if not boss and bootstrap:
     plt.tight_layout()
     plt.show()
     y_max = temp
-'''
+
 
     
 
@@ -358,34 +359,22 @@ plt.show()
 '''
 
 
-
+'''
 #plot original with all 3 modifications, all on one plot
 #new model, IRIS, and BOSS
 
 plt.plot(binned_lambdas, binned_alphas[0], c='k', drawstyle='steps', label='SFD')
 plt.plot(binned_lambdas, binned_alphas[1], c='r', drawstyle='steps', label=r'$\tau$ Correction')
 plt.plot(binned_lambdas, binned_alphas[3], c='b', drawstyle='steps', label='IRIS')
-#if boss:
-#    plt.plot(binned_lambdas, binned_alphas[2], c='g', drawstyle='steps', label=r'IRIS and $\tau$')
-#else:
-#    plt.plot(binned_lambdas_boss, binned_alphas_boss[0], c='g', drawstyle='steps', label='BOSS')
 
 if bootstrap:
     plt.plot(binned_lambdas, bootstrap_binned_stds[0], c='k', drawstyle='steps')
     plt.plot(binned_lambdas, bootstrap_binned_stds[1], c='r', drawstyle='steps')
     plt.plot(binned_lambdas, bootstrap_binned_stds[3], c='b', drawstyle='steps')
-#    if boss:
-#        plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='g', drawstyle='steps')
-#    else:
-#        plt.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='g', drawstyle='steps')
 else:
     plt.plot(binned_lambdas, binned_stds[0], c='k', drawstyle='steps')
     plt.plot(binned_lambdas, binned_stds[1], c='r', drawstyle='steps')
     plt.plot(binned_lambdas, binned_stds[3], c='b', drawstyle='steps')
-#    if boss:
-#        plt.plot(binned_lambdas, binned_stds[2], c='g', drawstyle='steps')
-#    else:
-#        plt.plot(binned_lambdas_boss, binned_stds_boss[0], c='g', drawstyle='steps')
 
 temp = y_max
 y_max = 0.35     
@@ -396,9 +385,9 @@ plt.ylim(0, y_max)
 plt.legend(frameon=False)
 plt.show()
 y_max = temp
-
-
 '''
+
+
 #threshold plots:
 
 if boss:
@@ -411,6 +400,17 @@ if boss:
                         np.load('../alphas_and_stds/alphas_boss_iris_1d_92719_20.npy'), \
                         np.load('../alphas_and_stds/alphas_boss_iris_1d_92719_25.npy'), \
                         np.load('../alphas_and_stds/alphas_boss_iris_1d_92719_30.npy')]
+    #THIS CHUNK IS TEMP
+    #plotting order: index: 2, 4, 5, 6
+    alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_verify_threshold_10.npy'), \
+                        np.load('../alphas_and_stds/alphas_verify_threshold_15.npy'), \
+                        np.load('../alphas_and_stds/alphas_verify_threshold_175.npy'), \
+                        np.load('../alphas_and_stds/alphas_verify_threshold_20.npy'), \
+                        np.load('../alphas_and_stds/alphas_verify_threshold_225.npy'), \
+                        np.load('../alphas_and_stds/alphas_verify_threshold_25.npy'), \
+                        np.load('../alphas_and_stds/alphas_verify_threshold_275.npy'), \
+                        np.load('../alphas_and_stds/alphas_verify_threshold_30.npy'), \
+                        np.load('../alphas_and_stds/alphas_verify_threshold_325.npy')]
     alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_5.npy'), \
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_75.npy'), \
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy'), \
@@ -419,6 +419,16 @@ if boss:
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_20.npy'), \
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_25.npy'), \
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_30.npy')]
+    #ALSO TEMP:
+    alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_verify_threshold_10.npy'), \
+                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_15.npy'), \
+                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_175.npy'), \
+                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_20.npy'), \
+                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_225.npy'), \
+                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_25.npy'), \
+                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_275.npy'), \
+                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_30.npy'), \
+                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_325.npy')]
     #alphas with various thresholds (BOSS, 2d, IRIS)
     alphas_thresh_2d = [np.load('../alphas_and_stds/alphas_boss_iris_91119_5.npy'), \
                      np.load('../alphas_and_stds/alphas_boss_iris_91119_75.npy'), \
@@ -487,73 +497,110 @@ if boss:
     x_max = 10100
     y_max = .52
 else:
-    x_min = 3800
+    x_min = 3850
     x_max = 9200
     y_max = .41
 
 ax = fig.add_subplot(121)
 plt.text(0.02, 0.98, 'Original\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
 
-plt.plot(binned_lambdas, binned_alphas_1d[2], c='k', drawstyle='steps', label='threshold 10')
-plt.plot(binned_lambdas, binned_stds_1d[2], c='k', drawstyle='steps')
+plt.plot(binned_lambdas, binned_alphas_1d[0], c='k', drawstyle='steps', label=r'I$_{100} < 10$')
+plt.plot(binned_lambdas, binned_stds_1d[0], c='k', drawstyle='steps')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 
-plt.plot(binned_lambdas, binned_alphas_1d[4], c='b', drawstyle='steps', linestyle='--', label='threshold 15')
-plt.plot(binned_lambdas, binned_stds_1d[4], c='b', drawstyle='steps', linestyle='--')
+plt.plot(binned_lambdas, binned_alphas_1d[1], c='b', drawstyle='steps', label=r'I$_{100} < 15$')
+plt.plot(binned_lambdas, binned_stds_1d[1], c='b', drawstyle='steps')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 
-plt.plot(binned_lambdas, binned_alphas_1d[5], c='m', drawstyle='steps', linestyle='dashdot', label='threshold 20')
-plt.plot(binned_lambdas, binned_stds_1d[5], c='m', drawstyle='steps', linestyle='dashdot')
+plt.plot(binned_lambdas, binned_alphas_1d[2], c='g', drawstyle='steps', label=r'I$_{100} < 17.5$')
+plt.plot(binned_lambdas, binned_stds_1d[2], c='g', drawstyle='steps')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 
-plt.plot(binned_lambdas, binned_alphas_1d[6], c='g', drawstyle='steps', linestyle=':', label='threshold 25')
-plt.plot(binned_lambdas, binned_stds_1d[6], c='g', drawstyle='steps', linestyle=':')
+plt.plot(binned_lambdas, binned_alphas_1d[3], c='r', drawstyle='steps', linestyle='--', label=r'I$_{100} < 20$')
+plt.plot(binned_lambdas, binned_stds_1d[3], c='r', drawstyle='steps', linestyle='--')
+plt.xlabel(r"Wavelength ($\AA$)")
+plt.ylabel(r"$\alpha_\lambda$")
+plt.xlim(x_min, x_max)
+plt.ylim(0, y_max)
+
+plt.plot(binned_lambdas, binned_alphas_1d[4], c='m', drawstyle='steps', linestyle='dashdot', label=r'I$_{100} < 22.5$')
+plt.plot(binned_lambdas, binned_stds_1d[4], c='m', drawstyle='steps', linestyle='dashdot')
+plt.xlabel(r"Wavelength ($\AA$)")
+plt.ylabel(r"$\alpha_\lambda$")
+plt.xlim(x_min, x_max)
+plt.ylim(0, y_max)
+
+plt.plot(binned_lambdas, binned_alphas_1d[5], c='y', drawstyle='steps', linestyle=':', label=r'I$_{100} < 25$')
+plt.plot(binned_lambdas, binned_stds_1d[5], c='y', drawstyle='steps', linestyle=':')
+plt.xlabel(r"Wavelength ($\AA$)")
+plt.ylabel(r"$\alpha_\lambda$")
+plt.xlim(x_min, x_max)
+plt.ylim(0, y_max)
+
+plt.plot(binned_lambdas, binned_alphas_1d[6], c='brown', drawstyle='steps', linestyle=':', label=r'I$_{100} < 27.5$')
+plt.plot(binned_lambdas, binned_stds_1d[6], c='brown', drawstyle='steps', linestyle=':')
+plt.xlabel(r"Wavelength ($\AA$)")
+plt.ylabel(r"$\alpha_\lambda$")
+plt.xlim(x_min, x_max)
+plt.ylim(0, y_max)
+
+plt.plot(binned_lambdas, binned_alphas_1d[7], c='cyan', drawstyle='steps', linestyle=':', label=r'I$_{100} < 30$')
+plt.plot(binned_lambdas, binned_stds_1d[7], c='cyan', drawstyle='steps', linestyle=':')
+plt.xlabel(r"Wavelength ($\AA$)")
+plt.ylabel(r"$\alpha_\lambda$")
+plt.xlim(x_min, x_max)
+plt.ylim(0, y_max)
+
+plt.plot(binned_lambdas, binned_alphas_1d[8], c='pink', drawstyle='steps', linestyle=':', label=r'I$_{100} < 32.5$')
+plt.plot(binned_lambdas, binned_stds_1d[8], c='pink', drawstyle='steps', linestyle=':')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 
 if boss:
-    plt.legend(frameon=False, loc='upper right')
+    leg = plt.legend(frameon=False, loc='upper right')
+    plt.setp(leg.texts, family='monospace')
 else:
-    plt.legend(frameon=False, loc='lower center')
+    leg = plt.legend(frameon=False, loc='lower center')
+    plt.setp(leg.texts, family='monospace')
 
 plt.text(0, 100, 'Original\nModel')
 
 ax = fig.add_subplot(122)
 plt.text(0.02, 0.98, 'Tao\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
 
-plt.plot(binned_lambdas, binned_alphas_2d[2], c='k', drawstyle='steps', label='threshold 10')
+plt.plot(binned_lambdas, binned_alphas_2d[2], c='k', drawstyle='steps', label=r'I$_{100} < 10$')
 plt.plot(binned_lambdas, binned_stds_2d[2], c='k', drawstyle='steps')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 
-plt.plot(binned_lambdas, binned_alphas_2d[4], c='b', drawstyle='steps', linestyle='--', label='threshold 15')
+plt.plot(binned_lambdas, binned_alphas_2d[4], c='b', drawstyle='steps', linestyle='--', label=r'I$_{100} < 15$')
 plt.plot(binned_lambdas, binned_stds_2d[4], c='b', drawstyle='steps', linestyle='--')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 
-plt.plot(binned_lambdas, binned_alphas_2d[5], c='m', drawstyle='steps', linestyle='dashdot', label='threshold 20')
+plt.plot(binned_lambdas, binned_alphas_2d[5], c='m', drawstyle='steps', linestyle='dashdot', label=r'I$_{100} < 20$')
 plt.plot(binned_lambdas, binned_stds_2d[5], c='m', drawstyle='steps', linestyle='dashdot')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
 plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 
-plt.plot(binned_lambdas, binned_alphas_2d[6], c='g', drawstyle='steps', linestyle=':', label='threshold 25')
+plt.plot(binned_lambdas, binned_alphas_2d[6], c='g', drawstyle='steps', linestyle=':', label=r'I$_{100} < 25$')
 plt.plot(binned_lambdas, binned_stds_2d[6], c='g', drawstyle='steps', linestyle=':')
 plt.xlabel(r"Wavelength ($\AA$)")
 plt.ylabel(r"$\alpha_\lambda$")
@@ -561,9 +608,12 @@ plt.xlim(x_min, x_max)
 plt.ylim(0, y_max)
 
 if boss:
-    plt.legend(frameon=False, loc='upper right')
+    leg = plt.legend(frameon=False, loc='upper right')
+    plt.setp(leg.texts, family='monospace')
 else:
-    plt.legend(frameon=False, loc='lower center')
+    leg = plt.legend(frameon=False, loc='lower center')
+    plt.setp(leg.texts, family='monospace')
+    
 
 plt.text(0, 100, 'Tao Model')
 
@@ -571,9 +621,9 @@ plt.tight_layout()
 
 if save_thresh:
     if boss:
-        plt.savefig("../boss_thresholds_2panel_10719.png")
+        plt.savefig("../boss_thresholds_2panel_110919.png")
     else:
-        plt.savefig("../sdss_thresholds_2panel_10719.png")
+        plt.savefig("../sdss_thresholds_2panel_110919.png")
 plt.show()
-'''
+
 

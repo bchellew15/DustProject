@@ -1,10 +1,3 @@
-#see reproduce_figs.py and reproduce_figs_boss.py
-#this version uses a lot more RAM and is made to work on AHAB
-
-#for bootstrapping:
-#saves sums of yx and xx (for each plate)
-
-
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,6 +25,10 @@ def check_memory():
         
 thr1 = threading.Thread(target = check_memory, daemon=True)
 thr1.start()
+
+#see reproduce_figs.py and reproduce_figs_boss.py
+#this version uses a lot more RAM and is made to work on AHAB
+#bootstrapping will be implemented using this file
 
 #command line args
 if len(sys.argv) < 4 or len(sys.argv) > 6:
@@ -282,9 +279,21 @@ for j in range(num_files):
     #    print(flambda.shape)
     #    print(ivar.shape)
 
+    #print plate of fibers between 22.5 and 25
+    chosen_plates = plate[(i100_old > 22.5) * (i100_old < 25)]
+    print(np.unique(chosen_plates))
+    #print plate numbers with avgs
+    plate_avgs = np.array([np.mean(i100_old[plate==p]) for p in np.unique(plate)], ndmin=2).T
+    unique_plates = np.array(np.unique(plate), ndmin=2).T
+    plate_and_avg = np.concatenate((unique_plates, plate_avgs), axis=1)
+    plate_and_avg = plate_and_avg[np.argsort(plate_avgs, axis=0)] 
+    for e in plate_and_avg:
+        print(e)
+    #print i100 on duplicate plates
+    exit(0)
+
     #process ivar:
     ivar *= (ivar > 0)
-    
     #masking
     ivar[i100_old > threshold] = 0
     #mask plates with large averages
@@ -353,7 +362,6 @@ if save != '0' and not bootstrap:
     print("alphas saved")
 
 '''
-#for if I want to bootstrap by fiber
 if bootstrap:
     if os.path.isfile(save):
         bootstrap_alphas = np.load(save)  
