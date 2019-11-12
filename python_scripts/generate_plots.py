@@ -402,15 +402,22 @@ if boss:
                         np.load('../alphas_and_stds/alphas_boss_iris_1d_92719_30.npy')]
     #THIS CHUNK IS TEMP
     #plotting order: index: 2, 4, 5, 6
-    alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_verify_threshold_10.npy'), \
-                        np.load('../alphas_and_stds/alphas_verify_threshold_15.npy'), \
-                        np.load('../alphas_and_stds/alphas_verify_threshold_175.npy'), \
-                        np.load('../alphas_and_stds/alphas_verify_threshold_20.npy'), \
-                        np.load('../alphas_and_stds/alphas_verify_threshold_225.npy'), \
-                        np.load('../alphas_and_stds/alphas_verify_threshold_25.npy'), \
-                        np.load('../alphas_and_stds/alphas_verify_threshold_275.npy'), \
-                        np.load('../alphas_and_stds/alphas_verify_threshold_30.npy'), \
-                        np.load('../alphas_and_stds/alphas_verify_threshold_325.npy')]
+    alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_3.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_4.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_5.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_6.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_8.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')]
+    #also temp:
+    alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_15.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_175.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_92719_20.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_225.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_92719_25.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_275.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_92719_30.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_325.npy')]
     alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_5.npy'), \
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_75.npy'), \
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy'), \
@@ -419,16 +426,23 @@ if boss:
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_20.npy'), \
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_25.npy'), \
                             np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_30.npy')]
-    #ALSO TEMP:
-    alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_verify_threshold_10.npy'), \
-                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_15.npy'), \
-                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_175.npy'), \
-                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_20.npy'), \
-                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_225.npy'), \
-                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_25.npy'), \
-                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_275.npy'), \
-                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_30.npy'), \
-                             np.load('../alphas_and_stds/alpha_stds_verify_threshold_325.npy')]
+    #TEMP:
+    alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_3.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_4.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_5.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_6.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_8.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy')]
+    #also temp:
+    alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_15.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_175.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_20.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_225.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_25.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_275.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_92719_30.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_325.npy')]
     #alphas with various thresholds (BOSS, 2d, IRIS)
     alphas_thresh_2d = [np.load('../alphas_and_stds/alphas_boss_iris_91119_5.npy'), \
                      np.load('../alphas_and_stds/alphas_boss_iris_91119_75.npy'), \
@@ -438,6 +452,23 @@ if boss:
                      np.load('../alphas_and_stds/alphas_boss_iris_92719_20.npy'), \
                      np.load('../alphas_and_stds/alphas_boss_iris_92719_25.npy'), \
                      np.load('../alphas_and_stds/alphas_boss_iris_92719_30.npy')]
+    #TEMP:
+    alphas_thresh_2d = [np.load('../alphas_and_stds/alphas_boss_iris_111119_3.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_111119_4.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_91119_5.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_111119_6.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_111119_8.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy')]
+    #also TEMP:
+    alphas_thresh_2d = [np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_91119_15.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_111119_175.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_92719_20.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_111119_225.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_92719_25.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_111119_275.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_92719_30.npy'), \
+                        np.load('../alphas_and_stds/alphas_boss_iris_111119_325.npy')]
     alpha_stds_thresh_2d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_5.npy'), \
                          np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_75.npy'), \
                          np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
@@ -446,6 +477,23 @@ if boss:
                          np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_20.npy'), \
                          np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_25.npy'), \
                          np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_30.npy')]
+    #TEMP:
+    alpha_stds_thresh_2d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_3.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_4.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_5.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_6.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_8.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy')]
+    #also TEMP:
+    alpha_stds_thresh_2d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_15.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_175.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_20.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_225.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_25.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_275.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_30.npy'), \
+                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_325.npy')]
 else:
     #alphas with various thresholds (SDSS, 1d, SFD)
     alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_91019_5.npy'), \
@@ -504,68 +552,27 @@ else:
 ax = fig.add_subplot(121)
 plt.text(0.02, 0.98, 'Original\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
 
-plt.plot(binned_lambdas, binned_alphas_1d[0], c='k', drawstyle='steps', label=r'I$_{100} < 10$')
-plt.plot(binned_lambdas, binned_stds_1d[0], c='k', drawstyle='steps')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
+'''
+colors = ['k', 'b', 'g', 'r', 'm', 'y']
+labels = ['3', '4', '5', '6', '8', '10']
+for i in range(6):
+    plt.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+    plt.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps')
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.xlim(x_min, x_max)
+    plt.ylim(0, y_max)
+'''
 
-plt.plot(binned_lambdas, binned_alphas_1d[1], c='b', drawstyle='steps', label=r'I$_{100} < 15$')
-plt.plot(binned_lambdas, binned_stds_1d[1], c='b', drawstyle='steps')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_1d[2], c='g', drawstyle='steps', label=r'I$_{100} < 17.5$')
-plt.plot(binned_lambdas, binned_stds_1d[2], c='g', drawstyle='steps')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_1d[3], c='r', drawstyle='steps', linestyle='--', label=r'I$_{100} < 20$')
-plt.plot(binned_lambdas, binned_stds_1d[3], c='r', drawstyle='steps', linestyle='--')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_1d[4], c='m', drawstyle='steps', linestyle='dashdot', label=r'I$_{100} < 22.5$')
-plt.plot(binned_lambdas, binned_stds_1d[4], c='m', drawstyle='steps', linestyle='dashdot')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_1d[5], c='y', drawstyle='steps', linestyle=':', label=r'I$_{100} < 25$')
-plt.plot(binned_lambdas, binned_stds_1d[5], c='y', drawstyle='steps', linestyle=':')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_1d[6], c='brown', drawstyle='steps', linestyle=':', label=r'I$_{100} < 27.5$')
-plt.plot(binned_lambdas, binned_stds_1d[6], c='brown', drawstyle='steps', linestyle=':')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_1d[7], c='cyan', drawstyle='steps', linestyle=':', label=r'I$_{100} < 30$')
-plt.plot(binned_lambdas, binned_stds_1d[7], c='cyan', drawstyle='steps', linestyle=':')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_1d[8], c='pink', drawstyle='steps', linestyle=':', label=r'I$_{100} < 32.5$')
-plt.plot(binned_lambdas, binned_stds_1d[8], c='pink', drawstyle='steps', linestyle=':')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
+colors = ['k', 'b', 'g', 'r', 'm', 'y', 'brown', 'cyan', 'pink']
+labels = ['10', '15', '17.5', '20', '22.5', '25', '27.5', '30', '32.5']
+for i in range(9):
+    plt.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+    plt.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps')
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.xlim(x_min, x_max)
+    plt.ylim(0, y_max)
 
 if boss:
     leg = plt.legend(frameon=False, loc='upper right')
@@ -579,33 +586,27 @@ plt.text(0, 100, 'Original\nModel')
 ax = fig.add_subplot(122)
 plt.text(0.02, 0.98, 'Tao\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
 
-plt.plot(binned_lambdas, binned_alphas_2d[2], c='k', drawstyle='steps', label=r'I$_{100} < 10$')
-plt.plot(binned_lambdas, binned_stds_2d[2], c='k', drawstyle='steps')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
+'''
+colors = ['k', 'b', 'g', 'r', 'm', 'y']
+labels = ['3', '4', '5', '6', '8', '10']
+for i in range(6):
+    plt.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+    plt.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps')
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.xlim(x_min, x_max)
+    plt.ylim(0, y_max)
+'''
 
-plt.plot(binned_lambdas, binned_alphas_2d[4], c='b', drawstyle='steps', linestyle='--', label=r'I$_{100} < 15$')
-plt.plot(binned_lambdas, binned_stds_2d[4], c='b', drawstyle='steps', linestyle='--')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_2d[5], c='m', drawstyle='steps', linestyle='dashdot', label=r'I$_{100} < 20$')
-plt.plot(binned_lambdas, binned_stds_2d[5], c='m', drawstyle='steps', linestyle='dashdot')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
-
-plt.plot(binned_lambdas, binned_alphas_2d[6], c='g', drawstyle='steps', linestyle=':', label=r'I$_{100} < 25$')
-plt.plot(binned_lambdas, binned_stds_2d[6], c='g', drawstyle='steps', linestyle=':')
-plt.xlabel(r"Wavelength ($\AA$)")
-plt.ylabel(r"$\alpha_\lambda$")
-plt.xlim(x_min, x_max)
-plt.ylim(0, y_max)
+colors = ['k', 'b', 'g', 'r', 'm', 'y', 'brown', 'cyan', 'pink']
+labels = ['10', '15', '17.5', '20', '22.5', '25', '27.5', '30', '32.5']
+for i in range(9):
+    plt.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+    plt.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps')
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.xlim(x_min, x_max)
+    plt.ylim(0, y_max)
 
 if boss:
     leg = plt.legend(frameon=False, loc='upper right')

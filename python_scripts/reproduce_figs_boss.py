@@ -233,7 +233,15 @@ for j in range(num_files):
         flambda = hdulist[0].data #type: float64
         ivar = hdulist[1].data #type: float64
         wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
-        
+    
+    plate_avgs = [np.mean(i100[plate==p]) for p in np.unique(plate)]
+    plate_avgs = np.sort(plate_avgs)
+    for avg in plate_avgs:
+        print(avg)
+    #plt.hist(plate_avgs, bins=50, range=(0, 10))
+    #plt.show()
+    exit(0)
+    
     #process ivar:
     for i in range(ivar.shape[0]):
         ivar[i] *= (ivar[i] > 0) #correct the negative values
