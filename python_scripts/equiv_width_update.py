@@ -81,17 +81,12 @@ def linear_fit(rel_alphas, rel_lambdas, rel_sigmas, a3, a4):
          [np.sum(np.multiply(y, rel_ivars)), np.sum(np.multiply(np.power(y, 2), rel_ivars))]]
     b = [np.sum(np.multiply(rel_alphas, rel_ivars)), np.sum(np.multiply(np.multiply(rel_alphas, y), rel_ivars))]
 
+    #see what lstsq outputs:
+    print(lstsq(A, b))
+    exit(0)
+    
     a1, a2 = lstsq(A, b)[0]
     return a1, a2, y
-
-#helper for peak fitting
-def nonlinear_helper(alphas, sigmas):
-    def nonlinear_fit(rel_lambdas, a3, a4):
-        rel_sigmas = sigmas
-        rel_alphas = alphas
-        a1, a2, y = linear_fit(rel_alphas, rel_lambdas, rel_sigmas, a3, a4)
-        return a1 + a2*y
-    return nonlinear_fit
     
 #fitting a line + gaussian to peak, calculate equiv width
 def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
@@ -109,23 +104,25 @@ def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
     rel_alphas = alphas[range_indices]
     rel_sigmas = alpha_stds[range_indices]
     rel_lambdas = wavelength[range_indices]
-    popt,pcov = curve_fit(nonlinear_helper(rel_alphas, rel_sigmas), rel_lambdas, rel_alphas, p0=[peak_l, 5], sigma=rel_sigmas, bounds=([peak_l-3, 0], [peak_l+3, 5]))
-    #recover a1 and a2:
-    a1, a2, y = linear_fit(rel_alphas, rel_lambdas, rel_sigmas, popt[0], popt[1])
+    
+    peak_width = 1.85 #1.85 width from H-alpha
+    a1, a2, y = linear_fit(rel_alphas, rel_lambdas, rel_sigmas, peak_l, peak_width) 
 
-    print("params:", a1, a2, popt[0], popt[1])
+    print("params:", a1, a2)
 
     #plot the fitted gaussian:
-    x_range = np.arange(range1[0], range1[1], .01)
-    y = np.exp(-np.power(x_range-popt[0], 2)/(2*popt[1]**2))
-    alpha_pred = a1+a2*y
-    plt.plot(x_range, alpha_pred, '.')
-    plt.plot(rel_lambdas, rel_alphas, 'r.')
-    plt.show()
+    #x_range = np.arange(range1[0], range1[1], .01)
+    #y = np.exp(-np.power(x_range-peak_l, 2)/(2*peak_width**2))
+    #alpha_pred = a1+a2*y
+    #plt.plot(x_range, alpha_pred, '.')
+    #plt.plot(rel_lambdas, rel_alphas, 'r.')
+    #plt.show()
     
     #integrate (over 10 sigma)
-    width = quad(width_helper, popt[0]-10*popt[1], popt[0] + 10*popt[1], args=(a1, a2, popt[0], popt[1]))[0]
-
+    width, err = quad(width_helper, peak_l-10*peak_width, peak_l + 10*peak_width, args=(a1, a2, peak_l, peak_width))
+    print("error from fit")
+    print(width)
+    
     #calculate errors:
     #continuum: remove indices of peak
     close_peak_idx = np.argmin(np.abs(wavelength-peak_l))
@@ -147,7 +144,7 @@ def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
     # each bar has error bar*sigma*(1/peak + 1/continuum)*delta_lambda
     # then add in quadrature (because we can simplify to alpha/continuum - 1)
     bar_errs = delta_lambda*(alphas/cont)*np.sqrt(np.power(np.divide(alpha_stds, alphas), 2) + (stdev/cont)**2)
-    err = np.sqrt(np.sum(np.power(bar_errs[close_peak_idx-3:close_peak_idx+4], 2)))
+    #err = np.sqrt(np.sum(np.power(bar_errs[close_peak_idx-3:close_peak_idx+4], 2)))
 
     return width, err
 

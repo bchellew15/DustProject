@@ -48,11 +48,18 @@ if bootstrap:
                              np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
                              np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), \
                              np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy')]
-    bootstrap_lower_boss = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss] #90 percent confidence interval
-    bootstrap_upper_boss = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
-    bootstrap_stds_boss= [(np.percentile(b, 84, axis=0) - np.percentile(b, 16, axis=0)) / 2 for b in bootstrap_alphas_boss]
+    bootstrap_alpha_stds_boss = [np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy'), \
+                                 np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_2d_102019.npy'), \
+                                 np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_102019.npy'), \
+                                 np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_1d_102019.npy')]
+    
+    if boss:
+        bootstrap_lower = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss] #90 percent confidence interval
+        bootstrap_upper = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
+        bootstrap_stds = [(bootstrap_upper[i] - bootstrap_lower[i])/2 for i in range(len(bootstrap_lower))]
+    
 
-#sdss alphas (need to update to correct masking)
+#sdss alphas
 alphas_sdss = [np.load('../alphas_and_stds/alphas_91019_10.npy'), \
                np.load('../alphas_and_stds/alphas_2d_91119_10.npy'), \
                np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy'), \
@@ -69,6 +76,11 @@ if bootstrap:
                              np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_2d_102019.npy'), \
                              np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_1d_102019.npy'), \
                              np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy')]
+    bootstrap_alpha_stds_sdss = [np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_1d_101819.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_2d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_iris_2d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_iris_1d_102019.npy'), \
+                             np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy')]
 
     '''
     #histogram (verify that this is the MLE gaussian)
@@ -90,10 +102,12 @@ if bootstrap:
     exit(0)
     '''
     
-
-    bootstrap_lower_sdss = [np.percentile(b, 16, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss] #90 percent confidence interval
-    bootstrap_upper_sdss = [np.percentile(b, 84, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
-    bootstrap_stds_sdss = [(np.percentile(b, 84, axis=0) - np.percentile(b, 16, axis=0)) / 2 for b in bootstrap_alphas_sdss]
+    
+    if not boss:
+        bootstrap_lower = [np.percentile(b, 16, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss] #90 percent confidence interval
+        bootstrap_upper = [np.percentile(b, 84, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
+        bootstrap_stds = [(bootstrap_upper[i] - bootstrap_lower[i])/2 for i in range(len(bootstrap_lower))]
+    
     
 #flux conversion factor:
 alphas_sdss = [a/sdss_fluxfactor for a in alphas_sdss]
@@ -102,17 +116,13 @@ alphas_boss = [a/sdss_fluxfactor for a in alphas_boss] #test
 if boss:
     alphas = alphas_boss
     alpha_stds = alpha_stds_boss
-    if bootstrap:
-        bootstrap_lower = bootstrap_lower_boss
-        bootstrap_upper = bootstrap_upper_boss
-        bootstrap_stds = bootstrap_stds_boss
+    bootstrap_alphas = bootstrap_alphas_boss
+    bootstrap_alpha_stds = bootstrap_alpha_stds_boss
 else:
     alphas = alphas_sdss
     alpha_stds = alpha_stds_sdss
-    if bootstrap:
-        bootstrap_lower = bootstrap_lower_sdss
-        bootstrap_upper = bootstrap_upper_sdss
-        bootstrap_stds = bootstrap_stds_sdss
+    bootstrap_alphas = bootstrap_alphas_sdss
+    bootstrap_alpha_stds = bootstrap_alpha_stds_sdss
 
 num_arrays = len(alphas)
 
@@ -199,11 +209,12 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None):
 
     #mask emission lines
     emission_line_mask = np.zeros(len(wavelength), dtype=int)
-    emission_lines = [3727, 4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
+    emission_lines = [4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
+    if boss:
+        emission_lines.insert(0, 3727)
     for line in emission_lines:
         peak_idx = np.argmin(np.abs(wavelength-line))
-        emission_line_mask[peak_idx-2:peak_idx+3] = 1
-    #if boss, 3727
+        emission_line_mask[peak_idx-3:peak_idx+4] = 1
     
     for i in range(len(alphas)):
 
@@ -233,15 +244,42 @@ if not boss: #calculate binned spectrum for 1d boss
     binned_lambdas_boss, binned_alphas_boss, binned_stds_boss = generate_binned_alphas([alphas[-1]], [alpha_stds[-1]], wavelength, wavelength_boss)
 
 if bootstrap:
+    #bin all the bootstrap spectra
+    #use one spectrum to get binned wavelength
+
+    bootstrap_binned_lambdas, bootstrap_binned_alphas, _ = generate_binned_alphas(bootstrap_alphas, bootstrap_alpha_stds, wavelength)
+
+    '''
+    bootstrap_binned_lambdas, _, _ = generate_binned_alphas([bootstrap_alphas[0][0]], [bootstrap_alpha_stds[0][0]], wavelength)
+    bootstrap_binned_alphas = []
+    for i in range(len(bootstrap_alphas)):
+        bootstrap_binned_alphas.insert(0, np.zeros((bootstrap_alphas[0].shape[0], bootstrap_binned_lambdas.shape[0])))
+    
+    for i in range(len(bootstrap_alphas)):
+        for j in range(bootstrap_alphas_boss[i].shape[0]):
+            bootstrap_binned_alphas[i][j] = generate_binned_alphas([bootstrap_alphas_boss[i][j]], [bootstrap_alpha_stds_boss[i][j]], wavelength)[1][0]
+    '''
+    
+    #now look at percentiles:
+
+    bootstrap_binned_lower = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss] #90 percent confidence interval
+    bootstrap_binned_upper = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
+    bootstrap_binned_stds = [(bootstrap_upper[i] - bootstrap_lower[i])/2 for i in range(len(bootstrap_lower))]
+    
+
+
+    #old bootstrap code
+    '''
     _, bootstrap_binned_lower, bootstrap_binned_stds = generate_binned_alphas(bootstrap_lower, bootstrap_stds, wavelength)
     _, bootstrap_binned_upper, _ = generate_binned_alphas(bootstrap_upper, bootstrap_stds, wavelength)
     if not boss:
-        #first arg is arvitrary for binned_stds.
+        #first arg is arbitrary for binned_stds.
         _, _, bootstrap_binned_stds_boss = generate_binned_alphas([alphas[-1]], [bootstrap_stds[-1]], wavelength, wavelength_boss)
         _, bootstrap_binned_lower_boss, _ = generate_binned_alphas([bootstrap_lower_boss[0]], [bootstrap_stds[-1]], wavelength, wavelength_boss)
         _, bootstrap_binned_upper_boss, _ = generate_binned_alphas([bootstrap_upper_boss[0]], [bootstrap_stds[-1]], wavelength, wavelength_boss)
         bootstrap_binned_lower_boss = bootstrap_binned_lower_boss[0]
         bootstrap_binned_upper_boss = bootstrap_binned_upper_boss[0]
+    '''
 
 
 if boss:
