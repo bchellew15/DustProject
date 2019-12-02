@@ -28,24 +28,17 @@ thr1.start()
 
 #see reproduce_figs.py and reproduce_figs_boss.py
 #this version uses a lot more RAM and is made to work on AHAB
-#bootstrapping will be implemented using this file
 
 #command line args
-if len(sys.argv) < 4 or len(sys.argv) > 6:
-    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [bootstrap=0]")
+if len(sys.argv) != 7:
+    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [location=0, 1, 2] [bootstrap=0]")
     exit(0)
-if len(sys.argv) >= 5:
-    threshold = float(sys.argv[4]) #masking threshold
-else:
-    threshold = 10 #default
-if len(sys.argv) == 6:
-    bootstrap = int(sys.argv[5])
-else:
-    bootstrap = 0 #default
-
 mode = sys.argv[1]
 boss = int(sys.argv[2])
 save = sys.argv[3]
+threshold = float(sys.argv[4])
+location = int(sys.argv[5])
+bootstrap = int(sys.argv[6])
     
 #create scatterplot
 def plot_alphas(alphas, alpha_std, wavelength, color1='k', color2='r', bin=False):
@@ -147,8 +140,6 @@ def calc_alphas(i100, plate, flambda, ivar):
 
     print("finished calculating alphas")
     return alphas, alpha_std, wavelength
-    
-
 
 #load data for BOSS
 if boss:
@@ -171,6 +162,10 @@ if boss:
     mjd = hdulist[5].data
     plate = 10000*plate + mjd%10000 #plate is now a unique identifier
 
+    #sdss website says fiber 840 is bad
+    #http://www.sdss3.org/dr9/spectro/caveats.php#flux_cal
+    fiber_id = hdulist[7].data
+    
     #get i100 (type: float64)
     i100_old = np.loadtxt("../data/SFD_i100_at_BOSS_locations.txt")[:,2]
     if mode == '2d':
@@ -190,11 +185,6 @@ else:
     
     #load data
     fiberinfo = np.loadtxt('../data/fiberinfo_halpha.dat')
-    #l = np.array(fiberinfo[:, 2])     # Galactic longitude, degrees
-    #for i in range(len(l)): #convert l to range: -180 to 180
-    #    if l[i] > 180:
-    #        l[i] = l[i] - 360
-    #b = np.array(fiberinfo[:, 3])     # Galactic latitude, degrees
 
     #get i100 (type: float64)
     i100_old = np.array(fiberinfo[:, 4])# 100 micron intensity (MJy/sr)
@@ -224,40 +214,9 @@ alpha_std_10 = np.zeros(0)
 wavelength_10 = np.zeros(0)
 
 if bootstrap:
-    unique_plates = np.unique(plate)
-    print("number of unique plates:")
-
     #set up arrays for xxsig and yxsig. each unique plate has an entry at each wavelength
     yxsigs_bootstrap = np.zeros((len(unique_plates), 0))
     xxsigs_bootstrap = np.zeros((len(unique_plates), 0))
-
-    #print("shapes before:")
-    #print(i100_old.shape)
-    #print(i100.shape)
-    #print(plate.shape)
-
-    #bootstrap_indices = np.random.choice([i for i in range(i100_old.shape[0]) if i != 3178], i100_old.shape[0])
-    #bootstrap_indices = np.array([i for i in range(i100_old.shape[0]) if i != 3178])
-    #bootstrap_indices = np.append(bootstrap_indices, bootstrap_indices[-1]) #to make it the right length                   
-    #np.random.shuffle(bootstrap_indices)
-    #plate_temp = plate[bootstrap_indices]
-    #bootstrap_indices = bootstrap_indices[np.argsort(plate_temp)]
-    #bootstrap_indices = np.array(range(i100_old.shape[0])) #test
-    #bootstrap_indices[:10000] = bootstrap_indices[30000:40000]
-    #print("bootstrap indices:", bootstrap_indices)
-
-    #i100_old = i100_old[bootstrap_indices]
-    #i100 = i100[bootstrap_indices]
-    #plate = plate[bootstrap_indices]
-
-    #print("shapes after:")
-    #print(i100_old.shape)
-    #print(i100.shape)
-    #print(plate.shape)
-    
-#bootstrap code:
-#btw stds prob irrelevant
-
 
 #preprocessing and calculate alphas for each file
 for j in range(num_files):
@@ -266,32 +225,7 @@ for j in range(num_files):
         flambda = hdulist[0].data #type: float64
         ivar = hdulist[1].data #type: float64
         wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
-
-    #if bootstrap:
-    #    print("shapes before:")
-    #    print(flambda.shape)
-    #    print(ivar.shape)
-    #        
-    #    flambda = flambda[bootstrap_indices]
-    #    ivar = ivar[bootstrap_indices]
-    #        
-    #    print("shapes after:")
-    #    print(flambda.shape)
-    #    print(ivar.shape)
-
-    #print plate of fibers between 22.5 and 25
-    chosen_plates = plate[(i100_old > 22.5) * (i100_old < 25)]
-    print(np.unique(chosen_plates))
-    #print plate numbers with avgs
-    plate_avgs = np.array([np.mean(i100_old[plate==p]) for p in np.unique(plate)], ndmin=2).T
-    unique_plates = np.array(np.unique(plate), ndmin=2).T
-    plate_and_avg = np.concatenate((unique_plates, plate_avgs), axis=1)
-    plate_and_avg = plate_and_avg[np.argsort(plate_avgs, axis=0)] 
-    for e in plate_and_avg:
-        print(e)
-    #print i100 on duplicate plates
-    exit(0)
-
+        
     #process ivar:
     ivar *= (ivar > 0)
     #masking
@@ -300,11 +234,67 @@ for j in range(num_files):
     for p in np.unique(plate):
         if np.mean(i100_old[plate==p]) > threshold:
             ivar[plate==p] = 0
-            print("masking whole plate")        
+            print("masking whole plate")
             
-    if boss: # and not bootstrap: #TEMP might have to change this
+    if boss:
         ivar[3178] = 0 #data at this location is bad
+        ivar[fiber_id == 840] = 0
+
+    if location != 0:
+        if boss:
+            coords = np.loadtxt('BOSS_locations_galactic.txt')
+            l = coords[:,0]
+            b = coords[:,1]
+            if location == 1:
+                ivar[b < 0] = 0 #north
+            elif location == 2:
+                ivar[b > 0] = 0 #south
+            elif location == 3:
+                ivar[b>35] = 0
+                ivar[b<-35] = 0
+            elif location == 4:
+                ivar[(b>-35)*(b<35)] = 0
+                ivar[b>50] = 0
+                ivar[b<-50] = 0
+            elif location == 5:
+                ivar[(b>-50)*(b<50)] = 0
+            elif location == 6:
+                ivar[(l>60)*(l<300)] = 0
+            elif location == 7:
+                ivar[l<60] = 0
+                ivar[(l>120)*(l<240)] = 0
+                ivar[l>300] = 0
+            elif location == 8:
+                ivar[l<120] = 0
+                ivar[l>240] = 0
+        else:
+            coords = np.loadtxt('infile.txt')
+            l = coords[:,0]
+            b = coords[:,1]
+            if location == 1:
+                ivar[b < 0] = 0 #north
+            elif location == 2:
+                ivar[b > 0] = 0 #south
+            elif location == 3:
+                ivar[b>35] = 0
+                ivar[b<-35] = 0
+            elif location == 4:
+                ivar[(b>-35)*(b<35)] = 0
+                ivar[b>50] = 0
+                ivar[b<-50] = 0
+            elif location == 5:
+                ivar[(b>-50)*(b<50)] = 0
+            elif location == 6:
+                ivar[(l>60)*(l<300)] = 0
+            elif location == 7:
+                ivar[l<60] = 0
+                ivar[(l>120)*(l<240)] = 0
+                ivar[l>300] = 0
+            elif location == 8:
+                ivar[l<120] = 0
+                ivar[l>240] = 0
         
+                
     #convert ivar to ivar of y
     ivar /= np.power(wavelength, 2)
     print("loaded data")
@@ -325,23 +315,15 @@ for j in range(num_files):
             plate_p = plate[plate==p]
             flambda_p = flambda[plate==p]
             ivar_p = ivar[plate==p]
-            print("shapes before calc_alphas:")
-            print(i100_sub_p.shape)
-            print(plate_p.shape)
-            print(flambda_p.shape)
-            print(ivar_p.shape)
             yxsig_p, xxsig_p = calc_alphas(i100_sub_p, plate_p, flambda_p, ivar_p)
-            print(yxsig_p.shape)
             if len(yxsig_partial) == 0:
                 yxsig_partial = yxsig_p.reshape(1, yxsig_p.shape[0])
                 xxsig_partial = xxsig_p.reshape(1, xxsig_p.shape[0])
             else:
                 yxsig_partial = np.append(yxsig_partial, yxsig_p.reshape(1, yxsig_p.shape[0]), axis=0)
                 xxsig_partial = np.append(xxsig_partial, xxsig_p.reshape(1, xxsig_p.shape[0]), axis=0)
-                print("shape:", yxsig_partial.shape)
         yxsigs_bootstrap = np.append(yxsigs_bootstrap, yxsig_partial, axis=1)
         xxsigs_bootstrap = np.append(xxsigs_bootstrap, xxsig_partial, axis=1)
-        print("bigger shape:", yxsigs_bootstrap.shape)
 
     else:
         #calculate alphas
@@ -350,26 +332,17 @@ for j in range(num_files):
         alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
         wavelength_10 = np.append(wavelength_10, wavelength_i)
 
+print("saving alphas")
+    
 if bootstrap:
     np.save('yx_bootstrap_' + save, yxsigs_bootstrap)
     np.save('xx_bootstrap_' + save, xxsigs_bootstrap)
     
 if save != '0' and not bootstrap:
-    #np.save('../alphas_and_stds/alphas_test.npy', alphas_10)
     np.save('../alphas_and_stds/alphas_' + save + '.npy', alphas_10)
     np.save('../alphas_and_stds/alpha_stds_' + save + '.npy', alpha_std_10)
     #np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
     print("alphas saved")
-
-'''
-if bootstrap:
-    if os.path.isfile(save):
-        bootstrap_alphas = np.load(save)  
-        print("bootstrap alphas shape:", bootstrap_alphas.shape)
-        np.save(save, np.append(bootstrap_alphas, alphas_10.reshape(1, len(alphas_10)), axis=0))
-    else:
-        np.save(save, alphas_10.reshape(1, len(alphas_10)))
-'''
 
 
 

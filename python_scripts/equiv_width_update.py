@@ -40,8 +40,10 @@ if boss:
     alphas = [np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy')]
     alpha_stds = [np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy')]
 else:
-    alphas = [np.load('../alphas_and_stds/alphas_91019_10.npy')]
-    alpha_stds = [np.load('../alphas_and_stds/alpha_stds_91019_10.npy')]
+    alphas = [np.load('../alphas_and_stds/alphas_91019_10.npy'), \
+              np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy')]
+    alpha_stds = [np.load('../alphas_and_stds/alpha_stds_91019_10.npy'), \
+                  np.load('../alphas_and_stds/alpha_stds_sdss_iris_2d_102019.npy')]
 
 peaks = [4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
 left_ranges = [(4829, 4893), (4905, 4977), (4987, 5026), (5827, 5887), (6470, 6554), (6555, 6573), (6574.6, 6700), (6600, 6722), (6722, 6785)]
@@ -75,18 +77,23 @@ def width_helper(x, a1, a2, a3, a4):
 #overall peak fitting
 def linear_fit(rel_alphas, rel_lambdas, rel_sigmas, a3, a4):
 
-    rel_ivars = 1 / np.power(rel_sigmas, 2)
+    rel_vars = np.power(rel_sigmas, 2)
+    rel_ivars = 1 / rel_vars
     y = np.exp(-np.power(rel_lambdas-a3, 2)/(2*a4**2))
     A = [[np.sum(rel_ivars), np.sum(np.multiply(y, rel_ivars))], \
          [np.sum(np.multiply(y, rel_ivars)), np.sum(np.multiply(np.power(y, 2), rel_ivars))]]
     b = [np.sum(np.multiply(rel_alphas, rel_ivars)), np.sum(np.multiply(np.multiply(rel_alphas, y), rel_ivars))]
-
-    #see what lstsq outputs:
-    print(lstsq(A, b))
-    exit(0)
     
     a1, a2 = lstsq(A, b)[0]
-    return a1, a2, y
+
+    #compute errors:
+    bp = np.concatenate((rel_ivars.reshape(1, len(rel_ivars)), np.multiply(y, rel_ivars).reshape(1, len(rel_ivars))), axis=0) #b prime (derivative)
+    Abp = np.dot(np.linalg.inv(A), bp)
+    Abp_sqr = np.power(Abp, 2)
+    a_vars = np.dot(Abp_sqr, rel_vars)
+    a_stds = np.sqrt(a_vars)
+
+    return a1, a2, a_stds[0], a_stds[1]
     
 #fitting a line + gaussian to peak, calculate equiv width
 def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
@@ -100,15 +107,13 @@ def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
     else:
         range2_idx1, range2_idx2 = (0, 0)
     
-    range_indices = np.array([np.arange(range1_idx1, range1_idx2), np.arange(range2_idx1, range2_idx2)])[0]
+    range_indices = np.concatenate((np.arange(range1_idx1, range1_idx2), np.arange(range2_idx1, range2_idx2)))
     rel_alphas = alphas[range_indices]
     rel_sigmas = alpha_stds[range_indices]
     rel_lambdas = wavelength[range_indices]
     
     peak_width = 1.85 #1.85 width from H-alpha
-    a1, a2, y = linear_fit(rel_alphas, rel_lambdas, rel_sigmas, peak_l, peak_width) 
-
-    print("params:", a1, a2)
+    a1, a2, a1_std, a2_std = linear_fit(rel_alphas, rel_lambdas, rel_sigmas, peak_l, peak_width) 
 
     #plot the fitted gaussian:
     #x_range = np.arange(range1[0], range1[1], .01)
@@ -119,9 +124,14 @@ def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
     #plt.show()
     
     #integrate (over 10 sigma)
-    width, err = quad(width_helper, peak_l-10*peak_width, peak_l + 10*peak_width, args=(a1, a2, peak_l, peak_width))
-    print("error from fit")
-    print(width)
+    num_sigmas = 10
+    width, _ = quad(width_helper, peak_l-num_sigmas*peak_width, peak_l + num_sigmas*peak_width, args=(a1, a2, peak_l, peak_width))
+    #error:
+    gauss_integral, _ = quad(width_helper, peak_l-num_sigmas*peak_width, peak_l + num_sigmas*peak_width, args=(1, 1, peak_l, peak_width))
+    frac_err = np.sqrt(np.power(a1_std/a1, 2) + np.power(a2_std/a2, 2))
+    err = frac_err*(a2/a1)*gauss_integral
+
+    #left off here on 12/1/19
     
     #calculate errors:
     #continuum: remove indices of peak
@@ -218,11 +228,6 @@ for i in range(len(alphas)):
         titles.insert(0, "3727 (OII)")
     titles = np.reshape(titles, (len(titles), 1))
     headers=["Wavelength", "Width", "Err", "H-alpha ratio", "Err", "H-beta ratio", "Err"]
-
-    print(titles.shape)
-    print(widths.shape)
-    print(width_errs.shape)
-    print(ratios.shape)
     
     cell_text = np.concatenate((titles, widths, width_errs, ratios), axis=1)
     print("\n" + tabulate(cell_text, headers))
@@ -230,40 +235,14 @@ for i in range(len(alphas)):
     print("N to alpha: from", temp_ratio_N - temp_ratio_N_err, "to", temp_ratio_N + temp_ratio_N_err)
     print("S to alpha: from", temp_ratio_S - temp_ratio_S_err, "to", temp_ratio_S + temp_ratio_S_err)
 
-    
-#analyze wavelength array:
-'''
-#min and max:
-min_l = min(wavelength)
-max_l =  max(wavelength)
-print("interval:", (max_l-min_l)/4000) #interval: 1.35 angstroms
 
-#intervals in wavelength array:
-wavelength_diffs = [wavelength[i+1] - wavelength[i] for i in range(len(wavelength)-1)]
-plt.hist(wavelength_diffs)
-plt.show()
-'''
-
-'''
-#from brandt paper (I zoomed in on the pixels)
-alphas[1] = [0.18972603, 0.18287671, 0.1630137, 0.14657534, 0.09863014, 0.1609589, 0.18150685, 0.1890411, 0.16986301, 0.17328767, \
-             0.20547945, 0.20205479, 0.20205479, 0.23835616, 0.26438356, 0.24383562, 0.20136986, 0.16986301, 0.1390411, 0.13630137, 0.17876712, \
-             0.1739726, 0.28150685, 0.53835616, 0.61438356, 0.49452055, 0.31780822, 0.17465753, 0.19041096, 0.16643836, 0.16849315, \
-             0.16164384, 0.19383562, 0.19520548, 0.1760274, 0.18356164, 0.24109589, 0.33630137, 0.44315068, 0.4, 0.25, 0.20616438, \
-             0.1760274, 0.16780822, 0.17123288, 0.16712329, 0.17671233, 0.17260274, 0.17328767, 0.20205479, 0.17671233, 0.17191781, \
-             0.17808219, 0.20479452, 0.19383562, 0.1739726, 0.19383562, 0.19863014, 0.18630137, 0.19109589, 0.19246575, 0.18013699, \
-             0.17945205, 0.17671233, 0.16917808, 0.17260274, 0.16369863, 0.17671233, 0.18013699, 0.19726027, 0.16643836, 0.18561644, \
-             0.1739726, 0.17123288, 0.16712329, 0.18219178, 0.18630137, 0.17945205, 0.18287671, 0.17808219, 0.1760274, 0.19383562, \
-             0.16506849, 0.14931507, 0.16506849, 0.16575342, 0.17671233, 0.18630137, 0.18356164, 0.17534247, 0.18561644, 0.1869863, \
-             0.1609589, 0.17808219, 0.19109589, 0.18561644, 0.13424658, 0.17191781, 0.17945205, 0.18561644, 0.17534247, 0.1869863, \
-             0.17945205, 0.17739726, 0.17808219, 0.18630137, 0.18356164, 0.19726027, 0.20342466, 0.17739726, 0.15890411, 0.17260274, \
-             0.17945205, 0.17534247, 0.18082192, 0.16849315, 0.18219178, 0.20205479, 0.19794521, 0.16712329, 0.16849315, 0.18493151, \
-             0.17808219, 0.19520548, 0.17876712, 0.18835616, 0.19246575, 0.26712329, 0.37671233, 0.40410959, 0.3239726, 0.21849315, \
-             0.17465753, 0.19041096, 0.19383562, 0.18287671, 0.20273973, 0.26643836, 0.33972603, 0.34383562, 0.26712329, 0.19863014, \
-             0.17945205, 0.1869863, 0.19657534, 0.17260274, 0.18493151, 0.16369863, 0.17876712, 0.20273973, 0.20890411, 0.1869863, \
-             0.18013699, 0.16849315, 0.16643836, 0.18493151, 0.19041096, 0.17260274, 0.17739726, 0.17328767, 0.15958904, 0.18287671, \
-             0.19657534, 0.18561644, 0.19178082] #from Brandt paper
-alphas[1] = np.pad(alphas[1], pad_width=((2449, 1386)), mode='constant', constant_values=(1))
-'''
+    '''
+    #plot the widths with error bars:
+    if boss:
+        widths = widths[1:, :]
+        width_errs = width_errs[1:, :]
+    plt.errorbar(np.arange(widths.shape[0]), widths, fmt='.', yerr=width_errs)
+    plt.show()
+    '''
 
 
