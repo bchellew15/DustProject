@@ -37,8 +37,12 @@ else:
 #boss: iris, 2d
 #sdss: replica of brandt paper (see end of file)
 if boss:
-    alphas = [np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy')]
-    alpha_stds = [np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy')]
+    alphas = [np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
+              np.load('../alphas_and_stds/alphas_north_111719.npy'), \
+              np.load('../alphas_and_stds/alphas_south_111719.npy')]
+    alpha_stds = [np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
+                  np.load('../alphas_and_stds/alpha_stds_north_111719.npy'), \
+                  np.load('../alphas_and_stds/alpha_stds_south_111719.npy')]
 else:
     alphas = [np.load('../alphas_and_stds/alphas_91019_10.npy'), \
               np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy')]
@@ -131,8 +135,8 @@ def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
     frac_err = np.sqrt(np.power(a1_std/a1, 2) + np.power(a2_std/a2, 2))
     err = frac_err*(a2/a1)*gauss_integral
 
-    #left off here on 12/1/19
-    
+    '''
+    #old stuff to help with calculating errs:
     #calculate errors:
     #continuum: remove indices of peak
     close_peak_idx = np.argmin(np.abs(wavelength-peak_l))
@@ -140,7 +144,6 @@ def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
         range_indices = np.delete(range_indices, np.argwhere(range_indices==i))
     rel_alphas = alphas[range_indices]
     rel_sigmas = alpha_stds[range_indices]
-    rel_lambdas = wavelength[range_indices] #needed?
     
     cont = np.average(rel_alphas, weights = 1/np.power(rel_sigmas, 2))
     stdev = np.sqrt(np.sum(np.power(rel_sigmas, 2))) / len(rel_alphas)
@@ -155,6 +158,7 @@ def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
     # then add in quadrature (because we can simplify to alpha/continuum - 1)
     bar_errs = delta_lambda*(alphas/cont)*np.sqrt(np.power(np.divide(alpha_stds, alphas), 2) + (stdev/cont)**2)
     #err = np.sqrt(np.sum(np.power(bar_errs[close_peak_idx-3:close_peak_idx+4], 2)))
+    '''
 
     return width, err
 
@@ -167,29 +171,34 @@ def get_ratios(width, err, halpha, a_err, hbeta, b_err):
     return a_ratio, a_ratio_err, b_ratio, b_ratio_err
 
 # calculate 4000 A break
-def break_4000(alphas):
+def break_4000(alphas, stds):
 
-    #temp:
     idx_4000 = np.argmin(np.abs(wavelength-4000))
     idx_3850 = np.argmin(np.abs(wavelength-3850))
     idx_4150 = np.argmin(np.abs(wavelength-4150))
     delta_lambda = wavelength[idx_4000+1] - wavelength[idx_4000]
     left_break = delta_lambda*np.sum(alphas[idx_3850:idx_4000])
     right_break = delta_lambda*np.sum(alphas[idx_4000:idx_4150])
-
-    #alpha_func = interpolate.interp1d(wavelength, alphas)
-    #left_break = integrate.quad(alpha_func, 3850, 4000)[0]
-    #right_break = integrate.quad(alpha_func, 4000, 4150)[0]
     delta = left_break / right_break
     beta_width = -2.2*delta + .17
     alpha_width = -1.5*delta - .19
-    return alpha_width, beta_width
+
+    left_break_err = np.sqrt(np.sum(np.power(stds[idx_3850:idx_4000], 2)))
+    right_break_err = np.sqrt(np.sum(np.power(stds[idx_4000:idx_4150], 2)))
+    frac_delta_err = np.sqrt((left_break_err/left_break)**2 + (right_break_err/right_break)**2)
+    delta_err = frac_delta_err*delta
+    beta_err = 2.2*delta_err
+    alpha_err = 1.5*delta_err
+    
+    return alpha_width, beta_width, alpha_err, beta_err
 
 # calculate 4000 A break:
 bws = np.zeros(len(alphas))
 aws = np.zeros(len(alphas))
+bw_errs = np.zeros(len(alphas))
+aw_errs = np.zeros(len(alphas))
 for i in range(len(alphas)):
-    aws[i], bws[i] = break_4000(alphas[i])
+    aws[i], bws[i], aw_errs[i], bw_errs[i] = break_4000(alphas[i], alpha_stds[i])
 
 # calculate equivalent widths:
 #width and error for each wavelength
@@ -206,8 +215,10 @@ for i in range(len(alphas)):
         widths[j], width_errs[j] = equiv_width(peaks[j], alphas[i], alpha_stds[i], left_ranges[j], right_ranges[j])
         if j == idx_6565:
             widths[j] = widths[j] - aws[i]
+            width_errs[j] = np.sqrt(width_errs[j]**2 + aw_errs[i]**2)
         if j == idx_4863:
             widths[j] = widths[j] - bws[i]
+            width_errs[j] = np.sqrt(width_errs[j]**2 + bw_errs[i]**2)
     for j, peak_l in enumerate(peaks):
         ratios[j] = np.array(get_ratios(widths[j], width_errs[j], widths[idx_6565], width_errs[idx_6565], widths[idx_4863], width_errs[idx_4863])).T[0]
 

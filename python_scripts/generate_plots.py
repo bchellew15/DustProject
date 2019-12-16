@@ -120,6 +120,15 @@ if bootstrap:
                              np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_iris_2d_102019.npy'), \
                              np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_iris_1d_102019.npy'), \
                              np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy')]
+
+    '''
+    #temporary: truncate bootstrap stuff
+    num_samples = 1000 #temp
+    bootstrap_alphas_boss = [b[:num_samples, :] for b in bootstrap_alphas_boss] #temp
+    bootstrap_alpha_stds_boss = [b[:num_samples, :] for b in bootstrap_alpha_stds_boss] #temp
+    bootstrap_alphas_sdss = [b[:num_samples, :] for b in bootstrap_alphas_sdss] #temp
+    bootstrap_alpha_stds_sdss = [b[:num_samples, :] for b in bootstrap_alpha_stds_sdss] #temp
+    '''
     
     if boss:
         bootstrap_lower = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
@@ -309,10 +318,6 @@ binned_lambdas, binned_alphas, binned_stds = generate_binned_alphas(alphas, alph
 if not boss: #calculate binned spectrum for 1d boss
     binned_lambdas_boss, binned_alphas_boss, binned_stds_boss = generate_binned_alphas([alphas[-1]], [alpha_stds[-1]], wavelength, wavelength_boss)
 
-print("test some shapes")
-print(bootstrap_alphas[0].shape)
-print(binned_alphas[0].shape)
-
     
 if bootstrap:
     #bin all the bootstrap spectra
@@ -349,7 +354,7 @@ if not boss and bootstrap:
 
     plt.subplot(1, 2, 1)
 
-    plt.plot(binned_lambdas, binned_alphas[2], c='k', drawstyle='steps', label='SFD')
+    plt.plot(binned_lambdas, binned_alphas[2], c='k', drawstyle='steps', label='SDSS')
     plt.plot(binned_lambdas, binned_stds[2], c='k', drawstyle='steps')
     plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='m', drawstyle='steps')
     plt.fill_between(binned_lambdas, bootstrap_binned_lower[2], bootstrap_binned_upper[2], linewidth=0.0, color='k', alpha=0.2, step='pre')
@@ -480,7 +485,8 @@ if not boss:
 
     
 if boss:
-    plot_binned([4, 5], ['k', 'r'], ['South', 'North'], envelope=True)
+    envelope = bootstrap
+    plot_binned([4, 5], ['k', 'r'], ['South', 'North'], envelope=envelope)
     plt.show()
     if not bootstrap: #because I don't have bootstrap samples for all these
         plot_binned([2, 6, 7, 8], ['k', 'b', 'r', 'g'], ['Full Sky', '0<|b|<35', '35<|b|<50', '50<|b|<90'])
