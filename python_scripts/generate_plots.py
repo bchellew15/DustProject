@@ -139,25 +139,56 @@ if bootstrap:
         bootstrap_upper = [np.percentile(b, 84, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
         bootstrap_stds = [(bootstrap_upper[i] - bootstrap_lower[i])/2 for i in range(len(bootstrap_lower))]
 
-    '''
-    #histogram (verify that this is the MLE gaussian)
-    data_hist = bootstrap_alphas_sdss[0][2473]     #[int(bootstrap_alphas_sdss[0].shape[1]/2)]
-    data_hist = data_hist[(data_hist>0)*(data_hist<1)]
+    
+    #histogram (verify that bootstrap dist is normal)
+    #using sdss first because should be faster
+    data_hist = bootstrap_alphas_boss[0][1280]     #[int(bootstrap_alphas_sdss[0].shape[1]/2)]
+    data_hist = data_hist[(data_hist>-1)*(data_hist<2)] #cut off outliers
 
-    avg_hist = np.mean(data_hist)
-    var_hist = np.var(data_hist)
-    pdf_x = np.linspace(0, 0.4, 100)
-    pdf_y = 1.0/np.sqrt(2*np.pi*var_hist)*np.exp(-0.5*(pdf_x-avg_hist)**2/var_hist)
+    print("min and max")
+    print(min(data_hist))
+    print(max(data_hist))
 
-    h = plt.hist(data_hist, bins=50, range=(0, 0.4)) #,normed=True)
-    plt.plot(pdf_x, np.max(h[0])/np.max(pdf_y)*pdf_y, 'k--')
-    plt.show()
+    range_min = 0
+    range_max = 1 #max(data_hist)
+    
+    #avg_hist = np.mean(data_hist)
+    #var_hist = np.var(data_hist)
+    #pdf_x = np.linspace(range_min, range_max, 100)
+    #pdf_y = np.exp(-0.5*(pdf_x-avg_hist)**2/var_hist)
+    #removed prefactor 1.0/np.sqrt(2*np.pi*var_hist) from df_y
 
-    #plt.hist(bootstrap_alphas_sdss[0][:int(bootstrap_alphas_sdss[0].shape[1]/2)], bins=50)
+    num_bins = 50
+    h, bin_edges, _ = plt.hist(data_hist, bins=num_bins, range=(range_min, range_max), density=True) #,normed=True)
+    print("hist:")
+    print(h)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:])/2
+
+    #taken from stackoverflow
+    def gauss(x, *p):
+        A, mu, sigma = p
+        return A*np.exp(-(x-mu)**2/(2.*sigma**2))
+
+    p0 = [1., 0., 1.]
+    coeff, var_matrix = curve_fit(gauss, bin_centers, h, p0=p0)
+    hist_fit = gauss(bin_centers, *coeff)
+
+    plt.plot(bin_centers, hist_fit)
+
+    print('Fitted mean = ', coeff[1])
+    print('Fitted standard deviation = ', coeff[2])
+
+    #bin_width = (range_max-range_min) / num_bins
+    #print("num samples:", data_hist.shape[0])
+    #a = data_hist.shape[0]*bin_width/(np.sqrt(2*np.pi)*np.sqrt(var_hist))
+    #print("amplitude:", a)
+    
+    #plt.plot(pdf_x, a*pdf_y, 'k--')
+    #plt.show()
 
     plt.show()
     exit(0)
-    '''
+    
     
     
 #flux conversion factor:
@@ -282,7 +313,6 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None):
         if alphas[i].ndim > 1:
             binned_alpha_arr = np.zeros((alphas[i].shape[0], binned_lambdas.shape[0]))
             binned_std_arr = np.zeros((alphas[i].shape[0], binned_lambdas.shape[0]))
-        print("shape:", binned_alpha_arr.shape)
         for j, lmda in enumerate(binned_lambdas):
             indices = np.where((wavelength > lmda-50) & (wavelength < lmda) & np.logical_not(emission_line_mask))[0] #test
             if alphas[i].ndim > 1:

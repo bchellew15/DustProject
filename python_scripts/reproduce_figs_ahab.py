@@ -29,6 +29,8 @@ thr1.start()
 #see reproduce_figs.py and reproduce_figs_boss.py
 #this version uses a lot more RAM and is made to work on AHAB
 
+#bootstrap: take random sample before masking to replicate what happens with normal data
+
 #command line args
 if len(sys.argv) != 7:
     print("Usage: reproduce_figs.py [mode: 1d, 2d, iris, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [location=0, 1, 2] [bootstrap=0]")
@@ -214,6 +216,9 @@ alpha_std_10 = np.zeros(0)
 wavelength_10 = np.zeros(0)
 
 if bootstrap:
+    unique_plates = np.unique(plate)
+    print("number of unique plates:")
+
     #set up arrays for xxsig and yxsig. each unique plate has an entry at each wavelength
     yxsigs_bootstrap = np.zeros((len(unique_plates), 0))
     xxsigs_bootstrap = np.zeros((len(unique_plates), 0))
@@ -315,15 +320,23 @@ for j in range(num_files):
             plate_p = plate[plate==p]
             flambda_p = flambda[plate==p]
             ivar_p = ivar[plate==p]
+            print("shapes before calc_alphas:")
+            print(i100_sub_p.shape)
+            print(plate_p.shape)
+            print(flambda_p.shape)
+            print(ivar_p.shape)
             yxsig_p, xxsig_p = calc_alphas(i100_sub_p, plate_p, flambda_p, ivar_p)
+            print(yxsig_p.shape)
             if len(yxsig_partial) == 0:
                 yxsig_partial = yxsig_p.reshape(1, yxsig_p.shape[0])
                 xxsig_partial = xxsig_p.reshape(1, xxsig_p.shape[0])
             else:
                 yxsig_partial = np.append(yxsig_partial, yxsig_p.reshape(1, yxsig_p.shape[0]), axis=0)
                 xxsig_partial = np.append(xxsig_partial, xxsig_p.reshape(1, xxsig_p.shape[0]), axis=0)
+                print("shape:", yxsig_partial.shape)
         yxsigs_bootstrap = np.append(yxsigs_bootstrap, yxsig_partial, axis=1)
         xxsigs_bootstrap = np.append(xxsigs_bootstrap, xxsig_partial, axis=1)
+        print("bigger shape:", yxsigs_bootstrap.shape)
 
     else:
         #calculate alphas

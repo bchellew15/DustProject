@@ -19,7 +19,8 @@ xxsig_bootstrap = np.load('xx_bootstrap_' + save_key + '.npy')
 print(yxsig_bootstrap)
 print(xxsig_bootstrap)
 
-save_path = '../data/bootstrap_alphas_' + save_key + '.npy'
+save_path1 = '../data/bootstrap_alphas_' + save_key + '.npy'
+save_path2 = '../data/bootstrap_alpha_stds_' + save_key + '.npy'
 
 #check sizes:
 #print("check sizes")
@@ -35,11 +36,17 @@ for i in range(num_iter):
     sums2 = np.sum(xxsig_bootstrap[bootstrap_indices], axis=0)
 
     alphas = np.divide(sums1, sums2)
-    #alpha_std = np.sqrt(1/sums2)
+    alpha_stds = np.sqrt(1/sums2)
 
 
-    if os.path.isfile(save_path):
-        bootstrap_alphas = np.load(save_path)  
-        np.save(save_path, np.append(bootstrap_alphas, alphas.reshape(1, len(alphas)), axis=0))
+    if os.path.isfile(save_path1) and os.path.isfile(save_path2): 
+        bootstrap_alphas = np.load(save_path1)
+        bootstrap_stds = np.load(save_path2)
+        np.save(save_path1, np.append(bootstrap_alphas, alphas.reshape(1, len(alphas)), axis=0))
+        np.save(save_path2, np.append(bootstrap_stds, alpha_stds.reshape(1, len(alphas)), axis=0))
+    elif not os.path.isfile(save_path1) and not os.path.isfile(save_path2):
+        np.save(save_path1, alphas.reshape(1, len(alphas)))
+        np.save(save_path2, alpha_stds.reshape(1, len(alphas)))
     else:
-        np.save(save_path, alphas.reshape(1, len(alphas)))
+        print("error: one file exists and the other doesn't")
+        exit(0)
