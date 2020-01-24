@@ -1,5 +1,6 @@
 #read input from files with xxsig and yxsig sums
 #jacknife to leave out each plate one-by-one
+#saves results in "jacknife" files, read with view_stacked_spectra.py
 
 import numpy as np
 import sys

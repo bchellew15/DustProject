@@ -22,6 +22,17 @@ print(xxsig_bootstrap)
 save_path1 = '../data/bootstrap_alphas_' + save_key + '.npy'
 save_path2 = '../data/bootstrap_alpha_stds_' + save_key + '.npy'
 
+#TEMP
+'''
+save_path1 = '../data/temp1_bootstrap_alphas_' + save_key + '.npy'
+save_path2 = '../data/temp1_bootstrap_alpha_stds_' + save_key + '.npy'
+print("shapes before:", yxsig_bootstrap.shape, xxsig_bootstrap.shape)
+yxsig_bootstrap = np.delete(yxsig_bootstrap, 1786, axis=0)
+xxsig_bootstrap = np.delete(xxsig_bootstrap, 1786, axis=0)
+print("shapes after:", yxsig_bootstrap.shape, xxsig_bootstrap.shape)
+'''
+
+
 #check sizes:
 #print("check sizes")
 #print(yxsig_bootstrap.shape)

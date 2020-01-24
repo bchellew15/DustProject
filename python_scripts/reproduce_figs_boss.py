@@ -165,12 +165,13 @@ if boss:
     #create unique plate identifier
     hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + filenames[0])
     plate = hdulist[6].data
+    fiber_id = hdulist[7].data
+    
     mjd = hdulist[5].data
     plate = 10000*plate + mjd%10000 #plate is now a unique identifier
+    
 
-    #sdss website says fiber 840 is bad
-    #http://www.sdss3.org/dr9/spectro/caveats.php#flux_cal
-    fiber_id = hdulist[7].data
+    #
     
     #get i100 (type: float64)
     i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
@@ -234,13 +235,12 @@ for j in range(num_files):
         ivar = hdulist[1].data #type: float64
         wavelength = 10**( min(hdulist[2].data) + np.arange(flambda[0].shape[0])*1e-4 ).astype('float32')
     
-    plate_avgs = [np.mean(i100[plate==p]) for p in np.unique(plate)]
-    plate_avgs = np.sort(plate_avgs)
-    for avg in plate_avgs:
-        print(avg)
+    #plate_avgs = [np.mean(i100[plate==p]) for p in np.unique(plate)]
+    #plate_avgs = np.sort(plate_avgs)
+    #for avg in plate_avgs:
+    #    print(avg)
     #plt.hist(plate_avgs, bins=50, range=(0, 10))
     #plt.show()
-    exit(0)
     
     #process ivar:
     for i in range(ivar.shape[0]):
@@ -273,6 +273,7 @@ for j in range(num_files):
 
     #calculate alphas
     alphas_i, alpha_std_i, wavelength_i = calc_alphas(i100_sub, plate, flambda, ivar)
+    
     alphas_10 = np.append(alphas_10, alphas_i)
     alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
     wavelength_10 = np.append(wavelength_10, wavelength_i)

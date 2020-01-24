@@ -162,11 +162,10 @@ if boss:
     hdulist = fits.open("../data/" + filenames[0])
     plate = hdulist[6].data
     mjd = hdulist[5].data
-    plate = 10000*plate + mjd%10000 #plate is now a unique identifier
-
+    
     #sdss website says fiber 840 is bad
     #http://www.sdss3.org/dr9/spectro/caveats.php#flux_cal
-    fiber_id = hdulist[7].data
+    fiber_id = hdulist[7].data 
     
     #get i100 (type: float64)
     i100_old = np.loadtxt("../data/SFD_i100_at_BOSS_locations.txt")[:,2]
@@ -174,12 +173,42 @@ if boss:
         i100 = np.load("../data/i100_tao_boss.npy")
     elif mode == 'iris':
         i100 = np.load("../data/i100_tao_boss_iris.npy")
+        i100_old = np.load("../data/iris_i100_at_boss.npy") #iris 1d
     elif mode == 'iris_1d':
-        i100 = np.load("../data/iris_i100_at_boss.npy") 
+        i100 = np.load("../data/iris_i100_at_boss.npy")
+        i100_old = np.copy(i100)
     elif mode == '1d':
         i100 = i100_old
     else:
         print("Error: invalid mode")
+
+    '''
+    #temp: get info of specific plate
+    rel_indices = np.where(plate==4900)[0]
+    rel_i100 = i100[rel_indices]
+    rel_plate = plate[rel_indices]
+    rel_mjd = mjd[rel_indices]
+    rel_fiber = fiber_id[rel_indices]
+    np.set_printoptions(threshold=sys.maxsize)
+    print(rel_plate)
+    print(rel_mjd)
+    print(rel_fiber)
+    exit(0)
+    '''
+    
+    '''
+    #temp
+    print("mean")
+    print(np.mean(rel_i100))
+    print("scatter")
+    print(np.std(rel_i100))
+    print("SNR")
+    print(np.mean(np.power((rel_i100-np.mean(rel_i100))/np.std(rel_i100), 2)))
+    exit(0)
+    '''
+    
+
+    plate = 10000*plate + mjd%10000 #plate is now a unique identifier   
 
 #load data for SDSS
 else:
@@ -194,8 +223,10 @@ else:
         i100 = np.load("../data/i100_tao.npy") #i100_tao.npy
     elif mode == 'iris':
         i100 = np.load("../data/i100_iris_tao.npy")
+        i100_old = np.load("../data/iris_i100_at_sfd.npy") #iris 1d
     elif mode == 'iris_1d':
         i100 = np.load("../data/iris_i100_at_sfd.npy")
+        i100_old = np.copy(i100)
     elif mode == '1d':
         i100 = i100_old
     else:
@@ -244,6 +275,10 @@ for j in range(num_files):
     if boss:
         ivar[3178] = 0 #data at this location is bad
         ivar[fiber_id == 840] = 0
+        ivar[plate == np.unique(plate)[1509]] = 0
+        ivar[plate == np.unique(plate)[1265]] = 0
+        ivar[plate == np.unique(plate)[1786]] = 0
+        ivar[(plate == np.unique(plate)[938]) * (fiber_id == 252)] = 0
 
     if location != 0:
         if boss:
@@ -344,7 +379,7 @@ for j in range(num_files):
         alphas_10 = np.append(alphas_10, alphas_i)
         alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
         wavelength_10 = np.append(wavelength_10, wavelength_i)
-
+        
 print("saving alphas")
     
 if bootstrap:

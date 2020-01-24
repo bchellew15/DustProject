@@ -201,7 +201,7 @@ def mosaique_iris(alpha, delta, direc):
         print("file number: ", inum[ind[i]])
         w = wcs.WCS(hi) #, filei . . . 
         #filei.close()
-        xi, yi, trash = w.all_world2pix(alpha, delta, np.zeros(len(alpha)), 0)#1) #origin 1 for FITS, zeros b/c axis3 has size 1
+        xi, yi, trash = w.all_world2pix(alpha, delta, np.zeros(len(alpha)), 0) #last arg is WCS origin. 0 because numpy (1 if fits)
         
         '''
         #my own function:
