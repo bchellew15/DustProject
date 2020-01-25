@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from time import time
 import astropy.wcs as wcs #for ad2xy
 
+#goal: replicate functionality of iris_val.pro (IDL code)
+
 #next steps:
 #test functions independently
 #look at output step by step

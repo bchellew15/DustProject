@@ -1,4 +1,7 @@
-#a script to loop over other scripts with various parameter combinations
+#loop over other scripts with various parameter combinations
+
+#goal: input a date, and it generates all the relevant alpha files and bootstrap files
+#set it up so can do each step individually if needed
 
 import os
 

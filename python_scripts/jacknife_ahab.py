@@ -25,9 +25,9 @@ save_path2 = '../data/jacknife_alpha_stds_' + save_key + '.npy'
 #print(xxsig_bootstrap.shape)
 
 for i in range(yxsig_jacknife.shape[0]):
-    jacknife_indices = [j for j in np.arange(yxsig_jacknife.shape[0]) if j != i]
     #all the plates except the one at index i
-
+    jacknife_indices = [j for j in np.arange(yxsig_jacknife.shape[0]) if j != i]
+    
     sums1 = np.sum(yxsig_jacknife[jacknife_indices], axis=0)
     sums2 = np.sum(xxsig_jacknife[jacknife_indices], axis=0)
 

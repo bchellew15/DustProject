@@ -1,4 +1,12 @@
 #look at updated BOSS data files
+#check locations
+#check padding
+#histograms of ivar and flambda
+#look at mean i100 over plates
+#compare i100 for SFD and IRIS
+
+
+
 #these arrays have already been padded
 #BOSS_test.py has code to pad arrays and load padded arrays
 
@@ -52,8 +60,6 @@ plt.plot(dec, my_dec, 'k.')
 plt.plot(np.arange(360), np.arange(360), 'r')
 plt.show()
 '''
-
-
 
 #check whether fibers on same plate start with same lambda
 #which means: check whether fibers on the same plate have same padding

@@ -6,6 +6,23 @@ from time import sleep
 import sys
 from math import floor #for calculating bin ranges
 
+#previously named reproduce_figs_ahab.py
+#generate correlation spectra
+#this version uses a lot of RAM (~15 GB)
+
+'''
+EXPLAIN PARAMETERS:
+
+mode: 
+
+
+'''
+
+#2d: uses correction factor for i100 to account for tao (optical depth)
+
+#IMPORTANT: this code does NOT divide by flux conversion factor. For SDSS this is 1.38.
+
+
 #for tracking RAM:
 import os
 import psutil
@@ -26,14 +43,12 @@ def check_memory():
 thr1 = threading.Thread(target = check_memory, daemon=True)
 thr1.start()
 
-#see reproduce_figs.py and reproduce_figs_boss.py
-#this version uses a lot more RAM and is made to work on AHAB
-
-#bootstrap: take random sample before masking to replicate what happens with normal data
+#bootstrap: take random samples and then mask
 
 #command line args
+#see above for explanation of parameters
 if len(sys.argv) != 7:
-    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [location=0, 1, 2] [bootstrap=0]")
+    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris_2d, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [location=0, 1, 2] [bootstrap=0]")
     exit(0)
 mode = sys.argv[1]
 boss = int(sys.argv[2])
@@ -171,7 +186,7 @@ if boss:
     i100_old = np.loadtxt("../data/SFD_i100_at_BOSS_locations.txt")[:,2]
     if mode == '2d':
         i100 = np.load("../data/i100_tao_boss.npy")
-    elif mode == 'iris':
+    elif mode == 'iris_2d':
         i100 = np.load("../data/i100_tao_boss_iris.npy")
         i100_old = np.load("../data/iris_i100_at_boss.npy") #iris 1d
     elif mode == 'iris_1d':
@@ -221,7 +236,7 @@ else:
     i100_old = np.array(fiberinfo[:, 4])# 100 micron intensity (MJy/sr)
     if mode == '2d':
         i100 = np.load("../data/i100_tao.npy") #i100_tao.npy
-    elif mode == 'iris':
+    elif mode == 'iris_2d':
         i100 = np.load("../data/i100_iris_tao.npy")
         i100_old = np.load("../data/iris_i100_at_sfd.npy") #iris 1d
     elif mode == 'iris_1d':
@@ -340,7 +355,7 @@ for j in range(num_files):
     print("loaded data")
 
     #get subset of i100:
-    if boss and (mode == '2d' or mode == 'iris'):
+    if boss and (mode == '2d' or mode == 'iris_2d'):
         start_idx =  num_columns[j][0]
         num_elements = num_columns[j][1]
         i100_sub = i100[:, start_idx:start_idx+num_elements]        
