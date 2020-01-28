@@ -119,6 +119,25 @@ plt.show()
 #plot regions of sky (unbinned) same as original paper
 #(if not bootstrap and not boss)
 
+elif location == 3:
+                ivar[b>35] = 0
+                ivar[b<-35] = 0
+            elif location == 4:
+                ivar[(b>-35)*(b<35)] = 0
+                ivar[b>50] = 0
+                ivar[b<-50] = 0
+            elif location == 5:
+                ivar[(b>-50)*(b<50)] = 0
+            elif location == 6:
+                ivar[(l>60)*(l<300)] = 0
+            elif location == 7:
+                ivar[l<60] = 0
+                ivar[(l>120)*(l<240)] = 0
+                ivar[l>300] = 0
+            elif location == 8:
+                ivar[l<120] = 0
+                ivar[l>240] = 0
+
 plot_emissions([0, 4, 5, 6], ["Full Sky", "0<|b|<35", "35<|b|<50", "50<|b|<90"], ['k', 'b', 'r', 'g'])
 plt.show()
 plot_emissions([0, 7, 8, 9], ["Full Sky", "0<|l|<60", "60<|l|<120", "120<|l|<180"], ['k', 'b', 'r', 'g'])

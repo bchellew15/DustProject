@@ -1,59 +1,52 @@
-#loop over other scripts with various parameter combinations
-
-#goal: input a date, and it generates all the relevant alpha files and bootstrap files
-#set it up so can do each step individually if needed
+#loop over other scripts
+#goal is to generate all the alphas and bootstrap samples needed for the paper
+#input a unique key (a date, for example) that will be used for the filenames
 
 import os
+import sys
 
-'''
-#thresholds = ['5', '7.5', '10', '12.5', '15']
-#threshold_labels = ['5', '75', '10', '125', '15']
-thresholds = ['17.5', '22.5', '27.5', '30', '32.5']
-threshold_labels = ['175', '225', '275', '30', '325']
+#savekey is a unique key that will be used for this set of filenames
+if len(sys.argv) != 2:
+    print("Usage: script_looper.py [savekey]")
+    exit(0)
+savekey = sys.argv[1]
 
-#first I'll do SFD SDSS at 5 thresholds
-#then SFD BOSS at the same 5 thresholds
-#what about IRIS data? (maybe iris 2d at some point)
+num_samples = 10000 #10,000 bootstrap samples
+thresholds = ['10', '15', '20', '25', '30']
+threshold_labels = ['10', '15', '20', '25', '30'] #in case there is a decimal point
 
+#generate the alphas:
+os.system('python generate_alphas_ahab.py 1d 0 sdss_1d_' + savekey + ' 10 0 0')
+os.system('python generate_alphas_ahab.py iris_1d 0 sdss_iris_1d_' + savekey + ' 10 0 0')
+os.system('python generate_alphas_ahab.py 2d 0 sdss_2d_' + savekey + ' 10 0 0')
+os.system('python generate_alphas_ahab.py iris_2d 0 sdss_iris_2d_' + savekey + ' 10 0 0')
+os.system('python generate_alphas_ahab.py iris_2d 1 boss_iris_2d_' + savekey + ' 10 0 0')
 for i in range(len(thresholds)):
-    os.system('python reproduce_figs_ahab.py ' + 'iris_1d' + ' ' + '1' + ' ' + 'boss_iris_1d_111119_' + threshold_labels[i] + ' ' + thresholds[i])
-'''
+    os.system('python generate_alphas_ahab.py iris_1d 1 boss_iris_1d_' + savekey + '_' + threshold_labels[i] + ' ' + thresholds[i] + ' 0 0')
+    os.system('python generate_alphas_ahab.py iris_2d 1 boss_iris_2d_' + savekey + '_' + threshold_labels[i] + ' ' + thresholds[i] + ' 0 0')
+os.system('python generate_alphas_ahab.py iris_2d 1 boss_iris_2d_north_' + savekey + ' 10 1 0')
+os.system('python generate_alphas_ahab.py iris_2d 1 boss_iris_2d_south_' + savekey + ' 10 2 0')
 
-'''
-#bootstrapping (generate xx and yx):
-commands = ['python reproduce_figs_ahab.py 2d 0 sdss_2d_102019 10 0 1',
-            'python reproduce_figs_ahab.py iris_1d 0 sdss_iris_1d_102019 10 0 1',
-            'python reproduce_figs_ahab.py iris 0 sdss_iris_2d_102019 10 0 1',
-            'python reproduce_figs_ahab.py 1d 1 boss_1d_102019 10 0 1',
-            'python reproduce_figs_ahab.py 2d 1 boss_2d_102019 10 0 1',
-            'python reproduce_figs_ahab.py iris_1d 1 boss_iris_1d_102019 10 0 1',
-            'python reproduce_figs_ahab.py iris 1 boss_iris_2d_102019 10 0 1']
+#intermediate bootstrap step for all of these:
+os.system('python generate_alphas_ahab.py 1d 0 sdss_1d_' + savekey + ' 10 0 1')
+os.system('python generate_alphas_ahab.py iris_1d 0 sdss_iris_1d_' + savekey + ' 10 0 1')
+os.system('python generate_alphas_ahab.py 2d 0 sdss_2d_' + savekey + ' 10 0 1')
+os.system('python generate_alphas_ahab.py iris_2d 0 sdss_iris_2d_' + savekey + ' 10 0 1')
+os.system('python generate_alphas_ahab.py iris_2d 1 boss_iris_2d_' + savekey + ' 10 0 1')
+for i in range(len(thresholds)):
+    os.system('python generate_alphas_ahab.py iris_1d 1 boss_iris_1d_' + savekey + '_' + threshold_labels[i] + ' ' + thresholds[i] + ' 0 1')
+    os.system('python generate_alphas_ahab.py iris_2d 1 boss_iris_2d_' + savekey + '_' + threshold_labels[i] + ' ' + thresholds[i] + ' 0 1')
+os.system('python generate_alphas_ahab.py iris_2d 1 boss_iris_2d_north_' + savekey + ' 10 1 1')
+os.system('python generate_alphas_ahab.py iris_2d 1 boss_iris_2d_south_' + savekey + ' 10 2 1')
 
-#for north and south BOSS:
-commands = ['python reproduce_figs_ahab.py iris 1 north_111719 10 1 1',
-            'python reproduce_figs_ahab.py iris 1 south_111719 10 2 1']
-
-for c in commands:
-    os.system(c)
-'''
-
-
-#bootstrapping (generate bootstrap samples from xx and yx)
-commands = ['python bootstrap_ahab.py sdss_1d_101819 9000',
-            'python bootstrap_ahab.py sdss_2d_102019 9000',
-            'python bootstrap_ahab.py sdss_iris_1d_102019 9000',
-            'python bootstrap_ahab.py sdss_iris_2d_102019 9000',
-            'python bootstrap_ahab.py boss_1d_102019 9000',
-            'python bootstrap_ahab.py boss_2d_102019 9000',
-            'python bootstrap_ahab.py boss_iris_1d_102019 9000',
-            'python bootstrap_ahab.py boss_iris_2d_102019 9000']
-
-commands = ['python bootstrap_ahab.py north_111719 500',
-            'python bootstrap_ahab.py south_111719 500']
-
-commands = ['python bootstrap_ahab.py south_111719 500']
-
-
-for c in commands:
-    os.system(c)
-
+#now calculate bootstrap samples:
+os.system('python bootstrap_ahab.py sdss_1d_' + savekey + ' 10000')
+os.system('python bootstrap_ahab.py sdss_iris_1d_' + savekey + ' 10000')
+os.system('python bootstrap_ahab.py sdss_2d_' + savekey + ' 10000')
+os.system('python bootstrap_ahab.py sdss_iris_2d_' + savekey + ' 10000')
+os.system('python bootstrap_ahab.py boss_iris_2d_' + savekey + ' 10000')
+for i in range(len(thresholds)):
+    os.system('python bootstrap_ahab.py boss_iris_1d_' + savekey + '_' + threshold_labels[i] + ' 10000')
+    os.system('python bootstrap_ahab.py boss_iris_2d_' + savekey + '_' + threshold_labels[i] + ' 10000')
+os.system('python bootstrap_ahab.py boss_iris_2d_north_' + savekey + ' 10000')
+os.system('python bootstrap_ahab.py boss_iris_2d_south_' + savekey + ' 10000')

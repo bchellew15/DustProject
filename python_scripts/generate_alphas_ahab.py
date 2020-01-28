@@ -9,19 +9,28 @@ from math import floor #for calculating bin ranges
 #previously named reproduce_figs_ahab.py
 #generate correlation spectra
 #this version uses a lot of RAM (~15 GB)
+#IMPORTANT: this code does NOT divide by flux conversion factor. For SDSS this is 1.38.
+#bootstrap: take random samples and then mask
 
 '''
 EXPLAIN PARAMETERS:
 
-mode: 
-
-
+mode [1d, 2d, iris_1d, iris_2d]:
+  1d refers to linear model where 100 micron intensity is proportional to optical intensity.
+  2d refers to updated model that includes optical depth.
+  '1d' and '2d' use 100 micron values from SFD, iris_1d and iris_2d use 100 micron values from IRIS
+boss: 0 if optical intensity is from SDSS-II, 1 if BOSS
+save: 0 to not save anything, or enter savekey to save alphas. if bootstrap = 1, 'save' is ignored.
+threshold: helps determine which plates and fibers to mask. plates with avg 100 micron intensity above threshold
+  are masked, and any other fibers with intensity above threshold.
+location:
+  0: uses sky fibers in all regions
+  1: uses only fibers in the north
+  2: uses fibers in the south 
+bootstrap:
+  0: generate alphas normally without bootstrapping
+  1: save an intermediate step for later bootstrapping [handled by bootstrap_ahab.py]
 '''
-
-#2d: uses correction factor for i100 to account for tao (optical depth)
-
-#IMPORTANT: this code does NOT divide by flux conversion factor. For SDSS this is 1.38.
-
 
 #for tracking RAM:
 import os
@@ -43,12 +52,10 @@ def check_memory():
 thr1 = threading.Thread(target = check_memory, daemon=True)
 thr1.start()
 
-#bootstrap: take random samples and then mask
-
 #command line args
-#see above for explanation of parameters
+#see above for explanation
 if len(sys.argv) != 7:
-    print("Usage: reproduce_figs.py [mode: 1d, 2d, iris_2d, iris_1d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [location=0, 1, 2] [bootstrap=0]")
+    print("Usage: generate_alphas_ahab.py [mode: 1d, 2d, iris_1d, iris_2d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [location=0, 1, 2] [bootstrap=0]")
     exit(0)
 mode = sys.argv[1]
 boss = int(sys.argv[2])
@@ -57,59 +64,21 @@ threshold = float(sys.argv[4])
 location = int(sys.argv[5])
 bootstrap = int(sys.argv[6])
     
-#create scatterplot
-def plot_alphas(alphas, alpha_std, wavelength, color1='k', color2='r', bin=False):
-
-    if bin:
-        #calculate bin ranges
-        lambda_range = wavelength[-1] - wavelength[0]
-        left_over = lambda_range - 50*floor(lambda_range / 50)
-        binned_lambdas = np.arange(wavelength[0]+left_over/2, wavelength[-2], 50)
-
-        binned_alphas = np.zeros(binned_lambdas.shape)
-        binned_std = np.zeros(binned_lambdas.shape)
-        for i, lmda in enumerate(binned_lambdas):
-            indices = np.where((wavelength > lmda) & (wavelength < lmda+50))[0]
-            relevant_alphas = alphas[indices]
-            relevant_stds = alpha_std[indices]
-            #weighted average:
-            variance = np.power(relevant_stds, 2)
-            numerator = np.sum(np.divide(relevant_alphas, variance))
-            denominator = np.sum(np.divide(1, variance))
-            avg1 = numerator / denominator
-            avg2 = 1 / denominator
-            binned_alphas[i] = avg1
-            binned_std[i] = np.sqrt(avg2)
-        #plot alpha vs. wavelength
-        plt.plot(binned_lambdas, binned_alphas, c=color1, drawstyle='steps')
-        plt.plot(binned_lambdas, binned_std, c=color2, drawstyle='steps')
-    else: 
-        #plot alpha vs. wavelength
-        plt.plot(wavelength[50:-100], alphas[50:-100], c=color1, drawstyle='steps')
-        plt.plot(wavelength[50:-100], alpha_std[50:-100], c=color2, drawstyle='steps')
-
-    plt.xlabel("Wavelength")
-    plt.ylabel("Alpha")
-    
-#calculate x, y, alpha, then plot alpha vs. wavelength
-def calc_alphas(i100, plate, flambda, ivar):
+#calculate x, y, alpha
+def calc_alphas(i100, plate, flambda, ivar, boot=False):
 
     print("calculating x and y")
     
     #calculate y
     y = np.multiply(flambda, wavelength, dtype='float32')    
-        
     #100 micron frequency
     lam100 = 100 * pow(10,-6) #100 microns
     c = 2.998 * pow(10, 8) #speed of light
     freq100 = c / lam100
-
     #copy i100:
     x1 = np.copy(i100)    
-    
     #calculate x1 and x2
     x1 *= freq100   
-    
     #avg x1 over plates (assuming grouped together)
     x2 = np.zeros(x1.shape, dtype=np.float32)    
     boundaries = np.sort(np.unique(plate, return_index=True)[1])
@@ -119,10 +88,8 @@ def calc_alphas(i100, plate, flambda, ivar):
     #last section:
     avgs = np.mean(x1[boundaries[-1]:], axis=0) #mean across plates, not wavelength
     x2[boundaries[-1]:] = avgs
-
     #calculate x
     x = np.subtract(x1, x2)
-
     #x unit conversion
     if boss:
         unit_factor = 7.384 * 10**-11
@@ -133,7 +100,7 @@ def calc_alphas(i100, plate, flambda, ivar):
         x = x.reshape(len(x), 1)
         
     print("calculating alphas")
-
+    
     #calculate alpha
     xx = np.multiply(x, x)
     yx = np.multiply(y, x)
@@ -142,7 +109,7 @@ def calc_alphas(i100, plate, flambda, ivar):
     sums1 = np.sum(yxsig, axis=0)
     sums2 = np.sum(xxsig, axis=0)
 
-    if bootstrap:
+    if boot:
         return np.sum(yxsig, axis=0), np.sum(xxsig, axis=0)
 
     #check for division by 0
@@ -178,8 +145,6 @@ if boss:
     plate = hdulist[6].data
     mjd = hdulist[5].data
     
-    #sdss website says fiber 840 is bad
-    #http://www.sdss3.org/dr9/spectro/caveats.php#flux_cal
     fiber_id = hdulist[7].data 
     
     #get i100 (type: float64)
@@ -188,41 +153,13 @@ if boss:
         i100 = np.load("../data/i100_tao_boss.npy")
     elif mode == 'iris_2d':
         i100 = np.load("../data/i100_tao_boss_iris.npy")
-        i100_old = np.load("../data/iris_i100_at_boss.npy") #iris 1d
     elif mode == 'iris_1d':
         i100 = np.load("../data/iris_i100_at_boss.npy")
-        i100_old = np.copy(i100)
     elif mode == '1d':
         i100 = i100_old
     else:
         print("Error: invalid mode")
-
-    '''
-    #temp: get info of specific plate
-    rel_indices = np.where(plate==4900)[0]
-    rel_i100 = i100[rel_indices]
-    rel_plate = plate[rel_indices]
-    rel_mjd = mjd[rel_indices]
-    rel_fiber = fiber_id[rel_indices]
-    np.set_printoptions(threshold=sys.maxsize)
-    print(rel_plate)
-    print(rel_mjd)
-    print(rel_fiber)
-    exit(0)
-    '''
     
-    '''
-    #temp
-    print("mean")
-    print(np.mean(rel_i100))
-    print("scatter")
-    print(np.std(rel_i100))
-    print("SNR")
-    print(np.mean(np.power((rel_i100-np.mean(rel_i100))/np.std(rel_i100), 2)))
-    exit(0)
-    '''
-    
-
     plate = 10000*plate + mjd%10000 #plate is now a unique identifier   
 
 #load data for SDSS
@@ -238,10 +175,8 @@ else:
         i100 = np.load("../data/i100_tao.npy") #i100_tao.npy
     elif mode == 'iris_2d':
         i100 = np.load("../data/i100_iris_tao.npy")
-        i100_old = np.load("../data/iris_i100_at_sfd.npy") #iris 1d
     elif mode == 'iris_1d':
         i100 = np.load("../data/iris_i100_at_sfd.npy")
-        i100_old = np.copy(i100)
     elif mode == '1d':
         i100 = i100_old
     else:
@@ -251,8 +186,6 @@ else:
     hdulist = fits.open('../data/SDSS_allskyspec.fits')
     plate = np.array(hdulist[0].data)
     wavelength = np.array(hdulist[1].data)  # Angstroms
-
-    #create memmaps of flambda and ivar:
     flambda = hdulist[2].data
     ivar = hdulist[3].data
     
@@ -304,24 +237,6 @@ for j in range(num_files):
                 ivar[b < 0] = 0 #north
             elif location == 2:
                 ivar[b > 0] = 0 #south
-            elif location == 3:
-                ivar[b>35] = 0
-                ivar[b<-35] = 0
-            elif location == 4:
-                ivar[(b>-35)*(b<35)] = 0
-                ivar[b>50] = 0
-                ivar[b<-50] = 0
-            elif location == 5:
-                ivar[(b>-50)*(b<50)] = 0
-            elif location == 6:
-                ivar[(l>60)*(l<300)] = 0
-            elif location == 7:
-                ivar[l<60] = 0
-                ivar[(l>120)*(l<240)] = 0
-                ivar[l>300] = 0
-            elif location == 8:
-                ivar[l<120] = 0
-                ivar[l>240] = 0
         else:
             coords = np.loadtxt('infile.txt')
             l = coords[:,0]
@@ -330,25 +245,6 @@ for j in range(num_files):
                 ivar[b < 0] = 0 #north
             elif location == 2:
                 ivar[b > 0] = 0 #south
-            elif location == 3:
-                ivar[b>35] = 0
-                ivar[b<-35] = 0
-            elif location == 4:
-                ivar[(b>-35)*(b<35)] = 0
-                ivar[b>50] = 0
-                ivar[b<-50] = 0
-            elif location == 5:
-                ivar[(b>-50)*(b<50)] = 0
-            elif location == 6:
-                ivar[(l>60)*(l<300)] = 0
-            elif location == 7:
-                ivar[l<60] = 0
-                ivar[(l>120)*(l<240)] = 0
-                ivar[l>300] = 0
-            elif location == 8:
-                ivar[l<120] = 0
-                ivar[l>240] = 0
-        
                 
     #convert ivar to ivar of y
     ivar /= np.power(wavelength, 2)
@@ -370,12 +266,7 @@ for j in range(num_files):
             plate_p = plate[plate==p]
             flambda_p = flambda[plate==p]
             ivar_p = ivar[plate==p]
-            print("shapes before calc_alphas:")
-            print(i100_sub_p.shape)
-            print(plate_p.shape)
-            print(flambda_p.shape)
-            print(ivar_p.shape)
-            yxsig_p, xxsig_p = calc_alphas(i100_sub_p, plate_p, flambda_p, ivar_p)
+            yxsig_p, xxsig_p = calc_alphas(i100_sub_p, plate_p, flambda_p, ivar_p, boot=True)
             print(yxsig_p.shape)
             if len(yxsig_partial) == 0:
                 yxsig_partial = yxsig_p.reshape(1, yxsig_p.shape[0])
@@ -383,10 +274,10 @@ for j in range(num_files):
             else:
                 yxsig_partial = np.append(yxsig_partial, yxsig_p.reshape(1, yxsig_p.shape[0]), axis=0)
                 xxsig_partial = np.append(xxsig_partial, xxsig_p.reshape(1, xxsig_p.shape[0]), axis=0)
-                print("shape:", yxsig_partial.shape)
+                print("current bootstrap shape:", yxsig_partial.shape)
         yxsigs_bootstrap = np.append(yxsigs_bootstrap, yxsig_partial, axis=1)
         xxsigs_bootstrap = np.append(xxsigs_bootstrap, xxsig_partial, axis=1)
-        print("bigger shape:", yxsigs_bootstrap.shape)
+        print("final bootstrap shape:", yxsigs_bootstrap.shape)
 
     else:
         #calculate alphas
@@ -400,8 +291,7 @@ print("saving alphas")
 if bootstrap:
     np.save('yx_bootstrap_' + save, yxsigs_bootstrap)
     np.save('xx_bootstrap_' + save, xxsigs_bootstrap)
-    
-if save != '0' and not bootstrap:
+elif save != '0':
     np.save('../alphas_and_stds/alphas_' + save + '.npy', alphas_10)
     np.save('../alphas_and_stds/alpha_stds_' + save + '.npy', alpha_std_10)
     #np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
