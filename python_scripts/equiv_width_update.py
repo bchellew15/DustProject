@@ -12,7 +12,6 @@ from astropy.io import fits
 from scipy import interpolate
 from scipy import integrate
 import sys #for command line args
-from scipy.optimize import curve_fit #for fitting gaussian to equiv width
 from numpy.linalg import lstsq #for fitting gaussian
 from scipy.integrate import quad
 from tabulate import tabulate #for tables

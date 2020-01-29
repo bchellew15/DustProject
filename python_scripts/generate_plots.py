@@ -7,7 +7,6 @@ import numpy as np
 from astropy.io import fits
 import sys #for command line args
 from math import floor #for binning range
-from scipy.optimize import curve_fit #for checking if bootstrap histogram is gaussian
 
 '''
 COMMAND LINE OPTIONS:
@@ -27,6 +26,9 @@ save = sys.argv[2]
 bootstrap = int(sys.argv[3])
 loadkey = sys.argv[4]
 
+alpha_direc = '../alphas_and_stds'
+alpha_direc_boot = '../data/'  #'../alphas_and_stds'
+
 # load wavelengths
 wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
 hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
@@ -43,56 +45,56 @@ boss_fluxfactor = 1.38
 # original, tao, tao AND iris, iris
 
 #boss alphas:
-alphas_boss = [np.load('../alphas_and_stds/alphas_boss_102019.npy'), \
-               np.load('../alphas_and_stds/alphas_boss_2d_102019.npy'), \
-               np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
-               np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy'), \
-               np.load('../alphas_and_stds/alphas_north011720.npy'), \
-               np.load('../alphas_and_stds/alphas_south011720.npy')]
-alpha_stds_boss = [np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_north011720.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_south011720.npy')]
+alphas_boss = [None, #np.load('../alphas_and_stds/alphas_boss_102019.npy'), \
+               None, #np.load('../alphas_and_stds/alphas_boss_2d_102019.npy'), \
+               None, #np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
+               None, #np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy'), \
+               np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
+               np.load(alpha_direc + 'alphas_boss_iris_2d_south_' + loadkey + '.npy')]
+alpha_stds_boss = [None, #np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), \
+                   None, #np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy'), \
+                   None, #np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
+                   None, #np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy'), \
+                   np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
+                   np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy')]
 
 #sdss alphas
-alphas_sdss = [np.load('../alphas_and_stds/alphas_91019_10.npy'), \
-               np.load('../alphas_and_stds/alphas_2d_91119_10.npy'), \
-               np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy'), \
-               np.load('../alphas_and_stds/alphas_sdss_iris_1d_102019.npy'), \
-               np.load('../alphas_and_stds/alphas_boss_102019.npy')] #don't change the last element
-alpha_stds_sdss = [np.load('../alphas_and_stds/alpha_stds_91019_10.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_2d_91119_10.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_sdss_iris_2d_102019.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_sdss_iris_1d_102019.npy'), \
-                   np.load('../alphas_and_stds/alpha_stds_boss_102019.npy')]
+alphas_sdss = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
+               np.load(alpha_direc + 'alphas_sdss_2d_' + loadkey + '.npy'), \
+               np.load(alpha_direc + 'alphas_sdss_iris_2d_' + loadkey + '.npy'), \
+               np.load(alpha_direc + 'alphas_sdss_iris_1d_' + loadkey + '.npy'), \
+               np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy')] #don't change the last element
+alpha_stds_sdss = [np.load(alpha_direc + 'alpha_stds_sdss_1d_' + loadkey + '.npy'), \
+                   np.load(alpha_direc + 'alpha_stds_sdss_2d_' + loadkey + '.npy'), \
+                   np.load(alpha_direc + 'alpha_stds_sdss_iris_2d_' + loadkey + '.npy', \
+                   np.load(alpha_direc + 'alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
+                   np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
 
 if bootstrap:
-    bootstrap_alphas_boss = [np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_north011720.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_south011720.npy')]
-    bootstrap_alpha_stds_boss = [np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy'), \
-                                 np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_2d_102019.npy'), \
-                                 np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_102019.npy'), \
-                                 np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_1d_102019.npy'), \
-                                 np.load('../alphas_and_stds/bootstrap_alpha_stds_north011720.npy'), \
-                                 np.load('../alphas_and_stds/bootstrap_alpha_stds_south011720.npy')]
+    bootstrap_alphas_boss = [None, #np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy'), \
+                             None, #np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
+                             None, #np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), \
+                             None, #np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy'), \
+                             np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
+                             np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_south_' + loadkey + '.npy')]
+    bootstrap_alpha_stds_boss = [None, #np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy'), \
+                                 None, #np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_2d_102019.npy'), \
+                                 None, #np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_102019.npy'), \
+                                 None, #np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_1d_102019.npy'), \
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'))]
 
-    bootstrap_alphas_sdss = [np.load('../alphas_and_stds/bootstrap_alphas_sdss_1d_101819.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_sdss_2d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_2d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_sdss_iris_1d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy')]
-    bootstrap_alpha_stds_sdss = [np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_1d_101819.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_2d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_iris_2d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alpha_stds_sdss_iris_1d_102019.npy'), \
-                             np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy')]
-
+    bootstrap_alphas_sdss = [np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_1d_' + loadkey + '.npy'), \
+                             np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_2d_' + loadkey + '.npy'), \
+                             np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_iris_2d_' + loadkey + '.npy'), \
+                             np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_iris_1d_' + loadkey + '.npy'), \
+                             np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_10.npy')]
+    bootstrap_alpha_stds_sdss = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_1d_' + loadkey + '.npy'), \
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_2d_' + loadkey + '.npy'), \
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_iris_2d_' + loadkey + '.npy'), \
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
+    
     '''
     #temporary: truncate bootstrap arrays to make it faster
     num_samples = 1000
@@ -324,8 +326,9 @@ if not boss and bootstrap:
 
     if save != '0':
         plt.savefig('../paper_figures/compare_boss_sdss_' + savekey + '.pdf')
-        pass
-    plt.show()
+        plt.clr()
+    else:
+        plt.show()
     y_max = temp
 
 #plot binned alphas
@@ -422,7 +425,9 @@ if not boss:
     plot_binned([0, 1, 3], ['k', 'r', 'b'], ['SFD', r'$\tau$ Correction', 'IRIS'])
     if save != '0' and bootstrap:
         plt.savefig('../paper_figures/compare_boss_sdss_' + savekey + '.pdf')
-    plt.show()
+        plt.clr()
+    else:
+        plt.show()
 
 #plot north and south on same plot (boss)
 if boss:
@@ -430,42 +435,34 @@ if boss:
     plot_binned([4, 5], ['k', 'r'], ['North', 'South'], envelope=envelope)
     if save != '0' and bootstrap:
         plt.savefig('../paper_figures/boss_north_south_' + savekey + '.pdf')
-    plt.show()
+        plt.clr()
+    else:
+        plt.show()
 
 #threshold plots:
 if boss:
     #alphas with various thresholds (BOSS, 1d, IRIS)
-    alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_3.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_4.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_1d_012220_5.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_6.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_1d_111119_8.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')]
-    alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_3.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_4.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_012220_5.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_6.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_111119_8.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy')]
+    alphas_thresh_1d = [np.load(alpha_direc + 'alphas_boss_iris_1d_' + loadkey + '_10.npy'), \
+                        np.load(alpha_direc + 'alphas_boss_iris_1d_' + loadkey + '_15.npy'), \
+                        np.load(alpha_direc + 'alphas_boss_iris_1d_' + loadkey + '_20.npy'), \
+                        np.load(alpha_direc + 'alphas_boss_iris_1d_' + loadkey + '_25.npy'), \
+                        np.load(alpha_direc + 'alphas_boss_iris_1d_' + loadkey + '_30.npy')]
+    alpha_stds_thresh_1d = [np.load(alpha_direc + 'alpha_stds_boss_iris_1d_' + loadkey + '_10.npy'), \
+                            np.load(alpha_direc + 'alpha_stds_boss_iris_1d_' + loadkey + '_15.npy'), \
+                            np.load(alpha_direc + 'alpha_stds_boss_iris_1d_' + loadkey + '_20.npy'), \
+                            np.load(alpha_direc + 'alpha_stds_boss_iris_1d_' + loadkey + '_25.npy'), \
+                            np.load(alpha_direc + 'alpha_stds_boss_iris_1d_' + loadkey + '_30.npy')]
     #alphas with various thresholds (BOSS, 2d, IRIS)
-    alphas_thresh_2d = [np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_91119_15.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_111119_175.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_92719_20.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_111119_225.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_92719_25.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_111119_275.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_92719_30.npy'), \
-                        np.load('../alphas_and_stds/alphas_boss_iris_111119_325.npy')]
-    alpha_stds_thresh_2d = [np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_15.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_175.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_20.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_225.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_25.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_275.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_92719_30.npy'), \
-                            np.load('../alphas_and_stds/alpha_stds_boss_iris_111119_325.npy')]
+    alphas_thresh_1d = [np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy'), \
+                        np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_15.npy'), \
+                        np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_20.npy'), \
+                        np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_25.npy'), \
+                        np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_30.npy')]
+    alpha_stds_thresh_1d = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy'), \
+                            np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_15.npy'), \
+                            np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_20.npy'), \
+                            np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_25.npy'), \
+                            np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_30.npy')]
 
     binned_lambdas, binned_alphas_1d, binned_stds_1d = generate_binned_alphas(alphas_thresh_1d, alpha_stds_thresh_1d, wavelength)
     binned_lambdas, binned_alphas_2d, binned_stds_2d = generate_binned_alphas(alphas_thresh_2d, alpha_stds_thresh_2d, wavelength)
@@ -477,8 +474,8 @@ if boss:
     ax = fig.add_subplot(121)
     plt.text(0.02, 0.98, 'Original\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
 
-    colors = ['k', 'b', 'g', 'r', 'm', 'y'] #other colors to consider: brown, cyan, pink
-    labels = ['3', '4', '5', '6', '8', '10']
+    colors = ['k', 'b', 'g', 'r', 'm'] #other colors to consider: y, brown, cyan, pink
+    labels = ['10', '15', '20', '25', '30']
     for i in range(len(labels)):
         plt.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
         plt.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps')
