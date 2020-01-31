@@ -20,33 +20,33 @@ import warnings
 warnings.simplefilter("ignore")
 
 #command line options
-if len(sys.argv) != 2:
-    print("Usage: equiv_width.py [boss: 0, 1]")
+if len(sys.argv) != 3:
+    print("Usage: equiv_width.py [boss: 0, 1] [loadkey]")
     exit(0)  
 boss = int(sys.argv[1])
+loadkey = sys.argv[2]
+
+alpha_direc = '../alphas_and_stds/'
+hdulist_direc = '../data/'  #'/Users/blakechellew/Documents/DustProject/BrandtFiles/'
     
 # load wavelengths
 if boss:
     wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
 else:
-    hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
+    hdulist = fits.open(hdulist_direc + 'SDSS_allskyspec.fits')
     wavelength = np.array(hdulist[1].data)
 
 #load in alphas
-#boss: iris, 2d
-#sdss: replica of brandt paper (see end of file)
 if boss:
-    alphas = [np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
-              np.load('../alphas_and_stds/alphas_north_111719.npy'), \
-              np.load('../alphas_and_stds/alphas_south_111719.npy')]
-    alpha_stds = [np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
-                  np.load('../alphas_and_stds/alpha_stds_north_111719.npy'), \
-                  np.load('../alphas_and_stds/alpha_stds_south_111719.npy')]
+    alphas = [np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy'), \
+              np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
+              np.load(alpha_direc + 'alphas_boss_iris_2d_south_' + loadkey + '.npy')]
+    alpha_stds = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy'), \
+                  np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
+                  np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy')]
 else:
-    alphas = [np.load('../alphas_and_stds/alphas_91019_10.npy'), \
-              np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy')]
-    alpha_stds = [np.load('../alphas_and_stds/alpha_stds_91019_10.npy'), \
-                  np.load('../alphas_and_stds/alpha_stds_sdss_iris_2d_102019.npy')]
+    alphas = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy')]
+    alpha_stds  = [np.load(alpha_direc + 'alpha_stds_sdss_1d_' + loadkey + '.npy')]
 
 peaks = [4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
 left_ranges = [(4829, 4893), (4905, 4977), (4987, 5026), (5827, 5887), (6470, 6554), (6555, 6573), (6574.6, 6700), (6600, 6722), (6722, 6785)]
@@ -133,31 +133,6 @@ def equiv_width(peak_l, alphas, alpha_stds, range1, range2=None):
     gauss_integral, _ = quad(width_helper, peak_l-num_sigmas*peak_width, peak_l + num_sigmas*peak_width, args=(1, 1, peak_l, peak_width))
     frac_err = np.sqrt(np.power(a1_std/a1, 2) + np.power(a2_std/a2, 2))
     err = frac_err*(a2/a1)*gauss_integral
-
-    '''
-    #old stuff to help with calculating errs:
-    #calculate errors:
-    #continuum: remove indices of peak
-    close_peak_idx = np.argmin(np.abs(wavelength-peak_l))
-    for i in range(close_peak_idx-3, close_peak_idx+4):
-        range_indices = np.delete(range_indices, np.argwhere(range_indices==i))
-    rel_alphas = alphas[range_indices]
-    rel_sigmas = alpha_stds[range_indices]
-    
-    cont = np.average(rel_alphas, weights = 1/np.power(rel_sigmas, 2))
-    stdev = np.sqrt(np.sum(np.power(rel_sigmas, 2))) / len(rel_alphas)
-
-    delta_lambda = wavelength[close_peak_idx+1] - wavelength[close_peak_idx]
-    bars = (alphas-cont)/cont * delta_lambda
-
-    #calculate widths the other way:
-    #width = np.sum(bars[left_peak_idx+l_off:left_peak_idx+r_off])
-
-    # each bar has error bar*sigma*(1/peak + 1/continuum)*delta_lambda
-    # then add in quadrature (because we can simplify to alpha/continuum - 1)
-    bar_errs = delta_lambda*(alphas/cont)*np.sqrt(np.power(np.divide(alpha_stds, alphas), 2) + (stdev/cont)**2)
-    #err = np.sqrt(np.sum(np.power(bar_errs[close_peak_idx-3:close_peak_idx+4], 2)))
-    '''
 
     return width, err
 

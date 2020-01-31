@@ -253,8 +253,10 @@ for p1 in paths:
     for p2 in paths:
         min_res = minimize(linear_combo_2, [1, 1], args=(p1, p2))
         if min_res.fun < 2:
-            print("success:", min_res.fun)
+            print("\nsuccess:", min_res.fun)
             print(min_res.x)
+            print(p1)
+            print(p2)
         
 
 

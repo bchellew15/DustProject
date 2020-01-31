@@ -26,12 +26,13 @@ save = sys.argv[2]
 bootstrap = int(sys.argv[3])
 loadkey = sys.argv[4]
 
-alpha_direc = '../alphas_and_stds'
+alpha_direc = '../alphas_and_stds/'
 alpha_direc_boot = '../data/'  #'../alphas_and_stds'
+hdulist_direc = '../data/'  #'/Users/blakechellew/Documents/DustProject/BrandtFiles/'
 
 # load wavelengths
 wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
-hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
+hdulist = fits.open(hdulist_direc + 'SDSS_allskyspec.fits')
 wavelength_sdss = np.array(hdulist[1].data)
 if boss:
     wavelength = wavelength_boss
@@ -45,18 +46,30 @@ boss_fluxfactor = 1.38
 # original, tao, tao AND iris, iris
 
 #boss alphas:
-alphas_boss = [None, #np.load('../alphas_and_stds/alphas_boss_102019.npy'), \
-               None, #np.load('../alphas_and_stds/alphas_boss_2d_102019.npy'), \
-               None, #np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
-               None, #np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy'), \
-               np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
-               np.load(alpha_direc + 'alphas_boss_iris_2d_south_' + loadkey + '.npy')]
-alpha_stds_boss = [None, #np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), \
-                   None, #np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy'), \
-                   None, #np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
-                   None, #np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy'), \
-                   np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
-                   np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy')]
+
+#np.load('../alphas_and_stds/alphas_boss_102019.npy'), \
+#np.load('../alphas_and_stds/alphas_boss_2d_102019.npy'), \
+#np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
+#np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy'), \
+#np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), \
+#np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy'), \
+#np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
+#np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy'), \
+#np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy'), \
+#np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
+#np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), \
+#np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy'), \
+#np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy'), \
+#np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_2d_102019.npy'), \
+#np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_102019.npy'), \
+#np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_1d_102019.npy'), \
+
+alphas_boss = [np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
+               np.load(alpha_direc + 'alphas_boss_iris_2d_south_' + loadkey + '.npy'), \
+               np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy')]
+alpha_stds_boss = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
+                   np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
+                   np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
 
 #sdss alphas
 alphas_sdss = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
@@ -66,23 +79,15 @@ alphas_sdss = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
                np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy')] #don't change the last element
 alpha_stds_sdss = [np.load(alpha_direc + 'alpha_stds_sdss_1d_' + loadkey + '.npy'), \
                    np.load(alpha_direc + 'alpha_stds_sdss_2d_' + loadkey + '.npy'), \
-                   np.load(alpha_direc + 'alpha_stds_sdss_iris_2d_' + loadkey + '.npy', \
+                   np.load(alpha_direc + 'alpha_stds_sdss_iris_2d_' + loadkey + '.npy'), \
                    np.load(alpha_direc + 'alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
                    np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
 
 if bootstrap:
-    bootstrap_alphas_boss = [None, #np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy'), \
-                             None, #np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
-                             None, #np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), \
-                             None, #np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy'), \
-                             np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
+    bootstrap_alphas_boss = [np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
                              np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_south_' + loadkey + '.npy')]
-    bootstrap_alpha_stds_boss = [None, #np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy'), \
-                                 None, #np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_2d_102019.npy'), \
-                                 None, #np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_102019.npy'), \
-                                 None, #np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_1d_102019.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'))]
+    bootstrap_alpha_stds_boss = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_south_' + loadkey + '.npy')]
 
     bootstrap_alphas_sdss = [np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_1d_' + loadkey + '.npy'), \
                              np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_2d_' + loadkey + '.npy'), \
@@ -116,7 +121,9 @@ if bootstrap:
     
 #flux conversion factor:
 alphas_sdss = [a/sdss_fluxfactor for a in alphas_sdss]
-alphas_boss = [a/boss_fluxfactor for a in alphas_boss] #test
+alphas_boss = [a/boss_fluxfactor for a in alphas_boss]
+alpha_stds_sdss = [a/sdss_fluxfactor for a in alpha_stds_sdss]
+alpha_stds_boss = [a/boss_fluxfactor for a in alpha_stds_boss]
 
 if boss:
     alphas = alphas_boss
@@ -135,61 +142,80 @@ num_arrays = len(alphas)
 
 #plot unbinned spectra (wavelength ranges: 4830-5040 and 6530-6770)
 def plot_emissions(alpha_indices, labels, colors):
-   plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(12, 5))
    
    #plot 4830 - 5040
-   plt.subplot(1, 2, 1)
-   for i, idx in enumerate(alpha_indices):
-       plt.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
-       plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps')
+    plt.subplot(1, 2, 1)
+    for i, idx in enumerate(alpha_indices):
+        plt.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
 
-   if bootstrap:
-       for i, idx in enumerate(alpha_indices):
-           plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-           plt.plot(wavelength, bootstrap_stds[idx], c='m', drawstyle='steps')
+    if bootstrap:
+        for i, idx in enumerate(alpha_indices):
+            plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
+            plt.plot(wavelength, bootstrap_stds[idx], c='m', drawstyle='steps', linestyle='--')
 
-   plt.xlabel(r"Wavelength ($\AA$)")
-   plt.ylabel(r"$\alpha_\lambda$")
-   plt.legend(loc='upper center', frameon=False)
-   plt.xlim(4830, 5040)
-   plt.ylim(0, 0.6)
-   xcoords = [4863, 4960, 5008]
-   for xc in xcoords:
-       plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-       
-   #line from 03 continuum::
-   #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
-   #actual continuum for NII:
-   #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.legend(loc='upper center', frameon=False)
+    plt.xlim(4830, 5040)
+    plt.ylim(0, 1)
+    xcoords = [4863, 4960, 5008]
+    for xc in xcoords:
+        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
+    plt.text(4863, 0.4, r"H$\beta$")
+    plt.text(4960, 0.4, "O[III]")
+    plt.text(5008, 0.4, "O[III]")
 
-   #plot 6530 - 6770 (original vs tao)
-   plt.subplot(1, 2, 2)
-   for i, idx in enumerate(alpha_indices):
-       plt.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
-       plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps')
-       
-   if bootstrap:
-       for i, idx in enumerate(alpha_indices):
-           plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-           plt.plot(wavelength, bootstrap_stds[idx], c='m', drawstyle='steps')
-   
-   plt.xlabel(r"Wavelength ($\AA$)")
-   plt.ylabel(r"$\alpha_\lambda$")
-   plt.legend(loc='upper center', frameon=False)
-   plt.xlim(6530, 6770)
-   plt.ylim(0, 1.1)
-   xcoords = [6550, 6565, 6585, 6718, 6733]
-   for xc in xcoords:
-       plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
+    #line from 03 continuum::
+    #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
+    #actual continuum for NII:
+    #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
 
-   #line from 03 continuum::
-   #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
-   #actual continuum for NII:
-   #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
+    #plot 6530 - 6770 (original vs tao)
+    plt.subplot(1, 2, 2)
+    for i, idx in enumerate(alpha_indices):
+        plt.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
 
-#unbinned plots, SFD 1d vs 3 others
+    if bootstrap:
+        for i, idx in enumerate(alpha_indices):
+            plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
+            plt.plot(wavelength, bootstrap_stds[idx], c='m', drawstyle='steps', linestyle='--')
+
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.legend(loc='upper center', frameon=False)
+    plt.xlim(6530, 6770)
+    plt.ylim(0, 1)
+    xcoords = [6550, 6565, 6585, 6718, 6733]
+    for xc in xcoords:
+        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
+    plt.text(6550, 0.4, "N[II]")
+    plt.text(6565, 0.4, r"H$\alpha$")
+    plt.text(6585, 0.4, "N[II]")
+    plt.text(6718, 0.4, "S[II]")
+    plt.text(6733, 0.4, "S[II]")
+
+    #line from 03 continuum::
+    #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
+    #actual continuum for NII:
+    #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
+
+    plt.tight_layout()
+
+
+if boss:
+    plot_emissions([2, 0, 1], ["Full Sky", "North", "South"], ['k', 'r', 'g'])
+    if save != '0' and bootstrap:
+        plt.savefig('../paper_figures/unbinned_' + save + '.pdf')
+        plt.clf()
+    else:
+        plt.show()
+        
 
 '''
+#unbinned plots, SFD 1d vs 3 others
 plot_emissions([0, 1], ["SFD", r"With $\tau$ Correction"], ['k', 'r'])
 plt.show()
 plot_emissions([0, 3], ["SFD", "With IRIS data"], ['k', 'r'])
@@ -267,22 +293,22 @@ if not boss: #calculate binned spectrum for 1d boss
 if bootstrap:
     #bin all the bootstrap spectra
     #use one spectrum to get binned wavelength
-    bootstrap_binned_lambdas, bootstrap_binned_alphas, _ = generate_binned_alphas(bootstrap_alphas, bootstrap_alpha_stds, wavelength)
+    _, bootstrap_binned_alphas, _ = generate_binned_alphas(bootstrap_alphas, bootstrap_alpha_stds, wavelength)
 
     #now look at percentiles:
-    bootstrap_binned_lower = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas] #90 percent confidence interval
+    bootstrap_binned_lower = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas] #68 percent confidence interval
     bootstrap_binned_upper = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas]
     bootstrap_binned_stds = [(bootstrap_binned_upper[i] - bootstrap_binned_lower[i])/2 for i in range(len(bootstrap_binned_lower))]
 
     if not boss:
         _, bootstrap_binned_alphas_boss, _ = generate_binned_alphas([bootstrap_alphas[-1]], [bootstrap_alpha_stds[-1]], wavelength, wavelength_boss)
-        bootstrap_binned_lower_boss = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss] #90 percent confidence interval
+        bootstrap_binned_lower_boss = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss] #68 percent confidence interval
         bootstrap_binned_upper_boss = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss]
         bootstrap_binned_stds_boss = [(bootstrap_binned_upper_boss[i] - bootstrap_binned_lower_boss[i])/2 for i in range(len(bootstrap_binned_lower_boss))]
 
 
 if boss:
-    y_max = 0.55
+    y_max = 0.3
     x_min = 3700
     x_max = 10000
 else:
@@ -292,13 +318,13 @@ else:
 
 #2-panel plot, BOSS compared to SDSS (both 1d, etc.)
 if not boss and bootstrap:
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(12, 5))
 
     plt.subplot(1, 2, 1)
 
     plt.plot(binned_lambdas, binned_alphas[2], c='k', drawstyle='steps', label='SDSS')
-    plt.plot(binned_lambdas, binned_stds[2], c='k', drawstyle='steps')
-    plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='m', drawstyle='steps')
+    plt.plot(binned_lambdas, binned_stds[2], c='k', drawstyle='steps', linestyle='--')
+    plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='m', drawstyle='steps', linestyle='--')
     plt.fill_between(binned_lambdas, bootstrap_binned_lower[2], bootstrap_binned_upper[2], linewidth=0.0, color='k', alpha=0.2, step='pre')
 
     plt.legend(frameon=False)
@@ -310,8 +336,8 @@ if not boss and bootstrap:
     plt.subplot(1, 2, 2)
 
     plt.plot(binned_lambdas_boss, binned_alphas_boss[0], c='k', drawstyle='steps', label='BOSS')
-    plt.plot(binned_lambdas_boss, binned_stds_boss[0], c='k', drawstyle='steps')
-    plt.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='m', drawstyle='steps')
+    plt.plot(binned_lambdas_boss, binned_stds_boss[0], c='k', drawstyle='steps', linestyle='--')
+    plt.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='m', drawstyle='steps', linestyle='--')
     plt.fill_between(binned_lambdas_boss, bootstrap_binned_lower_boss[0], bootstrap_binned_upper_boss[0], linewidth=0.0, color='k', alpha=0.2, step='pre')
 
     temp = y_max
@@ -325,8 +351,8 @@ if not boss and bootstrap:
     plt.tight_layout()
 
     if save != '0':
-        plt.savefig('../paper_figures/compare_boss_sdss_' + savekey + '.pdf')
-        plt.clr()
+        plt.savefig('../paper_figures/compare_boss_sdss_' + save + '.pdf')
+        plt.clf()
     else:
         plt.show()
     y_max = temp
@@ -337,14 +363,12 @@ def plot_binned(alpha_indices, colors, labels, envelope=False):
     for i, idx in enumerate(alpha_indices):
         plt.plot(binned_lambdas, binned_alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
         if bootstrap:
-            plt.plot(binned_lambdas, bootstrap_binned_stds[idx], c=colors[i], drawstyle='steps')
+            plt.plot(binned_lambdas, bootstrap_binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
         else:
-            plt.plot(binned_lambdas, binned_stds[idx], c=colors[i], drawstyle='steps')
+            plt.plot(binned_lambdas, binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
         if envelope:
             plt.fill_between(binned_lambdas, bootstrap_binned_lower[idx], bootstrap_binned_upper[idx], linewidth=0.0, color=colors[i], alpha=0.2, step='pre')
             
-    global y_max 
-    temp = y_max
     y_max = 0.35     
     plt.xlabel(r"Wavelength ($\AA$)")
     plt.ylabel(r"$\alpha_\lambda$")
@@ -352,7 +376,7 @@ def plot_binned(alpha_indices, colors, labels, envelope=False):
     plt.ylim(0, y_max)
     plt.legend(frameon=False)
     plt.show()
-    y_max = temp
+    y_max = 0.3
 
 
 if boss and bootstrap:
@@ -369,8 +393,8 @@ if boss and bootstrap:
     idx_9000 = np.argmin(np.abs(wavelength-9000))
     
     #north:
-    variance = np.power(alpha_stds[4], 2)
-    rel_alphas = bootstrap_alphas[4]
+    variance = np.power(alpha_stds[0], 2)
+    rel_alphas = bootstrap_alphas[0]
     numerator = np.nansum(np.divide(rel_alphas, variance), axis=1)
     denominator = np.nansum(np.divide(1, variance))
     avg_north = numerator / denominator
@@ -385,8 +409,8 @@ if boss and bootstrap:
     north_color_idx_var = np.nanvar(north_color_idx)
 
     #south:
-    variance = np.power(alpha_stds[5], 2)
-    rel_alphas = bootstrap_alphas[5]
+    variance = np.power(alpha_stds[1], 2)
+    rel_alphas = bootstrap_alphas[1]
     numerator = np.nansum(np.divide(rel_alphas, variance), axis=1)
     denominator = np.nansum(np.divide(1, variance))
     avg_south = numerator / denominator
@@ -422,20 +446,21 @@ if boss and bootstrap:
 #plot original with 2 modifications, all on one plot
 #new model, IRIS
 if not boss:
-    plot_binned([0, 1, 3], ['k', 'r', 'b'], ['SFD', r'$\tau$ Correction', 'IRIS'])
+    plt.figure(figsize=(6, 5))
+    plot_binned([0, 1, 3], ['k', 'r', 'b'], ['SFD', r'$\tau$ Correction', 'IRIS'], envelope=True) #TEMP: envelope
     if save != '0' and bootstrap:
-        plt.savefig('../paper_figures/compare_boss_sdss_' + savekey + '.pdf')
-        plt.clr()
+        plt.savefig('../paper_figures/all_3_mods_' + save + '.pdf')
+        plt.clf()
     else:
         plt.show()
 
 #plot north and south on same plot (boss)
 if boss:
     envelope = bootstrap
-    plot_binned([4, 5], ['k', 'r'], ['North', 'South'], envelope=envelope)
+    plot_binned([0, 1], ['k', 'r'], ['North', 'South'], envelope=envelope)
     if save != '0' and bootstrap:
-        plt.savefig('../paper_figures/boss_north_south_' + savekey + '.pdf')
-        plt.clr()
+        plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf')
+        plt.clf()
     else:
         plt.show()
 
@@ -453,23 +478,66 @@ if boss:
                             np.load(alpha_direc + 'alpha_stds_boss_iris_1d_' + loadkey + '_25.npy'), \
                             np.load(alpha_direc + 'alpha_stds_boss_iris_1d_' + loadkey + '_30.npy')]
     #alphas with various thresholds (BOSS, 2d, IRIS)
-    alphas_thresh_1d = [np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy'), \
+    alphas_thresh_2d = [np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy'), \
                         np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_15.npy'), \
                         np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_20.npy'), \
                         np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_25.npy'), \
                         np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_30.npy')]
-    alpha_stds_thresh_1d = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy'), \
+    alpha_stds_thresh_2d = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy'), \
                             np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_15.npy'), \
                             np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_20.npy'), \
                             np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_25.npy'), \
                             np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_30.npy')]
 
+    if bootstrap:
+        #bootstrap alphas and stds
+        bootstrap_alphas_thresh_1d = [np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_10.npy'), \
+                                      np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_15.npy'), \
+                                      np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_20.npy'), \
+                                      np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_25.npy'), \
+                                      np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_30.npy')]
+        bootstrap_alpha_stds_thresh_1d = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_10.npy'), \
+                                          np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_15.npy'), \
+                                          np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_20.npy'), \
+                                          np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_25.npy'), \
+                                          np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_30.npy')]
+        bootstrap_alphas_thresh_2d = [np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_10.npy'), \
+                                      np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_15.npy'), \
+                                      np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_20.npy'), \
+                                      np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_25.npy'), \
+                                      np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_30.npy')]
+        bootstrap_alpha_stds_thresh_2d = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_10.npy'), \
+                                          np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_15.npy'), \
+                                          np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_20.npy'), \
+                                          np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_25.npy'), \
+                                          np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_30.npy')]
+
+    #flux factor corrections:
+    alphas_thresh_1d = [a/boss_fluxfactor for a in alphas_thresh_1d]
+    alphas_stds_thresh_1d = [a/boss_fluxfactor for a in alpha_stds_thresh_1d]
+    alphas_thresh_2d = [a/boss_fluxfactor for a in alphas_thresh_2d]
+    alphas_stds_thresh_2d = [a/boss_fluxfactor for a in alpha_stds_thresh_2d]
+
+    #binning
     binned_lambdas, binned_alphas_1d, binned_stds_1d = generate_binned_alphas(alphas_thresh_1d, alpha_stds_thresh_1d, wavelength)
     binned_lambdas, binned_alphas_2d, binned_stds_2d = generate_binned_alphas(alphas_thresh_2d, alpha_stds_thresh_2d, wavelength)
-    fig = plt.figure(figsize=(8, 4), dpi=200)
+    if bootstrap:
+        _, bootstrap_binned_alphas_thresh_1d, _ = generate_binned_alphas(bootstrap_alphas_thresh_1d, bootstrap_alpha_stds_thresh_1d, wavelength)
+        _, bootstrap_binned_alphas_thresh_2d, _ = generate_binned_alphas(bootstrap_alphas_thresh_2d, bootstrap_alpha_stds_thresh_2d, wavelength)
+
+    if bootstrap:
+        #bootstrap percentiles
+        bootstrap_binned_lower_thresh_1d = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_1d] #68 percent confidence interval
+        bootstrap_binned_upper_thresh_1d = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_1d]
+        bootstrap_binned_stds_thresh_1d = [(bootstrap_binned_upper_thresh_1d[i] - bootstrap_binned_lower_thresh_1d[i])/2 for i in range(len(bootstrap_binned_lower_thresh_1d))]
+        bootstrap_binned_lower_thresh_2d = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_2d] #68 percent confidence interval
+        bootstrap_binned_upper_thresh_2d = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_2d]
+        bootstrap_binned_stds_thresh_2d = [(bootstrap_binned_upper_thresh_2d[i] - bootstrap_binned_lower_thresh_2d[i])/2 for i in range(len(bootstrap_binned_lower_thresh_2d))]
+    
+    fig = plt.figure(figsize=(12, 5), dpi=200)
     x_min = 3700
     x_max = 10100
-    y_max = .52
+    y_max = .3
 
     ax = fig.add_subplot(121)
     plt.text(0.02, 0.98, 'Original\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
@@ -478,7 +546,11 @@ if boss:
     labels = ['10', '15', '20', '25', '30']
     for i in range(len(labels)):
         plt.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
-        plt.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps')
+        if bootstrap:
+            plt.plot(binned_lambdas, bootstrap_binned_stds_thresh_1d[i], c = colors[i], drawstyle='steps', linestyle='--')
+            #plt.fill_between(binned_lambdas, bootstrap_binned_lower_thresh_1d[i], bootstrap_binned_upper_thresh_1d[i], linewidth=0.0, color=colors[i], alpha=0.5, step='pre') #TEMP
+        else:
+            plt.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps', linestyle='--')
         plt.xlabel(r"Wavelength ($\AA$)")
         plt.ylabel(r"$\alpha_\lambda$")
         plt.xlim(x_min, x_max)
@@ -494,7 +566,11 @@ if boss:
 
     for i in range(len(labels)):
         plt.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
-        plt.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps')
+        if bootstrap:
+            plt.plot(binned_lambdas, bootstrap_binned_stds_thresh_2d[i], c = colors[i], drawstyle='steps', linestyle='--')
+            #plt.fill_between(binned_lambdas, bootstrap_binned_lower_thresh_2d[i], bootstrap_binned_upper_thresh_2d[i], linewidth=0.0, color=colors[i], alpha=0.5, step='pre') #TEMP
+        else:
+            plt.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps', linestyle='--')
         plt.xlabel(r"Wavelength ($\AA$)")
         plt.ylabel(r"$\alpha_\lambda$")
         plt.xlim(x_min, x_max)
@@ -506,13 +582,16 @@ if boss:
     plt.tight_layout()
 
     if save != '0' and bootstrap:
-        plt.savefig('../boss_thresholds_2panel_' + savekey + '.pdf')
-
-    plt.show()
+        plt.savefig('../paper_figures/boss_thresholds_2panel_' + save + '.pdf')
+        plt.clf()
+    else:
+        plt.show()
 
 else:
     pass #don't want to plot SDSS thresholds right now
-    
+
+
+    '''
     #alphas with various thresholds (SDSS, 1d, SFD)
     alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_91019_5.npy'), \
                         np.load('../alphas_and_stds/alphas_91019_75.npy'), \
@@ -590,7 +669,7 @@ else:
     plt.tight_layout()
 
     plt.show()
-    
+    '''
 
 
 
