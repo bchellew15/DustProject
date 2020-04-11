@@ -13,10 +13,11 @@ import astropy.wcs as wcs #for ad2xy
 #goal: replicate functionality of iris_val.pro (IDL code)
 
 #next steps:
+#make coordinate frame a parameter (better way to convert?)
 #test functions independently
-#look at output step by step
-#better way to convert coordinates? (find examples)
 #are there undefined values in the map?
+
+#PARAMETERS:
 
 #which file selection method (1 is mine, 0 is original)
 file_sel = 1
@@ -78,7 +79,9 @@ def get_iris(num, direc, band):
 
     return imap, header
 
+'''
 #used formula for tangent projection:
+#(did not work)
 #https://lambda.gsfc.nasa.gov/product/iras/coordproj.cfm
 def my_ad2xy(alpha, delta, hi):
     #40 pixels per degree
@@ -112,6 +115,7 @@ def my_ad2xy(alpha, delta, hi):
     delta_pix = origin_y + LINE
     
     return alpha_pix, delta_pix
+'''
 
 #I did my own interpolation using scipy's interp2d
 def mbilinear(x, y, array):
@@ -346,7 +350,6 @@ else:
     np.save('iris_i100_at_boss.npy', result)
 
     #check correlation with SFD BOSS values...
-
 
 
 

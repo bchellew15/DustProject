@@ -1,5 +1,6 @@
 #code to deal with the star formation files
 #calculate Lick indices
+#find best-fit spectra
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +8,7 @@ import glob
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize
 
-paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*')
+paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
 
 #print out indices and filenames:
 #for i in range(len(paths)):
@@ -32,7 +33,7 @@ for i in range(len(alphas)):
 wavelength = wavelength[np.logical_not(emission_line_mask)]
 
 
-#find best-fit linear combination [plus polynomial]
+#find best-fit linear combination [plus polynomial] using max likelihood estimator
 #and plot the best-fit spectrum against actual spectrum
 '''
 #for adding a polynomial
@@ -89,17 +90,19 @@ plt.show()
 
 
 #plot the model spectra 
-'''
+
 for p in paths[:10]:
-    a = np.loadtxt(p)
+    if 'ssp_5Myr_z008' in p:
+        a = np.loadtxt(p)
+        
+        wav = a[:,0]
+        values = a[:,1]
+        
+        plt.plot(wav, values, drawstyle='steps')
+        plt.xlim(3500, 10000)
+        plt.show()
+#exit(0)
 
-    wav = a[:,0]
-    values = a[:,1]
-
-    plt.plot(wav, values, drawstyle='steps')
-    plt.xlim(3500, 10000)
-    plt.show()
-'''
 
 #some important lick index tuples:
 h_beta_bounds = (4847.875, 4876.625, 4827.875, 4847.875, 4876.625, 4891.625, 0)
@@ -179,17 +182,6 @@ def calc_lick(alphas, alpha_stds, wavelength):
     #print(fe_5270)
     #print(fe_5335)
     #print(mg_fe_p)
-
-    #check why NANs are happening:
-    #if np.isnan(mg_fe_p):
-    #    print("mg fe p is nan")
-    #    print("mg_b", mg_b)
-    #    print("fe_5270", fe_5270)
-    #    print("fe_5335", fe_5335)
-    #if np.isnan(mg1_fe):
-    #    print("mg1 fe is nan")
-    #    print("mg1", mg1)
-        
     
     return np.array([h_beta, h_gamma_a, h_delta_a, mg_fe_p, mg1_fe, mg2_fe, delta])
 
@@ -205,7 +197,7 @@ def distance_metric(indices_1, indices_2):
 measured_indices = calc_lick(alphas[1], alpha_stds[1], wavelength)
 print(measured_indices)
 
-'''
+
 #calculate lick indices for the simulated spectra
 #(need to interpolate?)
 for p in paths:
@@ -215,6 +207,10 @@ for p in paths:
     stds = np.ones(len(wav)) #all same, no effect
 
     indices = calc_lick(values, stds, wav)
+
+    if np.isnan(indices[4]):
+        print("found NAN")
+        print(p)
 
     #compare to alphas:
     measured_indices = calc_lick(alphas[1], alpha_stds[1], wavelength)
@@ -227,10 +223,11 @@ for p in paths:
     #    plt.xlim(3500, 10000)
     #    plt.ylim(0, 1)
     #    plt.show()
-    print("\npath and distance")
-    print(p)
-    print(dist)
-'''
+
+    #print("\npath and distance")
+    #print(p)
+    #print(dist)
+
 
 def linear_combo_2(coeffs, p1, p2):
 
@@ -249,6 +246,7 @@ def linear_combo_2(coeffs, p1, p2):
     
     
 #best combos of 2:
+
 for p1 in paths:
     for p2 in paths:
         min_res = minimize(linear_combo_2, [1, 1], args=(p1, p2))
@@ -257,6 +255,7 @@ for p1 in paths:
             print(min_res.x)
             print(p1)
             print(p2)
+
         
 
 

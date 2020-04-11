@@ -38,7 +38,7 @@ if boss:
     wavelength = wavelength_boss
 else:
     wavelength = wavelength_sdss
-
+    
 sdss_fluxfactor = 1.38
 boss_fluxfactor = 1.38
 
@@ -85,9 +85,11 @@ alpha_stds_sdss = [np.load(alpha_direc + 'alpha_stds_sdss_1d_' + loadkey + '.npy
 
 if bootstrap:
     bootstrap_alphas_boss = [np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
-                             np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_south_' + loadkey + '.npy')]
+                             np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_south_' + loadkey + '.npy'), \
+                             np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_10.npy')]
     bootstrap_alpha_stds_boss = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_south_' + loadkey + '.npy')]
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
+                                 np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
 
     bootstrap_alphas_sdss = [np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_1d_' + loadkey + '.npy'), \
                              np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_2d_' + loadkey + '.npy'), \
@@ -148,12 +150,11 @@ def plot_emissions(alpha_indices, labels, colors):
     plt.subplot(1, 2, 1)
     for i, idx in enumerate(alpha_indices):
         plt.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
-        plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
-
-    if bootstrap:
-        for i, idx in enumerate(alpha_indices):
-            plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-            plt.plot(wavelength, bootstrap_stds[idx], c='m', drawstyle='steps', linestyle='--')
+        if bootstrap:
+            #plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
+            plt.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+        else:
+            plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')  
 
     plt.xlabel(r"Wavelength ($\AA$)")
     plt.ylabel(r"$\alpha_\lambda$")
@@ -163,9 +164,9 @@ def plot_emissions(alpha_indices, labels, colors):
     xcoords = [4863, 4960, 5008]
     for xc in xcoords:
         plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-    plt.text(4863, 0.4, r"H$\beta$")
-    plt.text(4960, 0.4, "O[III]")
-    plt.text(5008, 0.4, "O[III]")
+    plt.text(4853, 0.4, r"H$\beta$")
+    plt.text(4943, 0.4, "O[III]")
+    plt.text(4991, 0.4, "O[III]")
 
     #line from 03 continuum::
     #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
@@ -176,12 +177,11 @@ def plot_emissions(alpha_indices, labels, colors):
     plt.subplot(1, 2, 2)
     for i, idx in enumerate(alpha_indices):
         plt.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
-        plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
-
-    if bootstrap:
-        for i, idx in enumerate(alpha_indices):
-            plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-            plt.plot(wavelength, bootstrap_stds[idx], c='m', drawstyle='steps', linestyle='--')
+        if bootstrap:
+            #plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
+            plt.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+        else:
+            plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
 
     plt.xlabel(r"Wavelength ($\AA$)")
     plt.ylabel(r"$\alpha_\lambda$")
@@ -191,11 +191,11 @@ def plot_emissions(alpha_indices, labels, colors):
     xcoords = [6550, 6565, 6585, 6718, 6733]
     for xc in xcoords:
         plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-    plt.text(6550, 0.4, "N[II]")
-    plt.text(6565, 0.4, r"H$\alpha$")
-    plt.text(6585, 0.4, "N[II]")
-    plt.text(6718, 0.4, "S[II]")
-    plt.text(6733, 0.4, "S[II]")
+    plt.text(6535, 0.4, "N[II]")
+    plt.text(6568, 0.9, r"H$\alpha$")
+    plt.text(6590, 0.6, "N[II]")
+    plt.text(6700, 0.6, "S[II]")
+    plt.text(6738, 0.5, "S[II]")
 
     #line from 03 continuum::
     #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
@@ -457,7 +457,7 @@ if not boss:
 #plot north and south on same plot (boss)
 if boss:
     envelope = bootstrap
-    plot_binned([0, 1], ['k', 'r'], ['North', 'South'], envelope=envelope)
+    plot_binned([0, 1], ['r', 'g'], ['North', 'South'], envelope=envelope)
     if save != '0' and bootstrap:
         plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf')
         plt.clf()

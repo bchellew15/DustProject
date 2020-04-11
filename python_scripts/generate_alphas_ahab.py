@@ -160,7 +160,7 @@ if boss:
     else:
         print("Error: invalid mode")
     
-    plate = 10000*plate + mjd%10000 #plate is now a unique identifier   
+    plate = 10000*plate + mjd%10000 #plate is now a unique identifier
 
 #load data for SDSS
 else:
@@ -231,6 +231,16 @@ for j in range(num_files):
     if location != 0:
         if boss:
             coords = np.loadtxt('BOSS_locations_galactic.txt')
+
+            #find locations of problem plates:
+            #print("plate 5896")
+            #print(np.mean(coords[plate == 5896], axis = 0))
+            #print("plate 5896")
+            #print(np.mean(coords[plate == 5400], axis=0))
+            #print("plate 5896")
+            #print(np.mean(coords[plate == 6297], axis=0))
+            #exit(0)
+            
             l = coords[:,0]
             b = coords[:,1]
             if location == 1:

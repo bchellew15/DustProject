@@ -9,11 +9,16 @@ import matplotlib #for lognorm
 from astropy.io import fits
 from mpl_toolkits.basemap import Basemap
 
+'''
+COMMAND LINE ARGS:
+if save = 0, save the figure, don't display
+otherwise, display but don't save
+'''
+
 #command line args:
-if len(sys.argv) == 2:
-    save = int(sys.argv[1])
-else:
-    save = 0
+if len(sys.argv) != 2:
+    print("Usage: sky_locations_4plot.py [save: 0, 1]")
+save = int(sys.argv[1])
 
 #truncate colormap (https://stackoverflow.com/questions/18926031/how-to-extract-a-subset-of-a-colormap-as-a-new-colormap-in-matplotlib)
 import matplotlib.colors as colors 
@@ -116,6 +121,13 @@ cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
 tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 cb.set_ticklabels(tick_labels)
 
+x1, y1 = m(20.7, 70.8)
+x2, y2 = m(279.3, 75.3)
+x3, y3 = m(88.4, -26.1)
+m.scatter(x1, y1, marker='.', s=10, c='r')
+m.scatter(x2, y2, marker='.', s=10, c='r')
+m.scatter(x3, y3, marker='.', s=10, c='r')
+
 #plt.title("Sky Fiber Density")
 
 ax = fig.add_subplot(224)
@@ -173,6 +185,10 @@ cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
 tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 tick_labels[0] = '<1'
 cb.set_ticklabels(tick_labels)
+
+m.scatter(x1, y1, marker='.', s=10, c='r')
+m.scatter(x2, y2, marker='.', s=10, c='r')
+m.scatter(x3, y3, marker='.', s=10, c='r')
 
 #plt.title("Sky Fiber Density")
 
@@ -312,6 +328,7 @@ cb.set_ticklabels(tick_labels)
 #plt.title("Sky Fiber Density")
 
 if save:
-    plt.savefig('../skyfibers_4plot_110219.png', bbox_inches='tight')
-plt.show()
+    plt.savefig('../paper_figures/skyfibers_4plot_013120.png', bbox_inches='tight')
+else:
+    plt.show()
 
