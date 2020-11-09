@@ -1,6 +1,6 @@
-#code to deal with the star formation files
-#calculate Lick indices
-#find best-fit spectra
+# code to compare alphas to star formation files
+# in order to find best-fit spectra
+# (Lick index stuff at the end)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,18 +8,37 @@ import glob
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize
 
+# paths for bc03 spectra
 paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
 
-#print out indices and filenames:
-#for i in range(len(paths)):
-#    print(i, paths[i])
+# print names of spectra:
+#for path in paths:
+#    print(path)
+
+#plot the model spectra:
+'''
+for p in paths[:10]:
+    if 'ssp_5Myr_z008' in p:
+        a = np.loadtxt(p)
+
+        wav = a[:, 0]
+        values = a[:, 1]
+
+        plt.plot(wav, values, drawstyle='steps')
+        plt.xlim(3500, 10000)
+        plt.show()
+'''
 
 #alphas and stds (boss):
-alphas = [np.load('../alphas_and_stds/alphas_boss_102019.npy'), \
-               np.load('../alphas_and_stds/alphas_boss_2d_102019.npy')]
-alpha_stds = [np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), \
-              np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy')]
+alphas = [np.load('../alphas_and_stds/alphas_boss_102019.npy')]
+alpha_stds = [np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy')]
 wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
+
+#limit the wavelength range to 4000 to 9000 nm:
+for i in range(len(alphas)):
+    alphas[i] = alphas[i][(wavelength > 4000) & (wavelength < 9000)]
+    alpha_stds[i] = alpha_stds[i][(wavelength > 4000) & (wavelength < 9000)]
+wavelength = wavelength[(wavelength > 4000) & (wavelength < 9000)]
 
 #mask emission lines
 emission_line_mask = np.zeros(len(wavelength), dtype=int)
@@ -32,13 +51,19 @@ for i in range(len(alphas)):
     alpha_stds[i] = alpha_stds[i][np.logical_not(emission_line_mask)]
 wavelength = wavelength[np.logical_not(emission_line_mask)]
 
-
-#find best-fit linear combination [plus polynomial] using max likelihood estimator
-#and plot the best-fit spectrum against actual spectrum
-'''
-#for adding a polynomial
-poly_degree = 0 #1 is linear, etc.
+# for adding a polynomial
+poly_degree = 2 #1 is linear, etc.
 poly_order = poly_degree + 1
+
+num_model_spectra = 10
+normalize_index = 18 #divide by this spectrum later
+#if only 3:
+# cst_6gyr_z02
+# ssp_5Gyr_z02
+# t5e9_12gyr_z02
+if num_model_spectra == 3:
+    paths = [paths[29], paths[13], paths[22]]
+    normalize_index = 2
 
 #load the spectra and interpolate to same wavelength range:
 model_spectra = np.zeros((len(paths)+poly_order, len(wavelength)))
@@ -48,9 +73,15 @@ for i, p in enumerate(paths):
     values = a[:,1]
     f = interp1d(wav, values, kind='cubic')
     model_spectra[i] = np.array([f(w) for w in wavelength])
-#scale them based on total flux from 4000 to 9000
+
+# find best-fit linear combination [plus polynomial] using max likelihood estimator
+# and plot the best-fit spectrum against actual spectrum
+
+# scale them based on total flux in the BOSS wavelength range (maybe change to 4000 to 9000)
+# (the model spectra were interpolated onto that range above).
+# that way, the coefficient ratio represents the flux ratio (between/among the source models).
 for i in range(len(paths)):
-    model_spectra[i] = model_spectra[i] / np.sum(model_spectra[i]) * np.sum(model_spectra[18])
+    model_spectra[i] = model_spectra[i] / np.sum(model_spectra[i]) * np.sum(model_spectra[normalize_index])
 for i in range(poly_order):
     model_spectra[-i-1] = np.power(wavelength, i)
     
@@ -58,13 +89,10 @@ num_spectra = len(paths)+poly_order
 A = np.zeros((num_spectra, num_spectra))
 for i in range(num_spectra):
     for j in range(num_spectra):
-        A[i, j] = np.nansum(model_spectra[i]*model_spectra[j]/np.power(alpha_stds[1], 2))
+        A[i, j] = np.nansum(model_spectra[i]*model_spectra[j]/np.power(alpha_stds[0], 2))
 b = np.zeros(num_spectra)
 for i in range(num_spectra):
-    b[i] = np.nansum(alphas[1]*model_spectra[i]/np.power(alpha_stds[1], 2))
-
-print(A)
-print(b)
+    b[i] = np.nansum(alphas[0]*model_spectra[i]/np.power(alpha_stds[0], 2))
     
 coeffs = np.linalg.lstsq(A, b)[0]
 print("coefficients")
@@ -79,30 +107,18 @@ best_fit_model = np.sum(weighted_model_spectra, axis=0)
 
 #find the chai squared:
 print("chai squared")
-print(np.nansum(np.power(best_fit_model - alphas[1], 2)))
+print(np.nansum(np.divide(np.power(best_fit_model - alphas[0], 2), np.power(alpha_stds[0], 2)))
     
 plt.plot(wavelength, best_fit_model, 'r', drawstyle='steps')
-plt.plot(wavelength, alphas[1], 'k', drawstyle='steps')
+plt.plot(wavelength, alphas[0], 'k', drawstyle='steps')
 plt.xlim(3500, 10000)
 plt.ylim(0, 1)
 plt.show()
-'''
 
 
-#plot the model spectra 
+exit(0)
 
-for p in paths[:10]:
-    if 'ssp_5Myr_z008' in p:
-        a = np.loadtxt(p)
-        
-        wav = a[:,0]
-        values = a[:,1]
-        
-        plt.plot(wav, values, drawstyle='steps')
-        plt.xlim(3500, 10000)
-        plt.show()
-#exit(0)
-
+### LICK INDEX STUFF BELOW THIS POINT #############################################
 
 #some important lick index tuples:
 h_beta_bounds = (4847.875, 4876.625, 4827.875, 4847.875, 4876.625, 4891.625, 0)
@@ -116,9 +132,7 @@ fe_5270_bounds = (5245.650, 5285.650, 5233.150, 5248.150, 5285.650, 5318.150, 0)
 fe_5335_bounds = (5312.125, 5352.125, 5304.625, 5315.875, 5353.375, 5363.375, 0)
 mg_b_bounds = (5160.125, 5192.625, 5142.625, 5161.375, 5191.375, 5206.375, 0)
 
-
-#calculate lick indices:
-#
+# calculate lick indices:
 def calc_lick_idx(alphas, alpha_stds, bounds, wavelength):
 
     (c1, c2, l1, l2, r1, r2, idx_type) = bounds
@@ -194,7 +208,7 @@ def distance_metric(indices_1, indices_2):
     return np.sum(np.power(indices_1_scale - indices_2_scale, 2))
 
 
-measured_indices = calc_lick(alphas[1], alpha_stds[1], wavelength)
+measured_indices = calc_lick(alphas[0], alpha_stds[0], wavelength)
 print(measured_indices)
 
 
@@ -213,13 +227,13 @@ for p in paths:
         print(p)
 
     #compare to alphas:
-    measured_indices = calc_lick(alphas[1], alpha_stds[1], wavelength)
+    measured_indices = calc_lick(alphas[0], alpha_stds[0], wavelength)
     dist = distance_metric(indices, measured_indices)
 
     #print out and plot the ones that are a good match
     #if dist < 10:
     #    plt.plot(wav, values, drawstyle='steps')
-    #    plt.plot(wavelength, alphas[1], drawstyle='steps')
+    #    plt.plot(wavelength, alphas[0], drawstyle='steps')
     #    plt.xlim(3500, 10000)
     #    plt.ylim(0, 1)
     #    plt.show()
@@ -241,7 +255,7 @@ def linear_combo_2(coeffs, p1, p2):
     values = coeffs[0]*values1 + coeffs[1]*values2
     indices = calc_lick(values, stds, wav)
 
-    measured_indices = calc_lick(alphas[1], alpha_stds[1], wavelength)
+    measured_indices = calc_lick(alphas[0], alpha_stds[0], wavelength)
     return distance_metric(indices, measured_indices)
     
     
@@ -255,8 +269,3 @@ for p1 in paths:
             print(min_res.x)
             print(p1)
             print(p2)
-
-        
-
-
-#max likelihood fitting (linear combo of spectra):

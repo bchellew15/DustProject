@@ -18,6 +18,7 @@ otherwise, display but don't save
 #command line args:
 if len(sys.argv) != 2:
     print("Usage: sky_locations_4plot.py [save: 0, 1]")
+    exit(0)
 save = int(sys.argv[1])
 
 #truncate colormap (https://stackoverflow.com/questions/18926031/how-to-extract-a-subset-of-a-colormap-as-a-new-colormap-in-matplotlib)
@@ -121,9 +122,10 @@ cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
 tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 cb.set_ticklabels(tick_labels)
 
-x1, y1 = m(20.7, 70.8)
-x2, y2 = m(279.3, 75.3)
-x3, y3 = m(88.4, -26.1)
+# subtract from 360 to invert the coordinates
+x1, y1 = m(360-20.7, 70.8)
+x2, y2 = m(360-279.3, 75.3)
+x3, y3 = m(360-88.4, -26.1)
 m.scatter(x1, y1, marker='.', s=10, c='r')
 m.scatter(x2, y2, marker='.', s=10, c='r')
 m.scatter(x3, y3, marker='.', s=10, c='r')

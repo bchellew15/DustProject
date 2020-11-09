@@ -10,7 +10,12 @@ from math import floor #for calculating bin ranges
 #generate correlation spectra
 #this version uses a lot of RAM (~15 GB)
 #IMPORTANT: this code does NOT divide by flux conversion factor. For SDSS this is 1.38.
-#bootstrap: take random samples and then mask
+#IMPORTANT: if bootstrap is true, this script does NOT generate bootstrap samples.
+#  Instead, it does the first part of the calculation and saves the result as files starting with xx_ and yy_.
+#  The script bootstrap_ahab.py needs to be run on those to produce bootstrap samples.
+#  The script script_looper.py is set up to do all of this together.
+# bootstrap: masked plates still show up in output files as rows of all 0
+
 
 '''
 EXPLAIN PARAMETERS:
@@ -125,10 +130,11 @@ def calc_alphas(i100, plate, flambda, ivar, boot=False):
     print("finished calculating alphas")
     return alphas, alpha_std, wavelength
 
-#load data for BOSS
+
+# load data for BOSS
 if boss:
     
-    filenames = ['skyfibers_lam0.fits', 'skyfibers_lam1.fits', 'skyfibers_lam2.fits', 'skyfibers_lam3.fits', 'skyfibers_lam4.fits', \
+    filenames = ['skyfibers_lam0.fits', 'skyfibers_lam1.fits', 'skyfibers_lam2.fits', 'skyfibers_lam3.fits', 'skyfibers_lam4.fits',
                  'skyfibers_lam5.fits', 'skyfibers_lam6.fits', 'skyfibers_lam7.fits', 'skyfibers_lam8.fits', 'skyfibers_lam9.fits']
     num_files = len(filenames)
 

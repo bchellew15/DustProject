@@ -1,6 +1,7 @@
-#generate plots of correlation spectra (overall and certain sections)
-#need to run twice to cover all figures for the paper (once with boss=0 and bootstrap=1, once with boss=1 and bootstrap=1).
-#flux conversion factor is handled here, not in reproduce_figs
+# run this after generate_alphas_ahab.py. If want to use bootstrapping, also have to run bootstrap_ahab.py first.
+# generate plots of correlation spectra (overall and certain sections)
+# need to run twice to cover all figures for the paper (once with boss=0 and bootstrap=1, once with boss=1 and bootstrap=1).
+# flux conversion factor is handled here, not in reproduce_figs
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -46,24 +47,6 @@ boss_fluxfactor = 1.38
 # original, tao, tao AND iris, iris
 
 #boss alphas:
-
-#np.load('../alphas_and_stds/alphas_boss_102019.npy'), \
-#np.load('../alphas_and_stds/alphas_boss_2d_102019.npy'), \
-#np.load('../alphas_and_stds/alphas_boss_iris_91119_10.npy'), \
-#np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy'), \
-#np.load('../alphas_and_stds/alpha_stds_boss_102019.npy'), \
-#np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy'), \
-#np.load('../alphas_and_stds/alpha_stds_boss_iris_91119_10.npy'), \
-#np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy'), \
-#np.load('../alphas_and_stds/bootstrap_alphas_boss_1d_102019.npy'), \
-#np.load('../alphas_and_stds/bootstrap_alphas_boss_2d_102019.npy'), \
-#np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_102019.npy'), \
-#np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_1d_102019.npy'), \
-#np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_1d_102019.npy'), \
-#np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_2d_102019.npy'), \
-#np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_102019.npy'), \
-#np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_1d_102019.npy'), \
-
 alphas_boss = [np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
                np.load(alpha_direc + 'alphas_boss_iris_2d_south_' + loadkey + '.npy'), \
                np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy')]
@@ -112,12 +95,12 @@ if bootstrap:
     '''
     
     if boss:
-        bootstrap_lower = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
-        bootstrap_upper = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
+        bootstrap_lower = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
+        bootstrap_upper = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
         bootstrap_stds = [(bootstrap_upper[i] - bootstrap_lower[i])/2 for i in range(len(bootstrap_lower))]
     else:
-        bootstrap_lower = [np.percentile(b, 16, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
-        bootstrap_upper = [np.percentile(b, 84, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
+        bootstrap_lower = [np.nanpercentile(b, 16, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
+        bootstrap_upper = [np.nanpercentile(b, 84, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
         bootstrap_stds = [(bootstrap_upper[i] - bootstrap_lower[i])/2 for i in range(len(bootstrap_lower))]
     
     
@@ -296,14 +279,14 @@ if bootstrap:
     _, bootstrap_binned_alphas, _ = generate_binned_alphas(bootstrap_alphas, bootstrap_alpha_stds, wavelength)
 
     #now look at percentiles:
-    bootstrap_binned_lower = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas] #68 percent confidence interval
-    bootstrap_binned_upper = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas]
+    bootstrap_binned_lower = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas] #68 percent confidence interval
+    bootstrap_binned_upper = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas]
     bootstrap_binned_stds = [(bootstrap_binned_upper[i] - bootstrap_binned_lower[i])/2 for i in range(len(bootstrap_binned_lower))]
 
     if not boss:
         _, bootstrap_binned_alphas_boss, _ = generate_binned_alphas([bootstrap_alphas[-1]], [bootstrap_alpha_stds[-1]], wavelength, wavelength_boss)
-        bootstrap_binned_lower_boss = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss] #68 percent confidence interval
-        bootstrap_binned_upper_boss = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss]
+        bootstrap_binned_lower_boss = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss] #68 percent confidence interval
+        bootstrap_binned_upper_boss = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss]
         bootstrap_binned_stds_boss = [(bootstrap_binned_upper_boss[i] - bootstrap_binned_lower_boss[i])/2 for i in range(len(bootstrap_binned_lower_boss))]
 
 
@@ -527,11 +510,11 @@ if boss:
 
     if bootstrap:
         #bootstrap percentiles
-        bootstrap_binned_lower_thresh_1d = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_1d] #68 percent confidence interval
-        bootstrap_binned_upper_thresh_1d = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_1d]
+        bootstrap_binned_lower_thresh_1d = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_1d] #68 percent confidence interval
+        bootstrap_binned_upper_thresh_1d = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_1d]
         bootstrap_binned_stds_thresh_1d = [(bootstrap_binned_upper_thresh_1d[i] - bootstrap_binned_lower_thresh_1d[i])/2 for i in range(len(bootstrap_binned_lower_thresh_1d))]
-        bootstrap_binned_lower_thresh_2d = [np.percentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_2d] #68 percent confidence interval
-        bootstrap_binned_upper_thresh_2d = [np.percentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_2d]
+        bootstrap_binned_lower_thresh_2d = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_2d] #68 percent confidence interval
+        bootstrap_binned_upper_thresh_2d = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_2d]
         bootstrap_binned_stds_thresh_2d = [(bootstrap_binned_upper_thresh_2d[i] - bootstrap_binned_lower_thresh_2d[i])/2 for i in range(len(bootstrap_binned_lower_thresh_2d))]
     
     fig = plt.figure(figsize=(12, 5), dpi=200)
