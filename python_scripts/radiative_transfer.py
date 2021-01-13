@@ -1,8 +1,11 @@
 #TODO
 # check my scratch work and code (units, argument order)
 # look at the estimated errors of the integrals
+#   other checks: try MCMC method?
 # (which latitude (b)?)
 # phase function normalization
+# integrals: can I just stop at the wavelength bounds? or best to estimate what the integral is outside?
+# sanity checks?
 
 
 # take the BC03 model spectra and apply radiative transfer calculations.
@@ -132,55 +135,91 @@ def i_tir_integrand(lamb, z_s, bc03):
     return prefactor * term1 * term2 * term3
 
 
-# REVIEWED THROUGH HERE
-
-
-# eqn A7
-# first just the integrand.
+# eqn A7, part 1: just the integrand.
 # note that we need to integrate over z_s also.
-# then do the integral for a given lambda and z_s.
-def i_sca_integrand(tau, R, theta, z_s, lamb):
+def i_sca_integrand(tau, R, theta, z_s, lamb, bc03):
     z = z_of_tau(lamb, tau)
 
+    # prefactor is accounted for in wrapper function
     term1 = np.exp((-1 / np.sin(np.abs(b))) * (tau_f(lamb, 0) - tau))
     term2 = R
-    # verify that g is avg of cos
     term3 = henyey(cos_xi(tau, R, theta, z_s, lamb), dust_cos_f(lamb))
     term4 = surface_power_fn(bc03, z_s, lamb) * np.exp(-A_f(lamb, z, z_s, R))
     term5 = 4 * np.pi * ((z - z_s)**2 + R**2)
     return term1 * term2 * term3 * term4 / term5
 
 
-def i_sca(lamb):
-    prefactor = (1 / np.sin(np.abs(b))) * dust_albedo_f(lamb)
+# eqn A7, part 2: do the integral for given wavelength
+def i_sca(lamb, bc03):
     result, err = integrate.nquad(i_sca_integrand, [[0, tau_f(lamb, 0)],
                                                    [0, np.inf],
                                                    [0, 2*np.pi],
-                                                   [-np.inf, np.inf]], args=(lamb,), opts={'epsabs': 1})
+                                                   [-np.inf, np.inf]], args=(lamb, bc03))
+    prefactor = (1 / np.sin(np.abs(b))) * dust_albedo_f(lamb)
     return prefactor * result
 
 
 # loop through the bc03 spectra
 for p in paths[:1]:
+    # load and interpolate the bc03 spectra
     a = np.loadtxt(p)
     wav = a[:, 0]  # angstroms
     bc03 = a[:, 1]
-
-    # interpolate the bc03 spectra
     bc03_f = interp1d(wav, bc03, kind='cubic')
 
-    # integrate from 91 to 10^4 bc 0 to inf throws an error
-    # note: range of lambda for dust model is 10^-4 to 10^4
-    # note: range of lambda for bc03 is 91 to 1.6e6
-    # I_tir = 1 #TEMP
+    """
+    # compute total infrared radiation
+    # (integrate from 91 to 10^4 bc 0 to inf throws an error)
+    # (range of lambda for dust model is 10^-4 to 10^4)
+    # (note: range of lambda for bc03 is 91 to 1.6e6)
     I_tir, I_tir_err = integrate.nquad(i_tir_integrand, [[91, 10**4],
                                                          [-np.inf, np.inf]], args=(bc03_f,))
     # convert to 100 micron (there is an associated uncertainty)
     nu_I_nu_100 = .52 * I_tir
+    """
+
+
+    # REVIEWED THROUGH HERE
+
+    print("tau from z")
+    tau_test = tau_f(6000, 1)
+    print(z_of_tau(6000, tau_test))
+
+    temp = i_sca_integrand(tau=1, R=1, theta=np.pi, z_s=1, lamb=6000, bc03=bc03_f)
+    print("success")
+    print(temp)
+    z = z_of_tau(lamb=6000, tau=1)
+    print(z)
+
+    cross_section = dust_cross_f(6000)
+    print(cross_section)
+    tau = 1
+    erf_arg = 1 - 2 * tau / (density_prefactor * cross_section * sig * np.sqrt(2 * np.pi))
+    print(erf_arg)
+    erf_result = special.erfinv(erf_arg)
+    print(erf_result)
+
+    # sig * np.sqrt(2) * special.erfinv(1 - 2 * tau / (density_prefactor * cross_section * sig * np.sqrt(2 * np.pi)))
+
+    #term1 = np.exp((-1 / np.sin(np.abs(b))) * (tau_f(lamb, 0) - tau))
+    #term2 = R
+    #term3 = henyey(cos_xi(tau, R, theta, z_s, lamb), dust_cos_f(lamb))
+    #term4 = surface_power_fn(bc03, z_s, lamb) * np.exp(-A_f(lamb, z, z_s, R))
+    #term5 = 4 * np.pi * ((z - z_s) ** 2 + R ** 2)
+    #result = term1 * term2 * term3 * term4 / term5
+    #print(result)
+
+    print("starting integral")
+    test_lambda = 6000
+    i_sca(6000, bc03_f)
+    exit(0)
+
     # this will take a long time
-    # result_spectrum = np.array([i_sca(lamb) for lamb in wavelength[:1]]) / nu_I_nu_100
+    # result_spectrum = np.array([i_sca(lamb, bc03) for lamb in wavelength[:1]]) / nu_I_nu_100
 
     # save the result
     save_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
     save_path += p.split('/')[-1].rsplit('.spec')[0] + '.npy'
     # np.save(save_path, result)
+
+    # don't forget to multiply by lambda
