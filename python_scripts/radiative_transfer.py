@@ -1,8 +1,12 @@
 # TODO
 # check units again, for ex. cross section is cm^2
 # decide if trapezoid method is accurate enough
-# and make sure the integral converges
 # verify density prefactor calculation
+
+# verifying the integral:
+# it should match the results from BC03
+# make sure it converges; should stay same if I increase the bounds, and number of divs
+# try to guestimate the value based on integrand plots?
 
 # take the BC03 model spectra and apply radiative transfer calculations.
 # based on the appendix of BD12.
@@ -12,6 +16,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 import scipy.special as special
 from scipy import integrate
+import matplotlib.pyplot as plt
 
 # load some files
 wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')  # angstroms
@@ -93,7 +98,12 @@ def A_f(lamb, z, z_s, R):
     term1 = np.abs(tau_f(lamb, z) - tau_f(lamb, z_s))
     term2 = np.sqrt((z-z_s)**2 + R**2)
     term3 = np.abs(z - z_s)
-    return term1 * term2 / term3
+    result = term1 * term2 / term3
+
+    idx = np.isnan(result)
+    result[idx] = 1  # temp
+
+    return result
 
 
 # eqn A5
@@ -102,7 +112,13 @@ def cos_xi(z, R, theta, z_s, lamb):
     term1 = z**2 / np.tan(b)**2 + (z - z_s)**2
     term2 = R**2 + (z - z_s)**2
     denom = np.sqrt(term1 * term2)
-    return numer / denom
+
+    result = numer / denom
+
+    idx = np.isnan(result)
+    result[idx] = 1  # temp
+
+    return result
 
 
 # scale heights 300 pc and 1350 pc
@@ -128,7 +144,30 @@ def i_tir_integrand(z, lamb, z_s, bc03):
     term1 = 1 - dust_albedo_f(lamb)
     term2 = surface_power_deriv(bc03, z_s, lamb)
     term3 = special.expi(np.abs(tau_f(lamb, z) - tau_f(lamb, z_s)))
+
+    is_inf = np.isinf(term3)
+    term3[is_inf] = -4  # temp
+
     result = prefactor * change_vars * term1 * term2 * term3
+
+    if np.inf not in result:
+        return result
+
+    #print("i_tir vars")
+    #print("z", z)
+    #print("lamb", lamb)
+    #print("z_s", z_s)
+    #print("prefactor", prefactor)
+    #print("change_vars", change_vars)
+    #print("term1", term1)
+    #print("term2", term2)
+    #print("tau_z", tau_f(lamb, z))
+    #print("tau_zs", tau_f(lamb, z_s))
+    print("tau - tau", np.abs(tau_f(lamb, z) - tau_f(lamb, z_s)))
+    print("term3", term3)
+    print("result", result)
+
+
     return result
 
 # eqn A7, part 1: just the integrand.
@@ -141,24 +180,75 @@ def i_sca_integrand(theta, z, R, z_s, lamb, bc03):
     term3 = henyey(cos_xi(z, R, theta, z_s, lamb), dust_cos_f(lamb))
     term4 = surface_power_fn(bc03, z_s, lamb) * np.exp(-A_f(lamb, z, z_s, R))
     term5 = 4 * np.pi * ((z - z_s)**2 + R**2)
-    return prefactor * term1 * change_vars * term2 * term3 * term4 / term5
+    result = prefactor * term1 * change_vars * term2 * term3 * term4 / term5
+
+    idx = np.where(term5 == 0)[0]
+    result[idx] = 1  # temp
+
+    return result
 
 
 # eqn A7, part 2: do the integral for given wavelength
 def i_sca(lamb, bc03):
+
+    """
+    # plot integrand for I_sca:
+    # vars: theta, z, R, zs
+    # plot vs. theta (for given z, R, zs)
+    theta_vals = np.linspace(0, 2 * np.pi, 50)
+    z_temp = 1
+    R_temp = 1
+    zs_temp = 1.5
+    integrand_vals = i_sca_integrand(theta_vals, z_temp, R_temp, zs_temp, lamb, bc03_f)
+    plt.plot(theta_vals, integrand_vals)
+    plt.show()
+
+    # plot vs. z (for given theta, R, zs)
+    z_vals = np.linspace(0, 3, 50)
+    theta_temp = np.pi
+    R_temp = 1
+    zs_temp = 1.5
+    integrand_vals = i_sca_integrand(theta_temp, z_vals, R_temp, zs_temp, lamb, bc03_f)
+    plt.plot(z_vals, integrand_vals)
+    plt.show()
+
+    # plot vs. z_s (for given z, theta, R)
+    zs_vals = np.linspace(-3, 3, 50)
+    z_temp = 1
+    theta_temp = np.pi
+    R_temp = 1
+    integrand_vals = i_sca_integrand(theta_temp, z_temp, R_temp, zs_vals, lamb, bc03_f)
+    plt.plot(zs_vals, integrand_vals)
+    plt.show()
+
+    # plot vs. R (for given z, theta, zs)
+    R_vals = np.linspace(0, 10, 50)
+    z_temp = 1
+    theta_temp = np.pi
+    zs_temp = 1.5
+    integrand_vals = i_sca_integrand(theta_temp, z_temp, R_vals, zs_temp, lamb, bc03_f)
+    plt.plot(R_vals, integrand_vals)
+    plt.show()
+    """
+
     x = np.linspace(0, 2*np.pi, 50)  # theta grid, 0 to 2pi
-    y = np.linspace(1, 100, 50)  # z grid, 0 to inf
-    z = np.linspace(0, 10 ** 4, 50)  # R grid
-    v = np.linspace(1, 100, 50)  # z_s grid, -inf to inf
+    y = np.linspace(0, 3, 50)  # z grid, 0 to inf
+    z = np.linspace(0, 10, 50)  # R grid
+    v = np.linspace(-3, 3, 50)  # z_s grid, -inf to inf
+
     xx, yy, zz, vv = np.meshgrid(x, y, z, v)
     ww = i_sca_integrand(xx, yy, zz, vv, lamb, bc03)
+    # print("number of nans")
+    # print(np.count_nonzero(np.isnan(ww)))
     ww.shape
     inner = [integrate.simps(ww_x, x) for ww_x in ww]
     middle1 = [integrate.simps(ww_y, y) for ww_y in inner]
     middle2 = [integrate.simps(ww_z, z) for ww_z in middle1]
     result = integrate.simps(middle2, v)
-    print("i sca")
-    print(inner)
+    #print("ww")
+    #print(ww)
+    #print("inner")
+    #print(inner)
     return result
 
 
@@ -175,9 +265,34 @@ for p in paths[:1]:
     # (range of lambda for dust model is 10^-4 to 10^4)
     # (note: range of lambda for bc03 is 91 to 1.6e6)
 
-    x = np.linspace(1, 100, 50)  # z grid
+    """
+    # plot integrand for I_TIR:
+    # vars: z, lambda, z_s
+    # plot vs. lambda (for given z, zs)
+    lambda_vals = np.linspace(100, 10 ** 4, 50)
+    z_temp = 1
+    z_s_temp = 1.5
+    plt.plot(lambda_vals, i_tir_integrand(z_temp, lambda_vals, z_s_temp, bc03_f))
+    plt.show()
+
+    # plot vs. z (for given lambda, zs)
+    z_vals = np.linspace(0, 3, 50)
+    lambda_temp = 6000
+    z_s_temp = 1.5
+    plt.plot(z_vals, i_tir_integrand(z_vals, lambda_temp, z_s_temp, bc03_f))
+    plt.show()
+
+    # plot vs. z_s (for given lambda, z)
+    zs_vals = np.linspace(-3, 3, 50)
+    lambda_temp = 6000
+    z_temp = 1.5
+    plt.plot(zs_vals, i_tir_integrand(z_temp, lambda_temp, zs_vals, bc03_f))
+    plt.show()
+    """
+
+    x = np.linspace(0, 3, 50)  # z grid
     y = np.linspace(100, 10**4, 50)  # min, max, n   # lambda grid, 91 to 10**4 A
-    z = np.linspace(-10**4, 10**4, 50)  # z_s grid, -inf to inf
+    z = np.linspace(-3, 3, 50)  # z_s grid, -inf to inf
     xx, yy, zz = np.meshgrid(x, y, z)
     ww = i_tir_integrand(xx, yy, zz, bc03_f)
     ww.shape
@@ -185,8 +300,7 @@ for p in paths[:1]:
     middle = [integrate.simps(ww_y, y) for ww_y in inner]
     I_tir = integrate.simps(middle, z)
 
-    print(inner)
-    print(middle)
+    print("I_tir result")
     print(I_tir)
 
     # convert to 100 micron (there is an associated uncertainty)
@@ -200,7 +314,17 @@ for p in paths[:1]:
     # remember to multiply by lambda (TODO)
     I_sca = i_sca(6000, bc03_f)
     print(I_sca)
-    #result_spectrum = np.array([i_sca(lamb, bc03) for lamb in wavelength[:1]]) / nu_I_nu_100
+    wavelength_partial = wavelength[1000:1001]
+
+    i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])
+
+    i_lam_array = i_sca_array * wavelength_partial
+    alphas = i_lam_array / nu_I_nu_100
+
+    print(alphas)
+
+    plt.plot(wavelength_partial, alphas)
+    plt.show()
 
     # save the result
     save_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
