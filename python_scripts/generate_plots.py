@@ -1,9 +1,13 @@
 # run this after generate_alphas_ahab.py. If want to use bootstrapping, also have to run bootstrap_ahab.py first.
 # generate plots of correlation spectra (overall and certain sections)
-# need to run twice to cover all figures for the paper (once with boss=0 and bootstrap=1, once with boss=1 and bootstrap=1).
+# need to run 2x to cover all figures for the paper:
+#   boss=0 and bootstrap=1
+#   boss=1 and bootstrap=1
 # flux conversion factor is handled here, not in reproduce_figs
 
+import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 import numpy as np
 from astropy.io import fits
 import sys #for command line args
@@ -27,9 +31,33 @@ save = sys.argv[2]
 bootstrap = int(sys.argv[3])
 loadkey = sys.argv[4]
 
-alpha_direc = '../alphas_and_stds/'
-alpha_direc_boot = '../data/'  #'../alphas_and_stds'
-hdulist_direc = '../data/'  #'/Users/blakechellew/Documents/DustProject/BrandtFiles/'
+# global plotting options
+matplotlib.rcParams['axes.labelsize'] = 'large'
+matplotlib.rcParams['xtick.labelsize'] = 'large'
+matplotlib.rcParams['ytick.labelsize'] = 'large'
+matplotlib.rcParams['legend.fontsize'] = 'large'
+matplotlib.rcParams['xtick.direction'] = 'in'
+matplotlib.rcParams['ytick.direction'] = 'in'
+matplotlib.rcParams['xtick.top'] = True
+matplotlib.rcParams['xtick.bottom'] = True
+matplotlib.rcParams['ytick.left'] = True
+matplotlib.rcParams['ytick.right'] = True
+matplotlib.rcParams['ytick.major.size'] = 6.0
+matplotlib.rcParams['ytick.minor.size'] = 3.0
+matplotlib.rcParams['xtick.minor.size'] = 3.0
+matplotlib.rcParams['xtick.major.size'] = 6.0
+#matplotlib.rcParams['font.size'] = 'large'
+
+ahab = True
+
+if ahab:
+    alpha_direc = '../alphas_and_stds/'
+    alpha_direc_boot = '../data/'  #'../alphas_and_stds'
+    hdulist_direc = '../data/'  #'/Users/blakechellew/Documents/DustProject/BrandtFiles/'
+else:
+    alpha_direc = '../alphas_and_stds/'
+    alpha_direc_boot = '../alphas_and_stds'
+    hdulist_direc = '/Users/blakechellew/Documents/DustProject/BrandtFiles/'
 
 # load wavelengths
 wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
@@ -129,69 +157,77 @@ num_arrays = len(alphas)
 def plot_emissions(alpha_indices, labels, colors):
     plt.figure(figsize=(12, 5))
    
-   #plot 4830 - 5040
-    plt.subplot(1, 2, 1)
+    #plot 4830 - 5040
+    ax1 = plt.subplot(1, 2, 1)
     for i, idx in enumerate(alpha_indices):
-        plt.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        ax1.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
         if bootstrap:
-            #plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-            plt.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            #ax1.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
+            ax1.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
         else:
-            plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')  
+            ax1.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
 
-    plt.xlabel(r"Wavelength ($\AA$)")
-    plt.ylabel(r"$\alpha_\lambda$")
-    plt.legend(loc='upper center', frameon=False)
-    plt.xlim(4830, 5040)
-    plt.ylim(0, 1)
+    ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+    ax1.set_ylabel(r"$\alpha_\lambda$")
+    ax1.legend(loc='upper center', frameon=False)
+    ax1.set_xlim(4830, 5040)
+    ax1.set_ylim(0, 0.99)
     xcoords = [4863, 4960, 5008]
     for xc in xcoords:
-        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-    plt.text(4853, 0.4, r"H$\beta$")
-    plt.text(4943, 0.4, "O[III]")
-    plt.text(4991, 0.4, "O[III]")
+        ax1.axvline(x=xc, color='k', linewidth=1, linestyle='--')
+    ax1.text(4853, 0.4, r"H$\beta$")
+    ax1.text(4943, 0.4, "O[III]")
+    ax1.text(4991, 0.4, "O[III]")
+
+    ax1.xaxis.set_major_locator(MultipleLocator(50))
+    ax1.xaxis.set_minor_locator(MultipleLocator(10))
+    ax1.yaxis.set_major_locator(MultipleLocator(0.2))
+    ax1.yaxis.set_minor_locator(MultipleLocator(0.04))
 
     #line from 03 continuum::
-    #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
+    #ax1.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
     #actual continuum for NII:
-    #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
+    #ax1.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
 
     #plot 6530 - 6770 (original vs tao)
-    plt.subplot(1, 2, 2)
+    ax2 = plt.subplot(1, 2, 2)
     for i, idx in enumerate(alpha_indices):
-        plt.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        ax2.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
         if bootstrap:
-            #plt.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-            plt.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            #ax2.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
+            ax2.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
         else:
-            plt.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            ax2.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
 
-    plt.xlabel(r"Wavelength ($\AA$)")
-    plt.ylabel(r"$\alpha_\lambda$")
-    plt.legend(loc='upper center', frameon=False)
-    plt.xlim(6530, 6770)
-    plt.ylim(0, 1)
+    ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+    ax2.set_ylabel(r"$\alpha_\lambda$")
+    ax2.legend(loc='upper center', frameon=False)
+    ax2.set_xlim(6530, 6770)
+    ax2.set_ylim(0, 0.99)
     xcoords = [6550, 6565, 6585, 6718, 6733]
     for xc in xcoords:
-        plt.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-    plt.text(6535, 0.4, "N[II]")
-    plt.text(6568, 0.9, r"H$\alpha$")
-    plt.text(6590, 0.6, "N[II]")
-    plt.text(6700, 0.6, "S[II]")
-    plt.text(6738, 0.5, "S[II]")
+        ax2.axvline(x=xc, color='k', linewidth=1, linestyle='--')
+    ax2.text(6535, 0.4, "N[II]")
+    ax2.text(6568, 0.9, r"H$\alpha$")
+    ax2.text(6590, 0.6, "N[II]")
+    ax2.text(6700, 0.6, "S[II]")
+    ax2.text(6738, 0.5, "S[II]")
+
+    ax2.xaxis.set_major_locator(MultipleLocator(50))
+    ax2.xaxis.set_minor_locator(MultipleLocator(10))
+    ax2.yaxis.set_major_locator(MultipleLocator(0.2))
+    ax2.yaxis.set_minor_locator(MultipleLocator(0.04))
 
     #line from 03 continuum::
-    #plt.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
+    #ax2.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
     #actual continuum for NII:
-    #plt.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
-
-    plt.tight_layout()
+    #ax2.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
 
 
 if boss:
-    plot_emissions([2, 0, 1], ["Full Sky", "North", "South"], ['k', 'r', 'g'])
+    plot_emissions([0, 1, 2], ["North", "South", "Full Sky"], ['#004488', '#BB5566', '#DDAA33'])
     if save != '0' and bootstrap:
-        plt.savefig('../paper_figures/unbinned_' + save + '.pdf')
+        plt.savefig('../paper_figures/unbinned_' + loadkey + '.pdf', bbox_inches='tight')
         plt.clf()
     else:
         plt.show()
@@ -303,38 +339,48 @@ else:
 if not boss and bootstrap:
     plt.figure(figsize=(12, 5))
 
-    plt.subplot(1, 2, 1)
+    ax1 = plt.subplot(1, 2, 1)
 
-    plt.plot(binned_lambdas, binned_alphas[2], c='k', drawstyle='steps', label='SDSS')
-    plt.plot(binned_lambdas, binned_stds[2], c='k', drawstyle='steps', linestyle='--')
-    plt.plot(binned_lambdas, bootstrap_binned_stds[2], c='m', drawstyle='steps', linestyle='--')
-    plt.fill_between(binned_lambdas, bootstrap_binned_lower[2], bootstrap_binned_upper[2], linewidth=0.0, color='k', alpha=0.2, step='pre')
+    ax1.plot(binned_lambdas, binned_alphas[2], c='k', drawstyle='steps', label='SDSS')
+    ax1.plot(binned_lambdas, binned_stds[2], c='k', drawstyle='steps', linestyle='--')
+    ax1.plot(binned_lambdas, bootstrap_binned_stds[2], c='m', drawstyle='steps', linestyle='--')
+    ax1.fill_between(binned_lambdas, bootstrap_binned_lower[2], bootstrap_binned_upper[2], linewidth=0.0, color='k', alpha=0.2, step='pre')
 
-    plt.legend(frameon=False)
-    plt.xlabel(r"Wavelength ($\AA$)")
-    plt.ylabel(r"$\alpha_\lambda$")
-    plt.xlim(x_min, x_max)
-    plt.ylim(0, y_max)
+    ax1.legend(frameon=False)
+    ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+    ax1.set_ylabel(r"$\alpha_\lambda$")
+    ax1.set_xlim(x_min, x_max)
+    ax1.set_ylim(0, y_max)
 
-    plt.subplot(1, 2, 2)
+    ax1.xaxis.set_major_locator(MultipleLocator(1000))
+    ax1.xaxis.set_minor_locator(MultipleLocator(200))
+    ax1.yaxis.set_major_locator(MultipleLocator(0.05))
+    ax1.yaxis.set_minor_locator(MultipleLocator(0.01))
 
-    plt.plot(binned_lambdas_boss, binned_alphas_boss[0], c='k', drawstyle='steps', label='BOSS')
-    plt.plot(binned_lambdas_boss, binned_stds_boss[0], c='k', drawstyle='steps', linestyle='--')
-    plt.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='m', drawstyle='steps', linestyle='--')
-    plt.fill_between(binned_lambdas_boss, bootstrap_binned_lower_boss[0], bootstrap_binned_upper_boss[0], linewidth=0.0, color='k', alpha=0.2, step='pre')
+    ax2 = plt.subplot(1, 2, 2)
+
+    ax2.plot(binned_lambdas_boss, binned_alphas_boss[0], c='k', drawstyle='steps', label='BOSS')
+    ax2.plot(binned_lambdas_boss, binned_stds_boss[0], c='k', drawstyle='steps', linestyle='--')
+    ax2.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='m', drawstyle='steps', linestyle='--')
+    ax2.fill_between(binned_lambdas_boss, bootstrap_binned_lower_boss[0], bootstrap_binned_upper_boss[0], linewidth=0.0, color='k', alpha=0.2, step='pre')
 
     temp = y_max
-    y_max = 0.3
-    plt.legend(frameon=False)
-    plt.xlabel(r"Wavelength ($\AA$)")
-    plt.ylabel(r"$\alpha_\lambda$")
-    plt.xlim(x_min, x_max)
-    plt.ylim(0, y_max)
+    y_max = 0.29
+    ax2.legend(frameon=False)
+    ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+    ax2.set_ylabel(r"$\alpha_\lambda$")
+    ax2.set_xlim(x_min, x_max)
+    ax2.set_ylim(0, y_max)
 
-    plt.tight_layout()
+    ax2.xaxis.set_major_locator(MultipleLocator(1000))
+    ax2.xaxis.set_minor_locator(MultipleLocator(200))
+    ax2.yaxis.set_major_locator(MultipleLocator(0.05))
+    ax2.yaxis.set_minor_locator(MultipleLocator(0.01))
+
+    # plt.tight_layout()
 
     if save != '0':
-        plt.savefig('../paper_figures/compare_boss_sdss_' + save + '.pdf')
+        plt.savefig('../paper_figures/compare_boss_sdss_' + loadkey + '.pdf', bbox_inches='tight')
         plt.clf()
     else:
         plt.show()
@@ -343,22 +389,28 @@ if not boss and bootstrap:
 #plot binned alphas
 #takes alphas already binned. use generate_binned_alphas
 def plot_binned(alpha_indices, colors, labels, envelope=False):
+    fig, ax = plt.subplots()
+
     for i, idx in enumerate(alpha_indices):
-        plt.plot(binned_lambdas, binned_alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        ax.plot(binned_lambdas, binned_alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
         if bootstrap:
-            plt.plot(binned_lambdas, bootstrap_binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            ax.plot(binned_lambdas, bootstrap_binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
         else:
-            plt.plot(binned_lambdas, binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            ax.plot(binned_lambdas, binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
         if envelope:
-            plt.fill_between(binned_lambdas, bootstrap_binned_lower[idx], bootstrap_binned_upper[idx], linewidth=0.0, color=colors[i], alpha=0.2, step='pre')
+            ax.fill_between(binned_lambdas, bootstrap_binned_lower[idx], bootstrap_binned_upper[idx], linewidth=0.0, color=colors[i], alpha=0.2, step='pre')
             
-    y_max = 0.35     
-    plt.xlabel(r"Wavelength ($\AA$)")
-    plt.ylabel(r"$\alpha_\lambda$")
-    plt.xlim(x_min, x_max)
-    plt.ylim(0, y_max)
-    plt.legend(frameon=False)
-    plt.show()
+    y_max = 0.35
+    ax.xaxis.set_major_locator(MultipleLocator(1000))
+    ax.yaxis.set_major_locator(MultipleLocator(0.1))
+    ax.xaxis.set_minor_locator(MultipleLocator(200))
+    ax.yaxis.set_minor_locator(MultipleLocator(0.02))
+    #ax.figure(figsize=(6, 5))
+    ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+    ax.set_ylabel(r"$\alpha_\lambda$")
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(0, y_max)
+    ax.legend(frameon=False)
     y_max = 0.3
 
 
@@ -372,46 +424,68 @@ if boss and bootstrap:
     wavelength_deltas = np.append(wavelength_deltas, wavelength_deltas[-1])
     idx_4000 = np.argmin(np.abs(wavelength-4000))
     idx_5000 = np.argmin(np.abs(wavelength-5000))
+    idx_6000 = np.argmin(np.abs(wavelength-6000))
+    idx_7000 = np.argmin(np.abs(wavelength-7000))
     idx_8000 = np.argmin(np.abs(wavelength-8000))
     idx_9000 = np.argmin(np.abs(wavelength-9000))
     
     #north:
-    variance = np.power(alpha_stds[0], 2)
-    rel_alphas = bootstrap_alphas[0]
-    numerator = np.nansum(np.divide(rel_alphas, variance), axis=1)
+    variance = np.power(bootstrap_stds[0], 2)
+    rel_alphas = alphas[0]
+    numerator = np.nansum(np.divide(rel_alphas, variance))
     denominator = np.nansum(np.divide(1, variance))
     avg_north = numerator / denominator
     avg_north_var = np.nanvar(avg_north)
     avg_north = np.nanmean(avg_north)
 
     integrand = np.multiply(rel_alphas, wavelength_deltas)
-    integral_4_5 = np.nansum(integrand[:,idx_4000:idx_5000], axis=1)
-    integral_8_9 = np.nansum(integrand[:,idx_8000:idx_9000], axis=1)
+    integrand_std = np.multiply(variance, wavelength_deltas**2)
+    integral_4_5 = np.nansum(integrand[idx_4000:idx_5000])
+    integral_6_7 = np.nansum(integrand[idx_6000:idx_7000])
+    integral_8_9 = np.nansum(integrand[idx_8000:idx_9000])
+    integral_4_5_std = np.sqrt(np.nansum(integrand_std[idx_4000:idx_5000]))
+    integral_6_7_std = np.sqrt(np.nansum(integrand_std[idx_6000:idx_7000]))
+    integral_8_9_std = np.sqrt(np.nansum(integrand_std[idx_8000:idx_9000]))
     north_color_idx = integral_8_9 - integral_4_5
     north_color_idx_avg = np.mean(north_color_idx)
     north_color_idx_var = np.nanvar(north_color_idx)
+    north_ere = 2 * integral_6_7 / (integral_4_5 + integral_8_9)
+    north_ere_frac_1 = np.sqrt(integral_4_5_std**2 + integral_8_9_std**2)/(integral_4_5 + integral_8_9)
+    north_ere_frac_2 = integral_6_7_std / integral_6_7
+    north_ere_std = 2 * np.sqrt(north_ere_frac_1**2 + north_ere_frac_2**2)
 
     #south:
-    variance = np.power(alpha_stds[1], 2)
-    rel_alphas = bootstrap_alphas[1]
-    numerator = np.nansum(np.divide(rel_alphas, variance), axis=1)
+    variance = np.power(bootstrap_stds[1], 2)
+    rel_alphas = alphas[1]
+    numerator = np.nansum(np.divide(rel_alphas, variance))
     denominator = np.nansum(np.divide(1, variance))
     avg_south = numerator / denominator
     avg_south_var = np.nanvar(avg_south)
     avg_south = np.nanmean(avg_south)
 
     integrand = np.multiply(rel_alphas, wavelength_deltas)
-    integral_4_5 = np.nansum(integrand[:, idx_4000:idx_5000], axis=1)
-    integral_8_9 = np.nansum(integrand[:, idx_8000:idx_9000], axis=1)
+    integrand_std = np.multiply(variance, wavelength_deltas ** 2)
+    integral_4_5 = np.nansum(integrand[idx_4000:idx_5000])
+    integral_6_7 = np.nansum(integrand[idx_6000:idx_7000])
+    integral_8_9 = np.nansum(integrand[idx_8000:idx_9000])
+    integral_4_5_std = np.sqrt(np.nansum(integrand_std[idx_4000:idx_5000]))
+    integral_6_7_std = np.sqrt(np.nansum(integrand_std[idx_6000:idx_7000]))
+    integral_8_9_std = np.sqrt(np.nansum(integrand_std[idx_8000:idx_9000]))
     south_color_idx = integral_8_9 - integral_4_5
     south_color_idx_avg = np.mean(south_color_idx)
     south_color_idx_var = np.nanvar(south_color_idx)
+    south_ere = 2 * integral_6_7 / (integral_4_5 + integral_8_9)
+    south_ere_frac_1 = np.sqrt(integral_4_5_std ** 2 + integral_8_9_std ** 2) / (integral_4_5 + integral_8_9)
+    south_ere_frac_2 = integral_6_7_std / integral_6_7
+    south_ere_std = 2 * np.sqrt(south_ere_frac_1 ** 2 + south_ere_frac_2 ** 2)
     
     #print results
     print("north avg:", avg_north)
     print("south avg:", avg_south)
     print("north idx:", north_color_idx_avg)
     print("south idx:", south_color_idx_avg)
+    print("north ere:", north_ere, north_ere_std)
+    print("south ere:", south_ere, south_ere_std)
 
     #calculate significance:
     #estimate variance:
@@ -424,15 +498,18 @@ if boss and bootstrap:
     z = (north_color_idx_avg - south_color_idx_avg) / np.sqrt(var_diff)
     print("z value for idx:")
     print(z)
+
+    var_diff = north_ere_std**2 + south_ere_std**2
+    z = (south_ere - north_ere) / np.sqrt(var_diff)
+    print("z value for ere", z)
     
     
 #plot original with 2 modifications, all on one plot
 #new model, IRIS
 if not boss:
-    plt.figure(figsize=(6, 5))
-    plot_binned([0, 1, 3], ['k', 'r', 'b'], ['SFD', r'$\tau$ Correction', 'IRIS'], envelope=True) #TEMP: envelope
+    plot_binned([0, 1, 3], ['#004488', '#BB5566', '#DDAA33'], ['SFD', 'Nonlinear Model', 'IRIS'])
     if save != '0' and bootstrap:
-        plt.savefig('../paper_figures/all_3_mods_' + save + '.pdf')
+        plt.savefig('../paper_figures/all_3_mods_' + loadkey + '.pdf', bbox_inches='tight')
         plt.clf()
     else:
         plt.show()
@@ -440,9 +517,9 @@ if not boss:
 #plot north and south on same plot (boss)
 if boss:
     envelope = bootstrap
-    plot_binned([0, 1], ['r', 'g'], ['North', 'South'], envelope=envelope)
+    plot_binned([0, 1], ['#004488', '#BB5566'], ['North', 'South'], envelope=envelope)
     if save != '0' and bootstrap:
-        plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf')
+        plt.savefig('../paper_figures/boss_north_south_' + loadkey + '.pdf', bbox_inches='tight')
         plt.clf()
     else:
         plt.show()
@@ -522,50 +599,56 @@ if boss:
     x_max = 10100
     y_max = .3
 
-    ax = fig.add_subplot(121)
-    plt.text(0.02, 0.98, 'Original\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
+    ax1 = fig.add_subplot(121)
+    ax1.text(0.98, 0.98, 'Linear\nModel', horizontalalignment='right', verticalalignment='top', transform=ax1.transAxes, fontsize='large')
 
-    colors = ['k', 'b', 'g', 'r', 'm'] #other colors to consider: y, brown, cyan, pink
+    #"bright" color scheme from https://personal.sron.nl/~pault/
+    # (order: blue, red, green, yellow, cyan)
+    colors = ['#4477AA', '#CCBB44', '#66CCEE', '#EE6677', '#228833']
     labels = ['10', '15', '20', '25', '30']
     for i in range(len(labels)):
-        plt.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+        ax1.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
         if bootstrap:
-            plt.plot(binned_lambdas, bootstrap_binned_stds_thresh_1d[i], c = colors[i], drawstyle='steps', linestyle='--')
-            #plt.fill_between(binned_lambdas, bootstrap_binned_lower_thresh_1d[i], bootstrap_binned_upper_thresh_1d[i], linewidth=0.0, color=colors[i], alpha=0.5, step='pre') #TEMP
+            ax1.plot(binned_lambdas, bootstrap_binned_stds_thresh_1d[i], c = colors[i], drawstyle='steps', linestyle='--')
+            #ax1.fill_between(binned_lambdas, bootstrap_binned_lower_thresh_1d[i], bootstrap_binned_upper_thresh_1d[i], linewidth=0.0, color=colors[i], alpha=0.5, step='pre') #TEMP
         else:
-            plt.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps', linestyle='--')
-        plt.xlabel(r"Wavelength ($\AA$)")
-        plt.ylabel(r"$\alpha_\lambda$")
-        plt.xlim(x_min, x_max)
-        plt.ylim(0, y_max)
+            ax1.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps', linestyle='--')
+        ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+        ax1.set_ylabel(r"$\alpha_\lambda$")
+        ax1.set_xlim(x_min, x_max)
+        ax1.set_ylim(0, y_max)
 
-    leg = plt.legend(frameon=False, loc='upper right')
-    plt.setp(leg.texts, family='monospace')
+    leg = ax1.legend(frameon=False, loc='upper left', ncol=2)
 
-    plt.text(0, 100, 'Original\nModel')
+    ax1.xaxis.set_major_locator(MultipleLocator(1000))
+    ax1.xaxis.set_minor_locator(MultipleLocator(200))
+    ax1.yaxis.set_major_locator(MultipleLocator(0.05))
+    ax1.yaxis.set_minor_locator(MultipleLocator(0.01))
 
-    ax = fig.add_subplot(122)
-    plt.text(0.02, 0.98, 'Tao\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
+    ax2 = fig.add_subplot(122)
+    ax2.text(0.98, 0.98, 'Nonlinear\nModel', horizontalalignment='right', verticalalignment='top', transform=ax2.transAxes, fontsize='large')
 
     for i in range(len(labels)):
-        plt.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+        ax2.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
         if bootstrap:
-            plt.plot(binned_lambdas, bootstrap_binned_stds_thresh_2d[i], c = colors[i], drawstyle='steps', linestyle='--')
-            #plt.fill_between(binned_lambdas, bootstrap_binned_lower_thresh_2d[i], bootstrap_binned_upper_thresh_2d[i], linewidth=0.0, color=colors[i], alpha=0.5, step='pre') #TEMP
+            ax2.plot(binned_lambdas, bootstrap_binned_stds_thresh_2d[i], c = colors[i], drawstyle='steps', linestyle='--')
+            #ax2.fill_between(binned_lambdas, bootstrap_binned_lower_thresh_2d[i], bootstrap_binned_upper_thresh_2d[i], linewidth=0.0, color=colors[i], alpha=0.5, step='pre') #TEMP
         else:
-            plt.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps', linestyle='--')
-        plt.xlabel(r"Wavelength ($\AA$)")
-        plt.ylabel(r"$\alpha_\lambda$")
-        plt.xlim(x_min, x_max)
-        plt.ylim(0, y_max)
+            ax2.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps', linestyle='--')
+        ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+        ax2.set_ylabel(r"$\alpha_\lambda$")
+        ax2.set_xlim(x_min, x_max)
+        ax2.set_ylim(0, y_max)
 
-    leg = plt.legend(frameon=False, loc='upper right')
-    plt.setp(leg.texts, family='monospace')
-    plt.text(0, 100, 'Tao Model')
-    plt.tight_layout()
+    leg = ax2.legend(frameon=False, loc='lower center', ncol=2)
+
+    ax2.xaxis.set_major_locator(MultipleLocator(1000))
+    ax2.xaxis.set_minor_locator(MultipleLocator(200))
+    ax2.yaxis.set_major_locator(MultipleLocator(0.05))
+    ax2.yaxis.set_minor_locator(MultipleLocator(0.01))
 
     if save != '0' and bootstrap:
-        plt.savefig('../paper_figures/boss_thresholds_2panel_' + save + '.pdf')
+        plt.savefig('../paper_figures/boss_thresholds_2panel_' + loadkey + '.pdf', bbox_inches='tight')
         plt.clf()
     else:
         plt.show()
