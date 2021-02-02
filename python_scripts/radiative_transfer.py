@@ -107,11 +107,17 @@ def cos_xi(z, R, theta, z_s):
     denom = np.sqrt(term1 * term2)
     result = numer / denom
     print("cos xi")
-    print(z)
-    print(z_s)
-    print(result)
+
     if type(z) == np.ndarray or type(z_s) == np.ndarray:
-        result[z == z_s] = -np.cos(theta)  # avoid singularity; see notes
+        idx = np.nonzero(z == z_s)
+        print("indices")
+        print(idx)
+        print(result.shape)
+        if type(theta) == np.ndarray:
+            result[idx] = -np.cos(theta[idx])
+        else:
+            result[idx] = -np.cos(theta)
+        # avoid singularity; see notes
     elif z == z_s:
         return -np.cos(theta)
     return result
@@ -177,7 +183,7 @@ def i_sca(lamb, bc03):
     integrand_vals = i_sca_integrand(theta_vals, tau_temp, R_temp, zs_temp, lamb, bc03_f)
     plt.plot(theta_vals, integrand_vals)
     plt.title('I_sca integrand vs. theta')
-    plt.show()
+    #plt.show()
 
     # plot vs. tau (for given theta, R, zs)
     tau_vals = np.linspace(0.0001, tau_f(lamb, 0)-.0001, 50)
@@ -187,7 +193,7 @@ def i_sca(lamb, bc03):
     integrand_vals = i_sca_integrand(theta_temp, tau_vals, R_temp, zs_temp, lamb, bc03_f)
     plt.plot(tau_vals, integrand_vals)
     plt.title('I_sca integrand vs. tau')
-    plt.show()
+    #plt.show()
 
     # plot vs. z_s (for given tau, theta, R)
     zs_vals = np.linspace(50, 100, 50)
@@ -197,7 +203,7 @@ def i_sca(lamb, bc03):
     integrand_vals = i_sca_integrand(theta_temp, tau_temp, R_temp, zs_vals, lamb, bc03_f)
     plt.plot(zs_vals, integrand_vals)
     plt.title('I_sca integrand vs. z_s')
-    plt.show()
+    #plt.show()
 
     # plot vs. R (for given tau theta, zs)
     R_vals = np.linspace(0.01, 1000, 50)
@@ -207,7 +213,7 @@ def i_sca(lamb, bc03):
     integrand_vals = i_sca_integrand(theta_temp, tau_temp, R_vals, zs_temp, lamb, bc03_f)
     plt.plot(R_vals, integrand_vals)
     plt.title('I_sca integrand vs. R')
-    plt.show()
+    #plt.show()
 
     x = np.linspace(0, 2*np.pi, 50)  # theta grid, 0 to 2pi
     y = np.linspace(.0001, tau_f(lamb, 0)-.0001, 50)  # tau grid, 0 to tau(0)
@@ -218,6 +224,9 @@ def i_sca(lamb, bc03):
     ww = i_sca_integrand(xx, yy, zz, vv, lamb, bc03)
     # print("number of nans")
     # print(np.count_nonzero(np.isnan(ww)))
+
+    exit(0)
+
     ww.shape
     inner = [integrate.simps(ww_x, x) for ww_x in ww]
     middle1 = [integrate.simps(ww_y, y) for ww_y in inner]
@@ -239,18 +248,18 @@ for p in paths[:1]:
     bc03_f = interp1d(wav, bc03, kind='cubic')
 
     # compute total infrared radiation
-    # (integrate from 91 to 10^4 bc 0 to inf throws an error)
-    # (range of lambda for dust model is 10^-4 to 10^4)
+    # (0 to inf throws an error)
+    # (range of lambda for dust model is 10^-4 to 10^4 microns, or 1 to 10^8 angstroms)
     # (note: range of lambda for bc03 is 91 to 1.6e6)
 
     # plot integrand for I_TIR:
     # vars: z, lambda, z_s
     # plot vs. lambda (for given z, zs)
-    lambda_vals = np.linspace(100, 10 ** 4, 50)
+    lambda_vals = np.linspace(100, 6*10**4, 50)
     z_s_temp = 1.5
     plt.plot(lambda_vals, i_tir_integrand(lambda_vals, z_s_temp, bc03_f))
     plt.title('I_TIR integrand vs. wavelength')
-    plt.show()
+    #plt.show()
 
     # plot vs. z_s (for given lambda)
     zs_vals = np.linspace(-3, 70, 50)
@@ -258,10 +267,10 @@ for p in paths[:1]:
     z_temp = 1.5
     plt.plot(zs_vals, i_tir_integrand(lambda_temp, zs_vals, bc03_f))
     plt.title('I_TIR integrand vs. z_s')
-    plt.show()
+    #plt.show()
 
 
-    y = np.linspace(100, 10**4, 50)  # min, max, n   # lambda grid, 91 to 10**4 A
+    y = np.linspace(100, 6*10**4, 50)  # min, max, n   # lambda grid, 91 to 10**4 A
     z = np.linspace(-3, 70, 50)  # z_s grid, -inf to inf
     yy, zz = np.meshgrid(y, z)
     ww = i_tir_integrand(yy, zz, bc03_f)
