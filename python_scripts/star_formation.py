@@ -12,10 +12,10 @@ from scipy.optimize import minimize
 paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
 
 # print names of spectra:
-#for path in paths:
+# for path in paths:
 #    print(path)
 
-#plot the model spectra:
+# plot the model spectra:
 '''
 for p in paths[:10]:
     if 'ssp_5Myr_z008' in p:
@@ -29,18 +29,18 @@ for p in paths[:10]:
         plt.show()
 '''
 
-#alphas and stds (boss):
+# alphas and stds (boss):
 alphas = [np.load('../alphas_and_stds/alphas_boss_102019.npy')]
 alpha_stds = [np.load('../alphas_and_stds/alpha_stds_boss_2d_102019.npy')]
 wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
 
-#limit the wavelength range to 4000 to 9000 nm:
+# limit the wavelength range to 4000 to 9000 A:
 for i in range(len(alphas)):
     alphas[i] = alphas[i][(wavelength > 4000) & (wavelength < 9000)]
     alpha_stds[i] = alpha_stds[i][(wavelength > 4000) & (wavelength < 9000)]
 wavelength = wavelength[(wavelength > 4000) & (wavelength < 9000)]
 
-#mask emission lines
+# mask emission lines
 emission_line_mask = np.zeros(len(wavelength), dtype=int)
 emission_lines = [3727, 4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
 for line in emission_lines:
@@ -52,27 +52,51 @@ for i in range(len(alphas)):
 wavelength = wavelength[np.logical_not(emission_line_mask)]
 
 # for adding a polynomial
-poly_degree = 2 #1 is linear, etc.
+poly_degree = 3 # 1 is linear, etc.
 poly_order = poly_degree + 1
+poly_order = 0 # TEMP
 
-num_model_spectra = 10
-normalize_index = 18 #divide by this spectrum later
-#if only 3:
-# cst_6gyr_z02
-# ssp_5Gyr_z02
-# t5e9_12gyr_z02
+num_model_spectra = 3
+normalize_index = 18 # divide by this spectrum later
+
+# if only 3:
+# cst_6gyr_z02 [idx 29]
+# t9e9_12gyr_z02 [idx 21]
+# t5e9_12gyr_z02 [idx 22]
+
 if num_model_spectra == 3:
-    paths = [paths[29], paths[13], paths[22]]
+    paths = [paths[29],
+             paths[21],
+             paths[22]]
     normalize_index = 2
 
-#load the spectra and interpolate to same wavelength range:
+# load the spectra and interpolate to same wavelength range
+# emission lines are effectively masked bc those wavelengths are removed
 model_spectra = np.zeros((len(paths)+poly_order, len(wavelength)))
 for i, p in enumerate(paths):
     a = np.loadtxt(p)
-    wav = a[:,0]
-    values = a[:,1]
+    wav = a[:, 0]
+    values = a[:, 1]
     f = interp1d(wav, values, kind='cubic')
     model_spectra[i] = np.array([f(w) for w in wavelength])
+
+# subtract continuum from all the spectra
+continuum_deg = 4
+continuum_order = continuum_deg + 1
+for i in range(len(paths)):
+    coeffs_i = np.polyfit(wavelength, model_spectra[i], continuum_deg)
+    continuum_fit = 0
+    for j in range(continuum_order):
+        continuum_fit += coeffs_i[-1-j] * np.power(wavelength, j)
+    model_spectra[i] /= continuum_fit
+# same for alphas (need to account for errors better)
+for i in range(len(alphas)):
+    coeffs_i = np.polyfit(wavelength, alphas[i], continuum_deg)
+    continuum_fit = 0
+    for j in range(continuum_order):
+        continuum_fit += coeffs_i[-1 - j] * np.power(wavelength, j)
+    alphas[i] /= continuum_fit
+    alpha_stds[i] /= continuum_fit
 
 # find best-fit linear combination [plus polynomial] using max likelihood estimator
 # and plot the best-fit spectrum against actual spectrum
@@ -80,11 +104,12 @@ for i, p in enumerate(paths):
 # scale them based on total flux in the BOSS wavelength range (maybe change to 4000 to 9000)
 # (the model spectra were interpolated onto that range above).
 # that way, the coefficient ratio represents the flux ratio (between/among the source models).
-for i in range(len(paths)):
-    model_spectra[i] = model_spectra[i] / np.sum(model_spectra[i]) * np.sum(model_spectra[normalize_index])
-for i in range(poly_order):
-    model_spectra[-i-1] = np.power(wavelength, i)
-    
+if poly_order != 0:  #this is unnecessary if we are doing continuum normalization
+    for i in range(len(paths)):
+        model_spectra[i] = model_spectra[i] / np.sum(model_spectra[i]) * np.sum(model_spectra[normalize_index])
+    for i in range(poly_order):
+        model_spectra[-i-1] = np.power(wavelength, i)
+
 num_spectra = len(paths)+poly_order
 A = np.zeros((num_spectra, num_spectra))
 for i in range(num_spectra):
@@ -93,23 +118,69 @@ for i in range(num_spectra):
 b = np.zeros(num_spectra)
 for i in range(num_spectra):
     b[i] = np.nansum(alphas[0]*model_spectra[i]/np.power(alpha_stds[0], 2))
-    
-coeffs = np.linalg.lstsq(A, b)[0]
+
+#coeffs = np.linalg.lstsq(A, b)[0]
+print("rank", np.linalg.lstsq(A, b)[2])
+coeffs = np.linalg.solve(A, b)
 print("coefficients")
 print(coeffs)
 
-#plot the best fit spectrum:
-#best_fit_model = 
+print(coeffs.shape)
+
+# I think A happens to be the inverse covariance matrix.
+# (see paper notes)
+Cov = np.linalg.inv(A)
+print("covariance")
+print(Cov)
+
+# variance of the "function combining the 3 best-fit coeffs
+# calculate separately at each wavelength
+# here the "coeffs" are value of model spectrum at given wavelength
+fitted_model_vars = np.zeros(wavelength.shape)
+for i in range(len(wavelength)):
+    a = model_spectra[:, i]
+    a_col = a.reshape(len(a), 1)
+    a_row = a.reshape(1, len(a))
+    var_i = a_row.dot(Cov).dot(a_col)
+    fitted_model_vars[i] = var_i
+fitted_model_stds = np.sqrt(fitted_model_vars)
+
+
+
+
+# constrain coefficients to be positive using curve_fit
+"""
+def func(x, a, b, c):
+    spec_1 = interp1d(wavelength, model_spectra[0], kind='cubic')
+    spec_2 = interp1d(wavelength, model_spectra[1], kind='cubic')
+    spec_3 = interp1d(wavelength, model_spectra[2], kind='cubic')
+    return a*spec_1(x) + b*spec_2(x) + c*spec_3(x)
+from scipy.optimize import curve_fit
+coeffs, pcov = curve_fit(func, wavelength, alphas[0], bounds=(0, 20))
+print("new coeffs")
+print(coeffs)
+"""
+
+# plot the best fit spectrum:
+# best_fit_model =
 weighted_model_spectra = np.copy(model_spectra)
+
 for i in range(len(coeffs)):
     weighted_model_spectra[i] *= coeffs[i]
 best_fit_model = np.sum(weighted_model_spectra, axis=0)
 
-#find the chai squared:
+# find the chai squared:
 print("chai squared")
-print(np.nansum(np.divide(np.power(best_fit_model - alphas[0], 2), np.power(alpha_stds[0], 2)))
+chai_squared = np.nansum(np.divide(np.power(best_fit_model - alphas[0], 2), np.power(alpha_stds[0], 2)))
+print(chai_squared)
+print("per degree of freedom (for 3 spectra)")
+chai_df = chai_squared / (len(wavelength) + poly_order)
+print(chai_df)
     
 plt.plot(wavelength, best_fit_model, 'r', drawstyle='steps')
+plt.fill_between(wavelength, best_fit_model + 3*fitted_model_stds, best_fit_model - 3*fitted_model_stds, color='r', alpha=0.5, step='pre')
+#plt.plot(wavelength, best_fit_model + 3*fitted_model_stds, 'r', drawstyle='steps')
+#plt.plot(wavelength, best_fit_model - 3*fitted_model_stds, 'r', drawstyle='steps')
 plt.plot(wavelength, alphas[0], 'k', drawstyle='steps')
 plt.xlim(3500, 10000)
 plt.ylim(0, 1)
@@ -118,9 +189,9 @@ plt.show()
 
 exit(0)
 
-### LICK INDEX STUFF BELOW THIS POINT #############################################
+# LICK INDEX STUFF BELOW THIS POINT #############################################
 
-#some important lick index tuples:
+# some important lick index tuples:
 h_beta_bounds = (4847.875, 4876.625, 4827.875, 4847.875, 4876.625, 4891.625, 0)
 mg1_bounds = (5069.125, 5134.125, 4895.125, 4957.625, 5301.125, 5366.125, 1)
 mg2_bounds = (5154.125, 5196.625, 4895.125, 4957.625, 5301.125, 5366.125, 1)
@@ -131,6 +202,7 @@ fe_5015_bounds = (4977.750, 5054.000, 4946.500, 4977.750, 5054.000, 5065.250, 0)
 fe_5270_bounds = (5245.650, 5285.650, 5233.150, 5248.150, 5285.650, 5318.150, 0)
 fe_5335_bounds = (5312.125, 5352.125, 5304.625, 5315.875, 5353.375, 5363.375, 0)
 mg_b_bounds = (5160.125, 5192.625, 5142.625, 5161.375, 5191.375, 5206.375, 0)
+
 
 # calculate lick indices:
 def calc_lick_idx(alphas, alpha_stds, bounds, wavelength):

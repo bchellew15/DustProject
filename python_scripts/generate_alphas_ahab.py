@@ -93,6 +93,7 @@ def calc_alphas(i100, plate, flambda, ivar, boot=False):
     #last section:
     avgs = np.mean(x1[boundaries[-1]:], axis=0) #mean across plates, not wavelength
     x2[boundaries[-1]:] = avgs
+
     #calculate x
     x = np.subtract(x1, x2)
     #x unit conversion
@@ -105,12 +106,12 @@ def calc_alphas(i100, plate, flambda, ivar, boot=False):
         x = x.reshape(len(x), 1)
         
     print("calculating alphas")
-    
+
     #calculate alpha
     xx = np.multiply(x, x)
     yx = np.multiply(y, x)
     yxsig = np.multiply(yx, ivar)
-    xxsig = np.multiply(xx, ivar)    
+    xxsig = np.multiply(xx, ivar)
     sums1 = np.sum(yxsig, axis=0)
     sums2 = np.sum(xxsig, axis=0)
 

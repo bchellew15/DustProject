@@ -18,19 +18,29 @@ plate = hdulist[6].data
 fiber_id = hdulist[7].data
 flambda = hdulist[0].data
 
-#flambdas_on_plate = []
-#ivars_on_plate = []
-
-# temp
-# 2389, 2390, 2384, 2395, 2386
-print(plate[2389])
-print(plate[2390])
-print(plate[2384])
-print(plate[2385])
-print(plate[2386])
+i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
+i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
 
 wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
-alpha = np.load('partial_jacknife_alphas_boss_iris_1d_012720_30.npy')
+
+# coords = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations_galactic.txt")
+# see "sky_locations.py" for sdss locations
+
+i100 = i100[:, -1]
+p1 = plate[2384]
+p2 = plate[2385]
+print(p1)
+print(p2)
+relevant_fibers = np.where(plate == p1)[0]
+print(relevant_fibers)
+rel_i100 = i100[relevant_fibers]
+print(rel_i100)
+print(np.mean(rel_i100))
+print(i100[2389])
+print(i100[2390])
+print(i100[2384])
+print(i100[2385])
+
 
 
 

@@ -29,9 +29,10 @@ new_cmap = truncate_colormap(cmap, 0.2, 1)
 
 if boss: 
     coords = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations_galactic.txt")
+
     i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
     i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
-    i100 = i100[:,2941] #around the halfway point
+    i100 = i100[:,2941] # around the halfway point in terms of wavelength
 
     hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + 'skyfibers_lam0.fits')
     plate = hdulist[6].data
