@@ -173,7 +173,7 @@ def i_sca_integrand(theta, tau, R, z_s, lamb, bc03):
     elif z == z_s:
         term4_exp = 0
 
-    term4 = surface_power_deriv(bc03, z_s, lamb) * term4_exp  # TEMP
+    term4 = -surface_power_deriv(bc03, z_s, lamb) * term4_exp  # TEMP: added - and switched to deriv
     term5 = 4 * np.pi * ((z - z_s)**2 + R**2)
     result = prefactor * term1 * term2 * term3 * term4 / term5
     return result
@@ -182,7 +182,8 @@ def i_sca_integrand(theta, tau, R, z_s, lamb, bc03):
 # eqn A7, part 2: do the integral for given wavelength
 def i_sca(lamb, bc03):
 
-    """
+    print("check:", lamb)
+
     # plot integrand for I_sca:
     # vars: theta, tau, R, zs
     # plot vs. theta (for given tau, R, zs)
@@ -216,15 +217,16 @@ def i_sca(lamb, bc03):
     plt.show()
 
     # plot vs. R (for given tau theta, zs)
-    R_vals = np.linspace(0.01, 1000, 50)
-    tau_temp = 0.1
+    R_vals = np.linspace(0.01, 1, 50)
+    tau_temp = tau_f(lamb, 1.5)  # temp to get z = zs; was 0.1
     theta_temp = np.pi
     zs_temp = 1.5
     integrand_vals = i_sca_integrand(theta_temp, tau_temp, R_vals, zs_temp, lamb, bc03_f)
-    plt.plot(R_vals, integrand_vals)
+    plt.plot(R_vals, integrand_vals, '.')
     plt.title('I_sca integrand vs. R')
     plt.show()
-    """
+
+    exit(0)
 
     num_div = 50
     x_min = 0
@@ -260,21 +262,39 @@ def i_sca(lamb, bc03):
     # result = integrate.simps(middle2, v)
     # return result
 
+# solar metallicity: .012
+# (use .008 for now)
+# index 2: t=5e9, 12 Gyr, Z=.008
+# 5th to last: similar but t9e9
 
 # loop through the bc03 spectra
-for p in paths[:1]:
+for p in paths[2:3]:
     # load and interpolate the bc03 spectra
     a = np.loadtxt(p)
     wav = a[:, 0]  # angstroms
     bc03 = a[:, 1]
     bc03_f = interp1d(wav, bc03, kind='cubic')
 
+    # plot previously saved stuff:
+    load_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
+    load_path += p.split('/')[-1].rsplit('.spec')[0] + '_021121.npy'
+    alphas_radiative = np.load(load_path)
+    bc03_factor = 3  # test
+    bd12_factor = 0.49
+    plt.plot(wavelength, alphas_radiative*bd12_factor, label='Radiative Transfer')
+    plt.plot(wav, bc03_f(wav)/bc03_factor*bd12_factor, label='BC03 Model')
+    plt.xlim(3000, 10000)
+    plt.ylim(0, 0.4)
+    plt.xlabel("Wavelength")
+    plt.ylabel("Alpha")
+    plt.legend()
+    plt.show()
+
     # testing A4:
     #i_tir = i_tir_integrand(6000, 2, bc03_f)
     #print("I tir test")
     #print(i_tir)
     #exit(0)
-
 
 
     # compute total infrared radiation
@@ -328,11 +348,8 @@ for p in paths[:1]:
 
     print("starting integral")
 
-    # this will take a long time
-    wavelength_partial = wavelength[::100]
-
+    wavelength_partial = wavelength
     i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])  # units of sigma * parsecs
-
     i_lam_array = i_sca_array * wavelength_partial  # units of sigma * parsecs * angstroms
     alphas = i_lam_array / nu_I_nu_100
 
