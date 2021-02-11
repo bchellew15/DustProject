@@ -173,7 +173,7 @@ def i_sca_integrand(theta, tau, R, z_s, lamb, bc03):
     elif z == z_s:
         term4_exp = 0
 
-    term4 = surface_power_fn(bc03, z_s, lamb) * term4_exp
+    term4 = surface_power_deriv(bc03, z_s, lamb) * term4_exp  # TEMP
     term5 = 4 * np.pi * ((z - z_s)**2 + R**2)
     result = prefactor * term1 * term2 * term3 * term4 / term5
     return result
@@ -261,8 +261,6 @@ def i_sca(lamb, bc03):
     # return result
 
 
-# CHECKED THROUGH HERE (units and equations)
-
 # loop through the bc03 spectra
 for p in paths[:1]:
     # load and interpolate the bc03 spectra
@@ -270,9 +268,6 @@ for p in paths[:1]:
     wav = a[:, 0]  # angstroms
     bc03 = a[:, 1]
     bc03_f = interp1d(wav, bc03, kind='cubic')
-
-    # plt.plot(wav, bc03_f(wav))
-    # plt.show()
 
     # testing A4:
     #i_tir = i_tir_integrand(6000, 2, bc03_f)
@@ -308,8 +303,8 @@ for p in paths[:1]:
 
     num_div = 100
     y_min = 100
-    y_max = 10**6  # 6*10**4  # lambda grid, 91 to 10**4 A
-    y = np.linspace(y_min, y_max, num_div)  # min, max, n
+    y_max = 10**6  # 6*10**4
+    y = np.linspace(y_min, y_max, num_div)  # lambda grid, 91 to 10**4 A  # min, max, n
     z_min = -1000
     z_max = 1000
     z = np.linspace(z_min, z_max, num_div)  # z_s grid, -inf to inf
@@ -329,16 +324,16 @@ for p in paths[:1]:
     print(I_tir)
 
     # convert to 100 micron (there is an associated uncertainty)
-    nu_I_nu_100 = .52 * I_tir  # units?
+    nu_I_nu_100 = .52 * I_tir  # units of angstroms * sigma
 
     print("starting integral")
 
     # this will take a long time
-    wavelength_partial = wavelength[1005:1006]
+    wavelength_partial = wavelength[::100]
 
-    i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])
+    i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])  # units of sigma * parsecs
 
-    i_lam_array = i_sca_array * wavelength_partial
+    i_lam_array = i_sca_array * wavelength_partial  # units of sigma * parsecs * angstroms
     alphas = i_lam_array / nu_I_nu_100
 
     print("Wavelength and alphas")
@@ -346,6 +341,7 @@ for p in paths[:1]:
     print(alphas)
 
     plt.plot(wavelength_partial, alphas)
+    plt.plot(wav, bc03_f(wav))
     plt.show()
 
     # save the result
