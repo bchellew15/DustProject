@@ -100,6 +100,12 @@ def A_f(lamb, z, z_s, R):
     term2 = np.sqrt((z-z_s)**2 + R**2)
     term3 = np.abs(z - z_s)
     result = term1 * term2 / term3
+
+    if type(z) == np.ndarray or type(z_s) == np.ndarray:
+        np.putmask(result, z == z_s, density_prefactor * dust_cross_f(lamb) * R * np.exp(-z**2 / 2 / sig_dust**2))
+    elif z == z_s:
+        return density_prefactor * dust_cross_f(lamb) * R * np.exp(-z**2 / 2 / sig_dust**2)
+
     return result
 
 
@@ -143,15 +149,18 @@ def i_tir_integrand(lamb, z_s, bc03):
     term2 = surface_power_deriv(bc03, z_s, lamb)
     tau_zs = tau_f(lamb, z_s)
     tau_0 = tau_f(lamb, 0)
-    term3 = 2 + tau_zs * special.expi(tau_zs) - np.exp(tau_zs) \
-        + (tau_0 - tau_zs) * special.expi(tau_0 - tau_zs) - np.exp(tau_0 - tau_zs)
-    term3_2 = (tau_0 - tau_zs)*special.expi(tau_zs - tau_0) + np.exp(tau_zs - tau_0) \
-        + tau_zs * special.expi(tau_zs) - np.exp(tau_zs)
+    term3 = 2 + tau_zs * special.exp1(tau_zs) - np.exp(-tau_zs) \
+        + (tau_0 - tau_zs) * special.exp1(tau_0 - tau_zs) - np.exp(tau_zs - tau_0)
+    term3_2 = (tau_0 - tau_zs)*special.exp1(tau_zs - tau_0) + np.exp(tau_0 - tau_zs) \
+        + tau_zs * special.exp1(tau_zs) - np.exp(-tau_zs)
 
     if type(z_s) == np.ndarray or type(lamb) == np.ndarray:
         np.putmask(term3, tau_zs > tau_0, term3_2)
     elif tau_zs > tau_0:
         term3 = term3_2
+
+    # apply neg. sign:
+    term3 = -term3
 
     result = prefactor * term1 * term2 * term3
     return result
@@ -168,10 +177,7 @@ def i_sca_integrand(theta, tau, R, z_s, lamb, bc03):
     term3 = henyey(cos_xi(z, R, theta, z_s), dust_cos_f(lamb))
     term4_exp = np.exp(-A_f(lamb, z, z_s, R))
 
-    if type(z) == np.ndarray or type(z_s) == np.ndarray:
-        np.putmask(term4_exp, z == z_s, np.exp(-R*density_prefactor*dust_cross_f(lamb)) / R**2)
-    elif z == z_s:
-        term4_exp = 0
+    # add checking for R = 0...
 
     term4 = -surface_power_deriv(bc03, z_s, lamb) * term4_exp  # TEMP: added - and switched to deriv
     term5 = 4 * np.pi * ((z - z_s)**2 + R**2)
@@ -184,6 +190,7 @@ def i_sca(lamb, bc03):
 
     print("check:", lamb)
 
+    """
     # plot integrand for I_sca:
     # vars: theta, tau, R, zs
     # plot vs. theta (for given tau, R, zs)
@@ -225,8 +232,7 @@ def i_sca(lamb, bc03):
     plt.plot(R_vals, integrand_vals, '.')
     plt.title('I_sca integrand vs. R')
     plt.show()
-
-    exit(0)
+    """
 
     num_div = 50
     x_min = 0
@@ -281,8 +287,9 @@ for p in paths[2:3]:
     alphas_radiative = np.load(load_path)
     bc03_factor = 3  # test
     bd12_factor = 0.49
-    plt.plot(wavelength, alphas_radiative*bd12_factor, label='Radiative Transfer')
-    plt.plot(wav, bc03_f(wav)/bc03_factor*bd12_factor, label='BC03 Model')
+    plt.plot(wavelength, alphas_radiative*bd12_factor, label='Radiative Transfer', drawstyle='steps')
+    plt.plot(wavelength, bc03_f(wavelength)/bc03_factor*bd12_factor, label='BC03 Model', drawstyle='steps')
+    plt.plot(wavelength, alphas_radiative / bc03_f(wavelength), drawstyle='steps')
     plt.xlim(3000, 10000)
     plt.ylim(0, 0.4)
     plt.xlabel("Wavelength")
@@ -348,7 +355,7 @@ for p in paths[2:3]:
 
     print("starting integral")
 
-    wavelength_partial = wavelength
+    wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
     i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])  # units of sigma * parsecs
     i_lam_array = i_sca_array * wavelength_partial  # units of sigma * parsecs * angstroms
     alphas = i_lam_array / nu_I_nu_100
