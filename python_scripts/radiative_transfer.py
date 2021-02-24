@@ -204,7 +204,7 @@ def i_sca(lamb, bc03):
     plt.show()
 
     # plot vs. tau (for given theta, R, zs)
-    tau_vals = np.linspace(0.18, tau_f(lamb, 0)-.00001, 50)
+    tau_vals = np.linspace(0.001, tau_f(lamb, 0)-.00001, 50)
     theta_temp = np.pi
     R_temp = 1
     zs_temp = 1.5
@@ -224,8 +224,8 @@ def i_sca(lamb, bc03):
     plt.show()
 
     # plot vs. R (for given tau theta, zs)
-    R_vals = np.linspace(0.01, 1, 50)
-    tau_temp = tau_f(lamb, 1.5)  # temp to get z = zs; was 0.1
+    R_vals = np.linspace(.1, 1000, 50)
+    tau_temp = 0.21  # temp to get z = zs: tau_f(lamb, 1.5)
     theta_temp = np.pi
     zs_temp = 1.5
     integrand_vals = i_sca_integrand(theta_temp, tau_temp, R_vals, zs_temp, lamb, bc03_f)
@@ -233,12 +233,25 @@ def i_sca(lamb, bc03):
     plt.title('I_sca integrand vs. R')
     plt.show()
     """
+    """
+    # plot vs. lambda (for given tau, theta, R, zs)
+    R_temp = 1
+    lamb_vals = np.linspace(4000, 10000, 1200)
+    tau_temp = tau_f(lamb_vals, 1.5)  # temp to get z = zs; was 0.1
+    theta_temp = np.pi
+    zs_temp = 1.5
+    integrand_vals = i_sca_integrand(theta_temp, tau_temp, R_temp, zs_temp, lamb_vals, bc03_f)
+    plt.plot(lamb_vals, integrand_vals / bc03_f(lamb_vals))
+    plt.title('I_sca integrand vs. lambda')
+    plt.show()
+    """
+
 
     num_div = 50
     x_min = 0
     x_max = 2*np.pi
     x = np.linspace(x_min, x_max, num_div)  # theta grid, 0 to 2pi
-    y_min = .01  # get better estimate of lower bound
+    y_min = .01  # get better estimate of lower bound. was using .01.
     y_max = tau_f(lamb, 0)-.00001
     y = np.linspace(y_min, y_max, num_div)  # tau grid, 0 to tau(0)
     z_min = .01
@@ -355,7 +368,9 @@ for p in paths[2:3]:
 
     print("starting integral")
 
-    wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
+    # wavelength_partial = wavelength[(wavelength > 5380) & (wavelength < 5480)]
+    # wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
+    wavelength_partial = wavelength
     i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])  # units of sigma * parsecs
     i_lam_array = i_sca_array * wavelength_partial  # units of sigma * parsecs * angstroms
     alphas = i_lam_array / nu_I_nu_100
@@ -364,7 +379,7 @@ for p in paths[2:3]:
     print(wavelength_partial)
     print(alphas)
 
-    plt.plot(wavelength_partial, alphas)
+    plt.plot(wavelength_partial, alphas / bc03_f(wavelength_partial))
     plt.plot(wav, bc03_f(wav))
     plt.show()
 
