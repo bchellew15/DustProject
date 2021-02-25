@@ -170,18 +170,26 @@ def i_tir_integrand(lamb, z_s, bc03):
 # note that we integrate over z_s also.
 # units: parsecs * units of sigma
 def i_sca_integrand(theta, tau, R, z_s, lamb, bc03):
+
     prefactor = (1 / np.sin(np.abs(b))) * dust_albedo_f(lamb)
     z = z_of_tau(lamb, tau)
+
+    # check for tau = 0
+    if type(tau) != np.ndarray and tau == 0:
+        return 0  # this happens when z = infinity
+    z[tau == 0] = 1  # just so we don't have z = inf in cos_xi
+
     term1 = np.exp((-1 / np.sin(np.abs(b))) * (tau_f(lamb, 0) - tau))
     term2 = R
     term3 = henyey(cos_xi(z, R, theta, z_s), dust_cos_f(lamb))
     term4_exp = np.exp(-A_f(lamb, z, z_s, R))
-
-    # add checking for R = 0...
-
     term4 = -surface_power_deriv(bc03, z_s, lamb) * term4_exp  # TEMP: added - and switched to deriv
     term5 = 4 * np.pi * ((z - z_s)**2 + R**2)
     result = prefactor * term1 * term2 * term3 * term4 / term5
+
+    if type(tau) == np.ndarray:
+        np.putmask(result, tau == 0, 0)
+
     return result
 
 
@@ -202,9 +210,9 @@ def i_sca(lamb, bc03):
     plt.plot(theta_vals, integrand_vals)
     plt.title('I_sca integrand vs. theta')
     plt.show()
-
+    
     # plot vs. tau (for given theta, R, zs)
-    tau_vals = np.linspace(0.001, tau_f(lamb, 0)-.00001, 50)
+    tau_vals = np.linspace(0, tau_f(lamb, 0)-.00001, 300)
     theta_temp = np.pi
     R_temp = 1
     zs_temp = 1.5
@@ -212,7 +220,7 @@ def i_sca(lamb, bc03):
     plt.plot(tau_vals, integrand_vals)
     plt.title('I_sca integrand vs. tau')
     plt.show()
-
+    
     # plot vs. z_s (for given tau, theta, R)
     zs_vals = np.linspace(-100, 1000, 50)
     tau_temp = 0.1
@@ -251,8 +259,8 @@ def i_sca(lamb, bc03):
     x_min = 0
     x_max = 2*np.pi
     x = np.linspace(x_min, x_max, num_div)  # theta grid, 0 to 2pi
-    y_min = .01  # get better estimate of lower bound. was using .01.
-    y_max = tau_f(lamb, 0)-.00001
+    y_min = 0  # .01  # get better estimate of lower bound. was using .01.
+    y_max = tau_f(lamb, 0)  # -.00001
     y = np.linspace(y_min, y_max, num_div)  # tau grid, 0 to tau(0)
     z_min = .01
     z_max = 1000
@@ -296,7 +304,7 @@ for p in paths[2:3]:
 
     # plot previously saved stuff:
     load_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
-    load_path += p.split('/')[-1].rsplit('.spec')[0] + '_021121.npy'
+    load_path += p.split('/')[-1].rsplit('.spec')[0] + '_021121.npy'  # 021121 or 022321
     alphas_radiative = np.load(load_path)
     bc03_factor = 3  # test
     bd12_factor = 0.49
@@ -368,9 +376,9 @@ for p in paths[2:3]:
 
     print("starting integral")
 
-    # wavelength_partial = wavelength[(wavelength > 5380) & (wavelength < 5480)]
-    # wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
-    wavelength_partial = wavelength
+    # wavelength_partial = wavelength[(wavelength > 4600) & (wavelength < 5600)]  #5380 to 5480
+    wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
+    # wavelength_partial = wavelength
     i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])  # units of sigma * parsecs
     i_lam_array = i_sca_array * wavelength_partial  # units of sigma * parsecs * angstroms
     alphas = i_lam_array / nu_I_nu_100
