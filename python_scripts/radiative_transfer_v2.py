@@ -97,35 +97,24 @@ def z_of_tau(lamb, tau):
 
 
 # A2
-def A_f(lamb, z, z_s, R):
-    term1 = np.abs(tau_f(lamb, z) - tau_f(lamb, z_s))
-    term2 = np.sqrt((z - z_s) ** 2 + R ** 2)
-    term3 = np.abs(z - z_s)
-    result = term1 * term2 / term3
+def A_f(lamb, z, rho, beta):
+    term1 = tau_f(lamb, z) - tau_f(lamb, z - rho * np.cos(beta))
+    term2 = np.cos(beta)
+    result = np.abs(term1 / term2)
 
     if type(z) == np.ndarray or type(z_s) == np.ndarray:
-        np.putmask(result, z == z_s, density_prefactor * dust_cross_f(lamb) * R * np.exp(-z ** 2 / 2 / sig_dust ** 2))
-    elif z == z_s:
-        return density_prefactor * dust_cross_f(lamb) * R * np.exp(-z ** 2 / 2 / sig_dust ** 2)
+        np.putmask(result, np.cos(beta) == 0, density_prefactor * dust_cross_f(lamb) * rho * np.sin(beta) * np.exp(-z ** 2 / 2 / sig_dust ** 2))
+    elif np.cos(beta) == 0:
+        return density_prefactor * dust_cross_f(lamb) * rho * np.sin(beta) * np.exp(-z ** 2 / 2 / sig_dust ** 2)
 
     return result
 
 
 # eqn A5
-def cos_xi(z, R, theta, z_s):
-    numer = (z - z_s) ** 2 - R * z * np.cos(theta) / np.tan(b)
-    term1 = z ** 2 / np.tan(b) ** 2 + (z - z_s) ** 2
-    term2 = R ** 2 + (z - z_s) ** 2
-    denom = np.sqrt(term1 * term2)
-    result = numer / denom
-
-    # take the limit when there are issues
-    if type(z) == np.ndarray or type(z_s) == np.ndarray:
-        np.putmask(result, z == z_s, -np.cos(theta))
-    elif z == z_s:
-        return -np.cos(theta)
-
-    return result
+def cos_xi(z, rho, theta, beta):
+    numer = rho * np.cos(beta)**2 - z * np.sin(beta) * np.cos(theta) / np.tan(b)
+    denom_sqr = z**2 / np.tan(b)**2 + rho**2 * np.cos(beta)**2
+    return numer / np.sqrt(denom_sqr)
 
 
 # scale heights 300 pc and 1350 pc
@@ -135,44 +124,37 @@ a_1350 = 0.1
 
 # surface power density (arbitrary units; any normalization factor will cancel out later)
 # it's a function of height z_s
-def surface_power_fn(bc03, z_s, lamb):  # z_s in pc
-    return bc03(lamb) * (a_300 * np.exp(-z_s / 300) + a_1350 * np.exp(-z_s / 1350))
+# def surface_power_fn(bc03, z_s, lamb):  # z_s in pc
+#     return bc03(lamb) * (a_300 * np.exp(-z_s / 300) + a_1350 * np.exp(-z_s / 1350))
 
 
 # I found the derivative analytically
-def surface_power_deriv(bc03, z_s, lamb):
-    return bc03(lamb) * (-a_300 * np.exp(-z_s / 300) / 300 - a_1350 * np.exp(-z_s / 1350) / 1350)
+def surface_power_deriv(bc03, z, rho, beta, lamb):
+    return bc03(lamb) * \
+           (-a_300 * np.exp(-(z - rho *np.cos(beta)) / 300) / 300
+            - a_1350 * np.exp(-(z - rho *np.cos(beta)) / 1350) / 1350)
 
 
 # eqn A4: integrand
 # units: angstroms * units of sigma after integration
-def i_tir_integrand(lamb, z_s, bc03):
+def i_tir_integrand(lamb, z, rho, beta, bc03):
     prefactor = 1 / (8 * np.pi) / np.sin(np.abs(b))
     term1 = 1 - dust_albedo_f(lamb)
-    term2 = surface_power_deriv(bc03, z_s, lamb)
-    tau_zs = tau_f(lamb, z_s)
-    tau_0 = tau_f(lamb, 0)
-    term3 = 2 + tau_zs * special.exp1(tau_zs) - np.exp(-tau_zs) \
-            + (tau_0 - tau_zs) * special.exp1(tau_0 - tau_zs) - np.exp(tau_zs - tau_0)
-    term3_2 = (tau_0 - tau_zs) * special.exp1(tau_zs - tau_0) + np.exp(tau_0 - tau_zs) \
-              + tau_zs * special.exp1(tau_zs) - np.exp(-tau_zs)
-
-    if type(z_s) == np.ndarray or type(lamb) == np.ndarray:
-        np.putmask(term3, tau_zs > tau_0, term3_2)
-    elif tau_zs > tau_0:
-        term3 = term3_2
+    term2 = surface_power_deriv(bc03, z, rho, beta, lamb)
+    term3 = np.exp(-A_f(lamb, z, rho, beta))
+    term4 = np.sin(beta)
 
     # apply neg. sign:
     term3 = -term3
 
-    result = prefactor * term1 * term2 * term3
+    result = prefactor * term1 * term2 * term3 * term4
     return result
 
-
+"""
 # eqn A7, part 1: just the integrand.
 # note that we integrate over z_s also.
 # units: parsecs * units of sigma
-def i_sca_integrand(theta, tau, R, z_s, lamb, bc03):
+def i_sca_integrand(theta, tau, rho, beta, lamb, bc03):
     prefactor = (1 / np.sin(np.abs(b))) * dust_albedo_f(lamb)
     z = z_of_tau(lamb, tau)
 
@@ -183,9 +165,9 @@ def i_sca_integrand(theta, tau, R, z_s, lamb, bc03):
 
     term1 = np.exp((-1 / np.sin(np.abs(b))) * (tau_f(lamb, 0) - tau))
     term2 = R
-    term3 = henyey(cos_xi(z, R, theta, z_s), dust_cos_f(lamb))
-    term4_exp = np.exp(-A_f(lamb, z, z_s, R))
-    term4 = -surface_power_deriv(bc03, z_s, lamb) * term4_exp  # TEMP: added - and switched to deriv
+    term3 = henyey(cos_xi(z, rho, theta, beta), dust_cos_f(lamb))
+    term4_exp = np.exp(-A_f(lamb, z, rho, beta))
+    term4 = -surface_power_deriv(bc03, z, rho, beta, lamb) * term4_exp  # TEMP: added - and switched to deriv
     term5 = 4 * np.pi * ((z - z_s) ** 2 + R ** 2)
     result = prefactor * term1 * term2 * term3 * term4 / term5
 
@@ -193,7 +175,7 @@ def i_sca_integrand(theta, tau, R, z_s, lamb, bc03):
         np.putmask(result, tau == 0, 0)
 
     return result
-
+"""
 
 # eqn A7, part 2: do the integral for given wavelength
 def i_sca(lamb, bc03):
@@ -349,13 +331,19 @@ for p in paths[2:3]:
     plt.show()
     """
 
-    num_div = 100
-    y_min = 100
-    y_max = 10 ** 6  # 6*10**4
-    y = np.linspace(y_min, y_max, num_div)  # lambda grid, 91 to 10**4 A  # min, max, n
-    z_min = -1000
-    z_max = 1000
-    z = np.linspace(z_min, z_max, num_div)  # z_s grid, -inf to inf
+    num_div = 50
+    lamb_min = 100
+    lamb_max = 10 ** 6  # 6*10**4
+    lamb_grid = np.linspace(lamb_min, lamb_max, num_div)  # lambda grid, 91 to 10**4 A  # min, max, n
+    tau_min = 0
+    tau_max = tau_f(lamb, 0)
+    tau_grid = np.linspace(y_min, y_max, num_div)  # z_s grid, -inf to inf
+    beta_min =
+    beta_max =
+    beta_grid =
+    rho_min = 0
+    rho_max = 1000
+    rho_grid =
     yy, zz = np.meshgrid(y, z)
     ww = i_tir_integrand(yy, zz, bc03_f)
     ww.shape
@@ -373,6 +361,8 @@ for p in paths[2:3]:
 
     # convert to 100 micron (there is an associated uncertainty)
     nu_I_nu_100 = .52 * I_tir  # units of angstroms * sigma
+
+    exit(0)
 
     print("starting integral")
 
