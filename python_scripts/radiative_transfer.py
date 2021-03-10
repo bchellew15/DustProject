@@ -1,20 +1,6 @@
-# TODO
-# check units again, for ex. cross section is cm^2
-# still need to verify if the masking for numerically bad functions is working
-
-# more things to verify:
-# double check that henyey fn is used correctly
-
-# decide if trapezoid method is accurate enough
-# verify density prefactor calculation
-
-# verifying the integral:
-# it should match the results from BC03
-# make sure it converges; should stay same if I increase the bounds, and number of divs
-# try to guestimate the value based on integrand plots?
-
-# take the BC03 model spectra and apply radiative transfer calculations.
-# based on the appendix of BD12.
+# READ ME
+# This script is no longer the latest version.
+# See "radiative_transfer_v2" for the version that does the polar transformation
 
 import glob
 import numpy as np
