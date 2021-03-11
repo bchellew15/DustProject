@@ -84,6 +84,18 @@ def tau_f(lamb, z):
     cross_section = dust_cross_f(lamb)  # cm^2
     tau_lambda = density_prefactor * cross_section * sig_dust * np.sqrt(2 * np.pi) / 2 \
                  * (1 - special.erf(z / sig_dust / np.sqrt(2)))
+
+    if type(z) == np.ndarray:
+        np.putmask(tau_lambda, z == np.inf, 0)
+    elif z == np.inf:
+        return 0
+
+    if type(tau_lambda) == np.ndarray and True in np.isnan(tau_lambda) or \
+            type(tau_lambda) != np.ndarray and np.isnan(tau_lambda):
+        print("ERROR: tau_f outputs NaN")
+        print("lambda:", lamb)
+        print("z:", z)
+
     return tau_lambda  # unitless
 
 
@@ -102,10 +114,14 @@ def A_f(lamb, z, rho, beta):
     term2 = np.cos(beta)
     result = np.abs(term1 / term2)
 
-    if type(z) == np.ndarray or type(z_s) == np.ndarray:
+    if type(beta) == np.ndarray:
         np.putmask(result, np.cos(beta) == 0, density_prefactor * dust_cross_f(lamb) * rho * np.sin(beta) * np.exp(-z ** 2 / 2 / sig_dust ** 2))
     elif np.cos(beta) == 0:
         return density_prefactor * dust_cross_f(lamb) * rho * np.sin(beta) * np.exp(-z ** 2 / 2 / sig_dust ** 2)
+
+    if type(result) == np.ndarray and True in np.isnan(result) or \
+            type(result) != np.ndarray and np.isnan(result):
+        print("ERROR: A_f outputs NaN")
 
     return result
 
@@ -114,8 +130,12 @@ def A_f(lamb, z, rho, beta):
 def cos_xi(z, rho, theta, beta):
     numer = rho * np.cos(beta)**2 - z * np.sin(beta) * np.cos(theta) / np.tan(b)
     denom_sqr = z**2 / np.tan(b)**2 + rho**2 * np.cos(beta)**2
-    return numer / np.sqrt(denom_sqr)
+    result = numer / np.sqrt(denom_sqr)
 
+    if type(result) == np.ndarray and True in np.isnan(result) or \
+            type(result) != np.ndarray and np.isnan(result):
+        print("ERROR: cos_xi outputs NaN")
+    return result
 
 # scale heights 300 pc and 1350 pc
 a_300 = 0.9
@@ -149,6 +169,47 @@ def i_tir_integrand(lamb, z, rho, beta, bc03):
 
     result = prefactor * term1 * term2 * term3 * term4
     return result
+
+# eqn A4: integrate over everything except wavelength
+def i_tir_inner(lamb):
+    num_div = 50
+    tau_min = 0
+    tau_max = tau_f(lamb, 0)
+    tau_grid = np.linspace(tau_min, tau_max, num_div)  # z_s grid, -inf to inf
+    beta_min = 0
+    beta_max = np.pi
+    beta_grid = np.linspace(beta_min, beta_max, num_div)
+    rho_min = 0
+    rho_max = 5000
+    rho_grid = np.linspace(rho_min, rho_max, num_div)
+    taus, betas, rhos = np.meshgrid(tau_grid, beta_grid, rho_grid)
+    ww = i_tir_integrand(lamb, z_of_tau(lamb, taus), rhos, betas, bc03_f)
+
+    print("inner tir stuff")
+    print(ww)
+    exit(0)
+
+    # integrate on simple grid
+    tau_div = (tau_max - tau_min) / (num_div - 1)
+    beta_div = (beta_max - beta_min) / (num_div - 1)
+    rho_div = (rho_max - rho_min) / (num_div - 1)
+    inner_result = np.sum(ww) * tau_div * beta_div * rho_div  # units of angstroms * sigma
+    return inner_result
+
+def i_tir_outer():
+    num_div = 50
+    lamb_min = 100
+    lamb_max = 10 ** 6  # 6*10**4
+    lamb_grid = np.linspace(lamb_min, lamb_max, num_div)  # lambda grid, 91 to 10**4 A  # min, max, n
+
+    lamb_div = (lamb_max - lamb_min) / (num_div - 1)
+
+    ww = i_tir_inner(lamb_grid)
+    print("outer tir stuff")
+    print(ww)
+    outer_result = np.sum(ww) * lamb_div
+    return outer_result
+
 
 """
 # eqn A7, part 1: just the integrand.
@@ -307,55 +368,41 @@ for p in paths[2:3]:
     # print(i_tir)
     # exit(0)
 
+    # plots of integrand for I_TIR: (lambda, z, rho, beta)
+    num_div = 50
+    tau_grid = np.linspace(0, tau_f(6000, 0), num_div)  # z_s grid, -inf to inf
+    beta_grid = np.linspace(0, np.pi, num_div)
+    rho_grid = np.linspace(0, 5000, num_div)
+    lamb_grid = np.linspace(100, 10**6, num_div)
+
+    # order: lambda, z, rho, beta
+    lamb_plot = i_tir_integrand(lamb_grid, 1, 1, np.pi/4, bc03_f)
+    print(lamb_plot)
+    plt.plot(lamb_grid, lamb_plot)
+    plt.title('I_TIR integrand vs. lambda')
+    plt.show()
+    tau_plot = i_tir_integrand(6000, z_of_tau(6000, tau_grid), 1, np.pi/4, bc03_f)
+    print(tau_plot)
+    plt.plot(tau_grid, tau_plot)
+    plt.title('I_TIR integrand vs. tau')
+    plt.show()
+    beta_plot = i_tir_integrand(6000, 1, 1, beta_grid, bc03_f)
+    print(beta_plot)
+    plt.plot(beta_grid, beta_plot)
+    plt.title('I_TIR integrand vs. beta')
+    plt.show()
+    rho_plot = i_tir_integrand(6000, 1, rho_grid, np.pi / 4, bc03_f)
+    print(rho_plot)
+    plt.plot(rho_grid, rho_plot)
+    plt.title('I_TIR integrand vs. rho')
+    plt.show()
+
     # compute total infrared radiation
     # (0 to inf throws an error)
     # (range of lambda for dust model is 10^-4 to 10^4 microns, or 1 to 10^8 angstroms)
     # (note: range of lambda for bc03 is 91 to 1.6e6)
 
-    """
-    # plot integrand for I_TIR:
-    # vars: z, lambda, z_s
-    # plot vs. lambda (for given z, zs)
-    lambda_vals = np.linspace(91, 6*10**4, 50)
-    z_s_temp = 1.5
-    plt.plot(lambda_vals, i_tir_integrand(lambda_vals, z_s_temp, bc03_f))
-    plt.title('I_TIR integrand vs. wavelength')
-    plt.show()
-
-    # plot vs. z_s (for given lambda)
-    zs_vals = np.linspace(-3, 70, 50)
-    lambda_temp = 6000
-    z_temp = 1.5
-    plt.plot(zs_vals, i_tir_integrand(lambda_temp, zs_vals, bc03_f))
-    plt.title('I_TIR integrand vs. z_s')
-    plt.show()
-    """
-
-    num_div = 50
-    lamb_min = 100
-    lamb_max = 10 ** 6  # 6*10**4
-    lamb_grid = np.linspace(lamb_min, lamb_max, num_div)  # lambda grid, 91 to 10**4 A  # min, max, n
-    tau_min = 0
-    tau_max = tau_f(lamb, 0)
-    tau_grid = np.linspace(y_min, y_max, num_div)  # z_s grid, -inf to inf
-    beta_min =
-    beta_max =
-    beta_grid =
-    rho_min = 0
-    rho_max = 1000
-    rho_grid =
-    yy, zz = np.meshgrid(y, z)
-    ww = i_tir_integrand(yy, zz, bc03_f)
-    ww.shape
-
-    # integrate on simple grid
-    y_div = (y_max - y_min) / (num_div - 1)
-    z_div = (z_max - z_min) / (num_div - 1)
-    I_tir = np.sum(ww) * y_div * z_div  # units of angstroms * sigma
-
-    # inner = [integrate.simps(ww_y, y) for ww_y in ww]
-    # I_tir = integrate.simps(inner, z)
-
+    I_tir = i_tir_outer()
     print("I_tir result")
     print(I_tir)
 
