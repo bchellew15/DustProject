@@ -120,11 +120,11 @@ a_1350 = 0.1
 # surface power density (arbitrary units; any normalization factor will cancel out later)
 # it's a function of height z_s
 def surface_power_fn(bc03, z_s, lamb):  # z_s in pc
-    return bc03(lamb) * (a_300 * np.exp(-z_s / 300) + a_1350 * np.exp(-z_s / 1350))
+    return bc03(lamb) * (a_300 * np.exp(-np.abs(z_s) / 300) + a_1350 * np.exp(-np.abs(z_s) / 1350))
 
 # I found the derivative analytically
 def surface_power_deriv(bc03, z_s, lamb):
-    return bc03(lamb) * (-a_300 * np.exp(-z_s / 300) / 300 - a_1350 * np.exp(-z_s / 1350) / 1350)
+    return bc03(lamb) * (-a_300 * np.exp(-np.abs(z_s) / 300) / 300 - a_1350 * np.exp(-np.abs(z_s) / 1350) / 1350)
 
 
 # eqn A4: integrand
