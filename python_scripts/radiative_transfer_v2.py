@@ -83,29 +83,31 @@ density_prefactor = 0.3 / dust_cross_f(V_band_wav) / sig_dust / np.sqrt(2 * np.p
 def tau_f(lamb, z):
     cross_section = dust_cross_f(lamb)  # cm^2
     tau_lambda = density_prefactor * cross_section * sig_dust * np.sqrt(2 * np.pi) / 2 \
-                 * (1 - special.erf(z / sig_dust / np.sqrt(2)))
+        * (1 - special.erf(z / sig_dust / np.sqrt(2)))
 
     if type(z) == np.ndarray:
         np.putmask(tau_lambda, z == np.inf, 0)
     elif z == np.inf:
         return 0
 
-    if type(tau_lambda) == np.ndarray and True in np.isnan(tau_lambda) or \
-            type(tau_lambda) != np.ndarray and np.isnan(tau_lambda):
-        print("ERROR: tau_f outputs NaN")
-        print("lambda:", lamb)
-        print("z:", z)
-
     return tau_lambda  # unitless
 
 
 # reverse: find z given tau
 # (see paper calculations)
-# (maybe not needed any more)
+# WARNING: it will multiply cross section across the last axis
 def z_of_tau(lamb, tau):
     cross_section = dust_cross_f(lamb)  # cm^2
-    return sig_dust * np.sqrt(2) * special.erfinv(
+    result = sig_dust * np.sqrt(2) * special.erfinv(
         1 - 2 * tau / (density_prefactor * cross_section * sig_dust * np.sqrt(2 * np.pi)))
+
+    # a bit dangerous to just convert nan -> infinity
+    if type(result) == np.ndarray:
+        np.putmask(result, np.isnan(result), np.inf)
+    elif result == np.nan:
+        return np.inf
+
+    return result
 
 
 # A2
@@ -119,10 +121,6 @@ def A_f(lamb, z, rho, beta):
     elif np.cos(beta) == 0:
         return density_prefactor * dust_cross_f(lamb) * rho * np.sin(beta) * np.exp(-z ** 2 / 2 / sig_dust ** 2)
 
-    if type(result) == np.ndarray and True in np.isnan(result) or \
-            type(result) != np.ndarray and np.isnan(result):
-        print("ERROR: A_f outputs NaN")
-
     return result
 
 
@@ -132,9 +130,6 @@ def cos_xi(z, rho, theta, beta):
     denom_sqr = z**2 / np.tan(b)**2 + rho**2 * np.cos(beta)**2
     result = numer / np.sqrt(denom_sqr)
 
-    if type(result) == np.ndarray and True in np.isnan(result) or \
-            type(result) != np.ndarray and np.isnan(result):
-        print("ERROR: cos_xi outputs NaN")
     return result
 
 # scale heights 300 pc and 1350 pc
@@ -145,14 +140,14 @@ a_1350 = 0.1
 # surface power density (arbitrary units; any normalization factor will cancel out later)
 # it's a function of height z_s
 # def surface_power_fn(bc03, z_s, lamb):  # z_s in pc
-#     return bc03(lamb) * (a_300 * np.exp(-z_s / 300) + a_1350 * np.exp(-z_s / 1350))
+#     return bc03(lamb) * (a_300 * np.exp(-np.abs(z_s) / 300) + a_1350 * np.exp(-np.abs(z_s) / 1350))
 
 
 # I found the derivative analytically
 def surface_power_deriv(bc03, z, rho, beta, lamb):
     return bc03(lamb) * \
-           (-a_300 * np.exp(-(z - rho *np.cos(beta)) / 300) / 300
-            - a_1350 * np.exp(-(z - rho *np.cos(beta)) / 1350) / 1350)
+           (-a_300 * np.exp(-np.abs(z - rho * np.cos(beta)) / 300) / 300
+            - a_1350 * np.exp(-np.abs(z - rho * np.cos(beta)) / 1350) / 1350)
 
 
 # eqn A4: integrand
@@ -171,8 +166,7 @@ def i_tir_integrand(lamb, z, rho, beta, bc03):
     return result
 
 # eqn A4: integrate over everything except wavelength
-def i_tir_inner(lamb):
-    num_div = 50
+def i_tir_inner(lamb, num_div, num_div_rho):
     tau_min = 0
     tau_max = tau_f(lamb, 0)
     tau_grid = np.linspace(tau_min, tau_max, num_div)  # z_s grid, -inf to inf
@@ -180,31 +174,29 @@ def i_tir_inner(lamb):
     beta_max = np.pi
     beta_grid = np.linspace(beta_min, beta_max, num_div)
     rho_min = 0
-    rho_max = 5000
-    rho_grid = np.linspace(rho_min, rho_max, num_div)
+    rho_max = 500
+    rho_grid = np.linspace(rho_min, rho_max, num_div_rho)
     taus, betas, rhos = np.meshgrid(tau_grid, beta_grid, rho_grid)
-    ww = i_tir_integrand(lamb, z_of_tau(lamb, taus), rhos, betas, bc03_f)
-
-    print("inner tir stuff")
-    print(ww)
-    exit(0)
+    ww = [i_tir_integrand(l, z_of_tau(l, taus), rhos, betas, bc03_f) for l in lamb]
+    print("sum:", np.sum(ww))
 
     # integrate on simple grid
     tau_div = (tau_max - tau_min) / (num_div - 1)
     beta_div = (beta_max - beta_min) / (num_div - 1)
-    rho_div = (rho_max - rho_min) / (num_div - 1)
+    rho_div = (rho_max - rho_min) / (num_div_rho - 1)
     inner_result = np.sum(ww) * tau_div * beta_div * rho_div  # units of angstroms * sigma
     return inner_result
 
 def i_tir_outer():
-    num_div = 50
+    num_div = 30
+    num_div_rho = 30
     lamb_min = 100
     lamb_max = 10 ** 6  # 6*10**4
     lamb_grid = np.linspace(lamb_min, lamb_max, num_div)  # lambda grid, 91 to 10**4 A  # min, max, n
 
     lamb_div = (lamb_max - lamb_min) / (num_div - 1)
 
-    ww = i_tir_inner(lamb_grid)
+    ww = i_tir_inner(lamb_grid, num_div, num_div_rho)
     print("outer tir stuff")
     print(ww)
     outer_result = np.sum(ww) * lamb_div
@@ -347,6 +339,7 @@ for p in paths[2:3]:
     bc03_f = interp1d(wav, bc03, kind='cubic')
 
     # plot previously saved stuff:
+    """
     load_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
     load_path += p.split('/')[-1].rsplit('.spec')[0] + '_021121.npy'  # 021121 or 022321
     alphas_radiative = np.load(load_path)
@@ -361,6 +354,7 @@ for p in paths[2:3]:
     plt.ylabel("Alpha")
     plt.legend()
     plt.show()
+    """
 
     # testing A4:
     # i_tir = i_tir_integrand(6000, 2, bc03_f)
@@ -372,7 +366,7 @@ for p in paths[2:3]:
     num_div = 50
     tau_grid = np.linspace(0, tau_f(6000, 0), num_div)  # z_s grid, -inf to inf
     beta_grid = np.linspace(0, np.pi, num_div)
-    rho_grid = np.linspace(0, 5000, num_div)
+    rho_grid = np.linspace(0, 500, num_div)
     lamb_grid = np.linspace(100, 10**6, num_div)
 
     # order: lambda, z, rho, beta
