@@ -174,17 +174,17 @@ def i_tir_integrand(lamb, z, rho, beta, bc03):
 # eqn A4: integrate over everything except wavelength
 def i_tir():
     num_div_lamb = 30
-    num_div_rho = 27  # TEST
-    num_div_tau = 28  # TEST
-    num_div_beta = 29  # TEST
+    num_div_rho = 27
+    num_div_tau = 28
+    num_div_beta = 29
 
     lamb_min = 100
     lamb_max = 10 ** 6  # 6*10**4
-    lamb_grid = np.linspace(lamb_min, lamb_max, num_div_lamb)  # lambda grid, 91 to 10**4 A  # min, max, n
+    lamb_grid = np.linspace(lamb_min, lamb_max, num_div_lamb)  # 91 to 10**4 A  # min, max, n
     tau_min = 0
     tau_max = tau_f(lamb_grid, 0)
     # broadcasting: dim. of tau grid are (lambda, tau)
-    tau_grid = np.linspace(tau_min, tau_max, num_div_tau)  # z_s grid, -inf to inf
+    tau_grid = np.linspace(tau_min, tau_max, num_div_tau)  # same as z, 0 to inf
     beta_min = 0
     beta_max = np.pi
     beta_grid = np.linspace(beta_min, beta_max, num_div_beta)
@@ -226,12 +226,11 @@ def i_tir():
     return result
 
 
-"""
 # eqn A7, part 1: just the integrand.
 # note that we integrate over z_s also.
 # units: parsecs * units of sigma
 def i_sca_integrand(theta, tau, rho, beta, lamb, bc03):
-    prefactor = (1 / np.sin(np.abs(b))) * dust_albedo_f(lamb)
+    prefactor = (1 / np.sin(np.abs(b))) * dust_albedo_f(lamb) / (4 * np.pi)
     z = z_of_tau(lamb, tau)
 
     # check for tau = 0
@@ -240,18 +239,17 @@ def i_sca_integrand(theta, tau, rho, beta, lamb, bc03):
     z[tau == 0] = 1  # just so we don't have z = inf in cos_xi
 
     term1 = np.exp((-1 / np.sin(np.abs(b))) * (tau_f(lamb, 0) - tau))
-    term2 = R
-    term3 = henyey(cos_xi(z, rho, theta, beta), dust_cos_f(lamb))
-    term4_exp = np.exp(-A_f(lamb, z, rho, beta))
-    term4 = -surface_power_deriv(bc03, z, rho, beta, lamb) * term4_exp  # TEMP: added - and switched to deriv
-    term5 = 4 * np.pi * ((z - z_s) ** 2 + R ** 2)
-    result = prefactor * term1 * term2 * term3 * term4 / term5
+    term2 = henyey(cos_xi(z, rho, theta, beta), dust_cos_f(lamb))
+    term3 = surface_power_deriv(bc03, z, rho, beta, lamb)
+    term4 = np.exp(-A_f(lamb, z, rho, beta))
+    term5 = np.sin(beta)
+    result = prefactor * term1 * term2 * term3 * term4 * term5
 
     if type(tau) == np.ndarray:
         np.putmask(result, tau == 0, 0)
 
     return result
-"""
+
 
 # eqn A7, part 2: do the integral for given wavelength
 def i_sca(lamb, bc03):
@@ -313,39 +311,38 @@ def i_sca(lamb, bc03):
     plt.show()
     """
 
-    num_div = 50
-    x_min = 0
-    x_max = 2 * np.pi
-    x = np.linspace(x_min, x_max, num_div)  # theta grid, 0 to 2pi
-    y_min = 0  # .01  # get better estimate of lower bound. was using .01.
-    y_max = tau_f(lamb, 0)  # -.00001
-    y = np.linspace(y_min, y_max, num_div)  # tau grid, 0 to tau(0)
-    z_min = .01
-    z_max = 1000
-    z = np.linspace(z_min, z_max, num_div)  # R grid
-    v_min = -100
-    v_max = 1000
-    v = np.linspace(v_min, v_max, num_div)  # z_s grid, -inf to inf  (peak depends on tau)
+    num_div_theta = 30
+    num_div_rho = 27
+    num_div_tau = 28
+    num_div_beta = 29
+    theta_min = 0
+    theta_max = 2 * np.pi
+    theta_grid = np.linspace(theta_min, theta_max, num_div_theta)
+    tau_min = 0
+    tau_max = tau_f(lamb, 0)
+    tau_grid = np.linspace(tau_min, tau_max, num_div_tau)
+    beta_min = 0
+    beta_max = np.pi
+    beta_grid = np.linspace(beta_min, beta_max, num_div_beta)
+    rho_min = 0
+    rho_max = 500
+    rho_grid = np.linspace(rho_min, rho_max, num_div_rho)
 
-    xx, yy, zz, vv = np.meshgrid(x, y, z, v)
-    ww = i_sca_integrand(xx, yy, zz, vv, lamb, bc03)
+    taus, betas, rhos, thetas = np.meshgrid(tau_grid, beta_grid, rho_grid, theta_grid, indexing='ij')
+    ww = i_sca_integrand(thetas, taus, rhos, betas, lamb, bc03)
+    print("ww sca")
+    print(ww)
+    print(np.argwhere(np.isnan(ww)))
+    #print("rhos")
+    #print(rhos)
 
-    # try basic addition on the grid:
-    x_div = (x_max - x_min) / (num_div - 1)
-    y_div = (y_max - y_min) / (num_div - 1)
-    z_div = (z_max - z_min) / (num_div - 1)
-    v_div = (v_max - v_min) / (num_div - 1)
-    result = np.sum(ww) * x_div * y_div * z_div * v_div
+    # sum over grid
+    theta_div = (theta_max - theta_min) / (num_div_theta - 1)
+    rho_div = (rho_max - rho_min) / (num_div_rho - 1)
+    tau_div = (tau_max - tau_min) / (num_div_tau - 1)
+    beta_div = (beta_max - beta_min) / (num_div_beta - 1)
+    result = np.sum(ww) * theta_div * rho_div * tau_div * beta_div
     return result
-
-    # print("number of nans")
-    # print(np.count_nonzero(np.isnan(ww)))
-
-    # inner = [integrate.simps(ww_x, x) for ww_x in ww]
-    # middle1 = [integrate.simps(ww_y, y) for ww_y in inner]
-    # middle2 = [integrate.simps(ww_z, z) for ww_z in middle1]
-    # result = integrate.simps(middle2, v)
-    # return result
 
 
 # solar metallicity: .012
@@ -385,6 +382,7 @@ for p in paths[2:3]:
     # print(i_tir)
     # exit(0)
 
+    """
     # plots of integrand for I_TIR: (lambda, z, rho, beta)
     num_div = 50
     tau_grid = np.linspace(0, tau_f(6000, 0), num_div)  # z_s grid, -inf to inf
@@ -413,6 +411,7 @@ for p in paths[2:3]:
     plt.plot(rho_grid, rho_plot)
     plt.title('I_TIR integrand vs. rho')
     plt.show()
+    """
 
     # compute total infrared radiation
     # (0 to inf throws an error)
@@ -426,13 +425,13 @@ for p in paths[2:3]:
     # convert to 100 micron (there is an associated uncertainty)
     nu_I_nu_100 = .52 * I_tir  # units of angstroms * sigma
 
-    exit(0)
-
     print("starting integral")
 
     # wavelength_partial = wavelength[(wavelength > 4600) & (wavelength < 5600)]  #5380 to 5480
-    wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
+    # wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
+    wavelength_partial = [3842]
     # wavelength_partial = wavelength
+    # try to use broadcasting for this?
     i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])  # units of sigma * parsecs
     i_lam_array = i_sca_array * wavelength_partial  # units of sigma * parsecs * angstroms
     alphas = i_lam_array / nu_I_nu_100
