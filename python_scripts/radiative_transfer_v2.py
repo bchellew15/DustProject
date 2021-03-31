@@ -98,6 +98,11 @@ def tau_f(lamb, z):
 # WARNING: it will multiply cross section across the last axis
 def z_of_tau(lamb, tau):
     cross_section = dust_cross_f(lamb)  # cm^2
+
+    print("z of tau broadcasting")
+    print(tau.shape)
+    print(cross_section.shape)
+
     result = sig_dust * np.sqrt(2) * special.erfinv(
         1 - 2 * tau / (density_prefactor * cross_section * sig_dust * np.sqrt(2 * np.pi)))
 
@@ -152,6 +157,7 @@ def surface_power_deriv(bc03, z, rho, beta, lamb):
 
 # eqn A4: integrand
 # units: angstroms * units of sigma after integration
+# broadcasting: lamb, z, rho, beta should all be 4d arrays
 def i_tir_integrand(lamb, z, rho, beta, bc03):
     prefactor = 1 / (8 * np.pi) / np.sin(np.abs(b))
     term1 = 1 - dust_albedo_f(lamb)
@@ -166,41 +172,58 @@ def i_tir_integrand(lamb, z, rho, beta, bc03):
     return result
 
 # eqn A4: integrate over everything except wavelength
-def i_tir_inner(lamb, num_div, num_div_rho):
+def i_tir():
+    num_div_lamb = 30
+    num_div_rho = 27  # TEST
+    num_div_tau = 28  # TEST
+    num_div_beta = 29  # TEST
+
+    lamb_min = 100
+    lamb_max = 10 ** 6  # 6*10**4
+    lamb_grid = np.linspace(lamb_min, lamb_max, num_div_lamb)  # lambda grid, 91 to 10**4 A  # min, max, n
     tau_min = 0
-    tau_max = tau_f(lamb, 0)
-    tau_grid = np.linspace(tau_min, tau_max, num_div)  # z_s grid, -inf to inf
+    tau_max = tau_f(lamb_grid, 0)
+    # broadcasting: dim. of tau grid are (lambda, tau)
+    tau_grid = np.linspace(tau_min, tau_max, num_div_tau)  # z_s grid, -inf to inf
     beta_min = 0
     beta_max = np.pi
-    beta_grid = np.linspace(beta_min, beta_max, num_div)
+    beta_grid = np.linspace(beta_min, beta_max, num_div_beta)
     rho_min = 0
     rho_max = 500
     rho_grid = np.linspace(rho_min, rho_max, num_div_rho)
-    taus, betas, rhos = np.meshgrid(tau_grid, beta_grid, rho_grid)
-    ww = [i_tir_integrand(l, z_of_tau(l, taus), rhos, betas, bc03_f) for l in lamb]
+
+    # meshgrid from the 3 easy dimensions (lambda, beta, rho)
+    lambs, betas, rhos = np.meshgrid(lamb_grid, beta_grid, rho_grid, indexing='ij')  # so input dims match output
+
+    # broadcasting test
+    print("lambs shape", lambs.shape)
+    print("betas shape", betas.shape)
+    print("rhos shape", rhos.shape)
+
+    # add a new dimension for tau:
+    new_shape = tuple([num_div_tau] + list(lambs.shape))  # lambs, betas, rhos have same shape
+    zeros = np.zeros(new_shape)
+    lambs = lambs[None, ...] + zeros
+    betas = betas[None, ...] + zeros
+    rhos = rhos[None, ...] + zeros
+    taus = tau_grid[..., None, None] + zeros
+
+    ww = i_tir_integrand(lambs, z_of_tau(lambs, taus), rhos, betas, bc03_f)
     print("sum:", np.sum(ww))
 
+    # broadcast test
+    print("ww shape", ww.shape)
+
     # integrate on simple grid
-    tau_div = (tau_max - tau_min) / (num_div - 1)
-    beta_div = (beta_max - beta_min) / (num_div - 1)
+    lamb_div = (lamb_max - lamb_min) / (num_div_lamb - 1)
+    beta_div = (beta_max - beta_min) / (num_div_beta - 1)
     rho_div = (rho_max - rho_min) / (num_div_rho - 1)
-    inner_result = np.sum(ww) * tau_div * beta_div * rho_div  # units of angstroms * sigma
-    return inner_result
+    tau_div = (tau_max - tau_min) / (num_div_tau - 1)
+    tau_div = tau_div[..., None, None] + zeros
+    print("tau div shape:", tau_div.shape)
 
-def i_tir_outer():
-    num_div = 30
-    num_div_rho = 30
-    lamb_min = 100
-    lamb_max = 10 ** 6  # 6*10**4
-    lamb_grid = np.linspace(lamb_min, lamb_max, num_div)  # lambda grid, 91 to 10**4 A  # min, max, n
-
-    lamb_div = (lamb_max - lamb_min) / (num_div - 1)
-
-    ww = i_tir_inner(lamb_grid, num_div, num_div_rho)
-    print("outer tir stuff")
-    print(ww)
-    outer_result = np.sum(ww) * lamb_div
-    return outer_result
+    result = np.sum(ww * tau_div * beta_div * rho_div * lamb_div)  # units of angstroms * sigma
+    return result
 
 
 """
@@ -396,7 +419,7 @@ for p in paths[2:3]:
     # (range of lambda for dust model is 10^-4 to 10^4 microns, or 1 to 10^8 angstroms)
     # (note: range of lambda for bc03 is 91 to 1.6e6)
 
-    I_tir = i_tir_outer()
+    I_tir = i_tir()
     print("I_tir result")
     print(I_tir)
 
