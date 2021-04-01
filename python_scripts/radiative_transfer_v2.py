@@ -84,12 +84,6 @@ def tau_f(lamb, z):
     cross_section = dust_cross_f(lamb)  # cm^2
     tau_lambda = density_prefactor * cross_section * sig_dust * np.sqrt(2 * np.pi) / 2 \
         * (1 - special.erf(z / sig_dust / np.sqrt(2)))
-
-    if type(z) == np.ndarray:
-        np.putmask(tau_lambda, z == np.inf, 0)
-    elif z == np.inf:
-        return 0
-
     return tau_lambda  # unitless
 
 
@@ -105,13 +99,6 @@ def z_of_tau(lamb, tau):
 
     result = sig_dust * np.sqrt(2) * special.erfinv(
         1 - 2 * tau / (density_prefactor * cross_section * sig_dust * np.sqrt(2 * np.pi)))
-
-    # a bit dangerous to just convert nan -> infinity
-    if type(result) == np.ndarray:
-        np.putmask(result, np.isnan(result), np.inf)
-    elif result == np.nan:
-        return np.inf
-
     return result
 
 
@@ -120,12 +107,6 @@ def A_f(lamb, z, rho, beta):
     term1 = tau_f(lamb, z) - tau_f(lamb, z - rho * np.cos(beta))
     term2 = np.cos(beta)
     result = np.abs(term1 / term2)
-
-    if type(beta) == np.ndarray:
-        np.putmask(result, np.cos(beta) == 0, density_prefactor * dust_cross_f(lamb) * rho * np.sin(beta) * np.exp(-z ** 2 / 2 / sig_dust ** 2))
-    elif np.cos(beta) == 0:
-        return density_prefactor * dust_cross_f(lamb) * rho * np.sin(beta) * np.exp(-z ** 2 / 2 / sig_dust ** 2)
-
     return result
 
 
@@ -134,7 +115,6 @@ def cos_xi(z, rho, theta, beta):
     numer = rho * np.cos(beta)**2 - z * np.sin(beta) * np.cos(theta) / np.tan(b)
     denom_sqr = z**2 / np.tan(b)**2 + rho**2 * np.cos(beta)**2
     result = numer / np.sqrt(denom_sqr)
-
     return result
 
 # scale heights 300 pc and 1350 pc
@@ -164,33 +144,33 @@ def i_tir_integrand(lamb, z, rho, beta, bc03):
     term2 = surface_power_deriv(bc03, z, rho, beta, lamb)
     term3 = np.exp(-A_f(lamb, z, rho, beta))
     term4 = np.sin(beta)
-
-    # apply neg. sign:
-    term3 = -term3
-
     result = prefactor * term1 * term2 * term3 * term4
     return result
 
 # eqn A4: integrate over everything except wavelength
 def i_tir():
-    num_div_lamb = 30
-    num_div_rho = 27
-    num_div_tau = 28
-    num_div_beta = 29
+    n_lamb = 30
+    n_rho = 27
+    n_tau = 28
+    n_beta = 29
 
     lamb_min = 100
-    lamb_max = 10 ** 6  # 6*10**4
-    lamb_grid = np.linspace(lamb_min, lamb_max, num_div_lamb)  # 91 to 10**4 A  # min, max, n
+    lamb_max = 6*10**4   # 10 ** 6
+    h_lamb = (lamb_max - lamb_min) / 2 / n_lamb
+    lamb_grid = np.linspace(lamb_min + h_lamb, lamb_max - h_lamb, n_lamb)  # 91 to 10**4 A  # min, max, n
     tau_min = 0
     tau_max = tau_f(lamb_grid, 0)
+    h_tau = (tau_max - tau_min) / 2 / n_tau
     # broadcasting: dim. of tau grid are (lambda, tau)
-    tau_grid = np.linspace(tau_min, tau_max, num_div_tau)  # same as z, 0 to inf
+    tau_grid = np.linspace(tau_min + h_tau, tau_max - h_tau, n_tau)  # same as z, 0 to inf
     beta_min = 0
     beta_max = np.pi
-    beta_grid = np.linspace(beta_min, beta_max, num_div_beta)
+    h_beta = (beta_max - beta_min) / 2 / n_beta
+    beta_grid = np.linspace(beta_min + h_beta, beta_max - h_beta, n_beta)
     rho_min = 0
     rho_max = 500
-    rho_grid = np.linspace(rho_min, rho_max, num_div_rho)
+    h_rho = (rho_max - rho_min) / 2 / n_rho
+    rho_grid = np.linspace(rho_min + h_rho, rho_max - h_rho, n_rho)
 
     # meshgrid from the 3 easy dimensions (lambda, beta, rho)
     lambs, betas, rhos = np.meshgrid(lamb_grid, beta_grid, rho_grid, indexing='ij')  # so input dims match output
@@ -199,9 +179,10 @@ def i_tir():
     print("lambs shape", lambs.shape)
     print("betas shape", betas.shape)
     print("rhos shape", rhos.shape)
+    print("tau grid", tau_grid.shape)
 
     # add a new dimension for tau:
-    new_shape = tuple([num_div_tau] + list(lambs.shape))  # lambs, betas, rhos have same shape
+    new_shape = tuple([n_tau] + list(lambs.shape))  # lambs, betas, rhos have same shape
     zeros = np.zeros(new_shape)
     lambs = lambs[None, ...] + zeros
     betas = betas[None, ...] + zeros
@@ -215,10 +196,10 @@ def i_tir():
     print("ww shape", ww.shape)
 
     # integrate on simple grid
-    lamb_div = (lamb_max - lamb_min) / (num_div_lamb - 1)
-    beta_div = (beta_max - beta_min) / (num_div_beta - 1)
-    rho_div = (rho_max - rho_min) / (num_div_rho - 1)
-    tau_div = (tau_max - tau_min) / (num_div_tau - 1)
+    lamb_div = (lamb_max - lamb_min) / (n_lamb - 1)
+    beta_div = (beta_max - beta_min) / (n_beta - 1)
+    rho_div = (rho_max - rho_min) / (n_rho - 1)
+    tau_div = (tau_max - tau_min) / (n_tau - 1)
     tau_div = tau_div[..., None, None] + zeros
     print("tau div shape:", tau_div.shape)
 
@@ -311,36 +292,35 @@ def i_sca(lamb, bc03):
     plt.show()
     """
 
-    num_div_theta = 30
-    num_div_rho = 27
-    num_div_tau = 28
-    num_div_beta = 29
+    n_theta = 30
+    n_rho = 27
+    n_tau = 28
+    n_beta = 29
     theta_min = 0
     theta_max = 2 * np.pi
-    theta_grid = np.linspace(theta_min, theta_max, num_div_theta)
+    h_theta = (theta_max - theta_min) / 2 / n_theta
+    theta_grid = np.linspace(theta_min + h_theta, theta_max - h_theta, n_theta)
     tau_min = 0
     tau_max = tau_f(lamb, 0)
-    tau_grid = np.linspace(tau_min, tau_max, num_div_tau)
+    h_tau = (tau_max - tau_min) / 2 / n_tau
+    tau_grid = np.linspace(tau_min + h_tau, tau_max - h_tau, n_tau)
     beta_min = 0
     beta_max = np.pi
-    beta_grid = np.linspace(beta_min, beta_max, num_div_beta)
+    h_beta = (beta_max - beta_min) / 2 / n_beta
+    beta_grid = np.linspace(beta_min + h_beta, beta_max - h_beta, n_beta)
     rho_min = 0
     rho_max = 500
-    rho_grid = np.linspace(rho_min, rho_max, num_div_rho)
+    h_rho = (rho_max - rho_min) / 2 / n_rho
+    rho_grid = np.linspace(rho_min + h_rho, rho_max - h_rho, n_rho)
 
     taus, betas, rhos, thetas = np.meshgrid(tau_grid, beta_grid, rho_grid, theta_grid, indexing='ij')
     ww = i_sca_integrand(thetas, taus, rhos, betas, lamb, bc03)
-    print("ww sca")
-    print(ww)
-    print(np.argwhere(np.isnan(ww)))
-    #print("rhos")
-    #print(rhos)
 
     # sum over grid
-    theta_div = (theta_max - theta_min) / (num_div_theta - 1)
-    rho_div = (rho_max - rho_min) / (num_div_rho - 1)
-    tau_div = (tau_max - tau_min) / (num_div_tau - 1)
-    beta_div = (beta_max - beta_min) / (num_div_beta - 1)
+    theta_div = (theta_max - theta_min) / (n_theta - 1)
+    rho_div = (rho_max - rho_min) / (n_rho - 1)
+    tau_div = (tau_max - tau_min) / (n_tau - 1)
+    beta_div = (beta_max - beta_min) / (n_beta - 1)
     result = np.sum(ww) * theta_div * rho_div * tau_div * beta_div
     return result
 
@@ -427,9 +407,8 @@ for p in paths[2:3]:
 
     print("starting integral")
 
-    # wavelength_partial = wavelength[(wavelength > 4600) & (wavelength < 5600)]  #5380 to 5480
-    # wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
-    wavelength_partial = [3842]
+    #wavelength_partial = wavelength[(wavelength > 4600) & (wavelength < 5600)]  #5380 to 5480
+    wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
     # wavelength_partial = wavelength
     # try to use broadcasting for this?
     i_sca_array = np.array([i_sca(lamb, bc03_f) for lamb in wavelength_partial])  # units of sigma * parsecs
