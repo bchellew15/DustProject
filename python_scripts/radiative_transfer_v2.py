@@ -65,13 +65,13 @@ b = 40 * np.pi / 180  # 40 degrees -> radians
 
 # phase function
 def henyey(cos_xi, g):
-    g = g * (-1)  # TEST
+    g = g * (-1)  # TEST: not sure why * -1
     result = (1 - g ** 2) / (1 + g ** 2 - 2 * g * cos_xi) ** (3 / 2) / (4 * np.pi)
     assert result.shape == cos_xi.shape
     return result
 
 
-sig_dust = 250  # parsecs (from density eqn)
+sig_dust = 250  # parsecs (from density eqn)   # TEST: change to 1 pc (should be 250)
 tau_def = 0.15  # fiducial value (see BD12 paper) (z = 0)
 V_band_wav = 5510  # A
 cross_sec_V = dust_cross_f(V_band_wav)  # cm^2
@@ -84,7 +84,7 @@ cross_sec_V = dust_cross_f(V_band_wav)  # cm^2
 def tau_f(lamb, z):
     cross_section = dust_cross_f(lamb)  # cm^2
     tau_0 = tau_def * cross_section / cross_sec_V
-    tau_lambda = tau_0 * (1 - special.erf(z / sig_dust / np.sqrt(2)))
+    tau_lambda = tau_0 * (1 - special.erf(z / sig_dust / np.sqrt(2))) # TEST: was 1 - erf
     return tau_lambda  # unitless
 
 
@@ -111,7 +111,7 @@ def cos_xi(z, rho, theta, beta):
     numer = rho * np.cos(beta)**2 - z * np.sin(beta) * np.cos(theta) / np.tan(b)
     denom_sqr = z**2 / np.tan(b)**2 + rho**2 * np.cos(beta)**2
     result = numer / np.sqrt(denom_sqr)
-    return result
+    return result  #TEST: apply abs value
 
 # scale heights 300 pc and 1350 pc
 a_300 = 0.9
@@ -132,7 +132,7 @@ def surface_power_fn(z, rho, beta):  # z_s in pc
 def i_tir_integrand(lamb, z, rho, beta):
     prefactor = 1 / (8 * np.pi) / np.sin(np.abs(b))
     term1 = 1 - dust_albedo_f(lamb)
-    term2 = surface_power_fn(z, rho, beta)  # TEST: was deriv
+    term2 = surface_power_fn(z, rho, beta)
     term3 = np.exp(-A_f(lamb, z, rho, beta))
     term4 = np.sin(beta)
     result = prefactor * term1 * term2 * term3 * term4
@@ -447,7 +447,7 @@ for p in paths[22:23]:
     plt.plot(lambdas_boss_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
     plt.plot(wavelength, alphas * bd12_factor / wavelength / bc03_f(wavelength) * avg_bc03 * 5000, 'r', label='~ alphas / bc03 / wav')
 
-    plt.xlim(4000, 9000)
+    plt.xlim(3800, 9200)
     plt.ylim(0, 1)
     plt.legend()
     plt.show()
