@@ -71,7 +71,7 @@ def henyey(cos_xi, g):
     return result
 
 
-sig_dust = 250  # parsecs (from density eqn)   # TEST: change to 1 pc (should be 250)
+sig_dust = 1  # parsecs (from density eqn)   # TEST: change to 1 pc (should be 250)
 tau_def = 0.15  # fiducial value (see BD12 paper) (z = 0)
 V_band_wav = 5510  # A
 cross_sec_V = dust_cross_f(V_band_wav)  # cm^2
@@ -84,7 +84,7 @@ cross_sec_V = dust_cross_f(V_band_wav)  # cm^2
 def tau_f(lamb, z):
     cross_section = dust_cross_f(lamb)  # cm^2
     tau_0 = tau_def * cross_section / cross_sec_V
-    tau_lambda = tau_0 * (1 - special.erf(z / sig_dust / np.sqrt(2))) # TEST: was 1 - erf
+    tau_lambda = tau_0 * (1 + special.erf(z / sig_dust / np.sqrt(2))) # TEST: was 1 - erf
     return tau_lambda  # unitless
 
 
@@ -111,7 +111,7 @@ def cos_xi(z, rho, theta, beta):
     numer = rho * np.cos(beta)**2 - z * np.sin(beta) * np.cos(theta) / np.tan(b)
     denom_sqr = z**2 / np.tan(b)**2 + rho**2 * np.cos(beta)**2
     result = numer / np.sqrt(denom_sqr)
-    return result  #TEST: apply abs value
+    return np.abs(result)  #TEST: apply abs value
 
 # scale heights 300 pc and 1350 pc
 a_300 = 0.9
