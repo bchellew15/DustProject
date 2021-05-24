@@ -21,10 +21,20 @@ from scipy.interpolate import interp1d
 import scipy.special as special
 import matplotlib.pyplot as plt
 from generate_plots import generate_binned_alphas
+from astropy.io import fits
+
+boss = False  # whether to interpolate to BOSS wavelengths or SDSS
 
 # load some files
-wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')  # angstroms
 paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
+if boss:
+    # BOSS wavelengths
+    wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')  # angstroms
+else:
+    # SDSS wavelengths (for comparisons)
+    hdulist_direc = '/Users/blakechellew/Documents/DustProject/BrandtFiles/'
+    hdulist_sdsswav = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
+    wavelength = np.array(hdulist_sdsswav[1].data)
 
 # load dust models
 dust_model_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/kext_albedo_WD_MW_3.1_60_D03.all'
@@ -62,6 +72,7 @@ dust_cross_f = interp1d(dust_wav, dust_cross, kind='cubic')  # cm^2
 # choose a latitude
 b = 40 * np.pi / 180  # 40 degrees -> radians
 
+dust_wav = dust_wav[429:638]  # test
 
 # phase function
 def henyey(cos_xi, g):
@@ -147,10 +158,13 @@ def i_tir(bc03_f):
     # n_tau = 30
     # n_beta = 30  # should be even to avoid beta=pi
 
-    lamb_min = 100
-    lamb_max = 15*10**4   # 10 ** 6
-    h_lamb = (lamb_max - lamb_min) / 2 / n_lamb
-    lamb_grid = np.linspace(lamb_min + h_lamb, lamb_max - h_lamb, n_lamb)  # 91 to 10**4 A  # min, max, n
+    # lamb_min = 100
+    # lamb_max = 15*10**4   # 10 ** 6
+    # h_lamb = (lamb_max - lamb_min) / 2 / n_lamb
+    # lamb_grid = np.linspace(lamb_min + h_lamb, lamb_max - h_lamb, n_lamb)  # 91 to 10**4 A  # min, max, n
+    lamb_grid = dust_wav  # temp, for using lambda grid from dust model
+    n_lamb = len(lamb_grid)
+
     tau_min = 0
     tau_max = tau_f(lamb_grid, 0)
     h_tau = (tau_max - tau_min) / 2 / n_tau
@@ -187,13 +201,18 @@ def i_tir(bc03_f):
     ww = i_tir_integrand(lambs, z_of_tau(lambs, taus), rhos, betas)
 
     # integrate on simple grid
-    lamb_div = (lamb_max - lamb_min) / n_lamb
+    # lamb_div = (lamb_max - lamb_min) / n_lamb
     beta_div = (beta_max - beta_min) / n_beta
     u_div = (u_max - u_min) / n_u
     tau_div = (tau_max - tau_min) / n_tau
     tau_div = tau_div[..., None, None] + zeros
 
-    # multiply by bc03
+    # temp, for using lambda grid from dust model
+    lamb_div = np.diff(lamb_grid)
+    lamb_div = np.append(lamb_div, lamb_div[-1])
+    lamb_div = lamb_div[None, :, None, None]
+
+    # multiply by bc03 and integrate over lambda
     bc03s = bc03_f(lamb_grid)[None, :, None, None]
     assert bc03s.shape == (1, ww.shape[1], 1, 1)
     result = np.sum(ww * bc03s * tau_div * beta_div * u_div * lamb_div)  # units of angstroms * sigma
@@ -327,7 +346,7 @@ for p in paths[22:23]:
 
     # load and interpolate the bc03 spectra
     a = np.loadtxt(p)
-    wav = a[:, 0]  # angstroms
+    wav = a[:, 0]  # angstroms (91 A to 1.6 * 10^6)
     bc03 = a[:, 1]
     bc03_f = interp1d(wav, bc03, kind='cubic')
 
@@ -411,11 +430,12 @@ for p in paths[22:23]:
 
     print("starting integral")
 
-    # wavelength_partial = wavelength[(wavelength > 4600) & (wavelength < 5600)]  #5380 to 5480
-    wavelength_partial = wavelength[::40]
-    # wavelength_partial = np.array([4996])
-    # wavelength_partial = [3842, 3920, 4450, 4996, 6480, 6660, 8875, 9553]
+    wavelength_partial = dust_wav  # use wavelength grid from dust model file
+    # wavelength_partial = wavelength[::40]
+    # wavelength_partial = np.append(wavelength_partial, wavelength[-1])  # to avoid interpolation issues for SDSS array
+
     # wavelength_partial = wavelength
+
     # try to use broadcasting for this?
     i_sca_array = np.array([i_sca(lamb) for lamb in wavelength_partial])  # units of sigma * parsecs
 
@@ -440,15 +460,17 @@ for p in paths[22:23]:
     avg_bc03 = np.mean(bc03_f(wavelength_partial))
     avg_bc03_wav = np.mean(bc03_f(wavelength_partial) * wavelength_partial)
 
-    alphas_norad = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720.npy')
+    if boss:
+        # should get this for sdss also... maybe.
+        alphas_norad = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720.npy')
+        plt.plot(wavelength, alphas_norad * 3 / 2, 'g', label='alphas (no radiative)')
 
-    plt.plot(wavelength, alphas_norad * 3 / 2, 'g', label='alphas (no radiative)')
     plt.plot(wavelength, wavelength * bc03_f(wavelength) / avg_bc03_wav / 2, 'b', label='~ wav*bc03')
     plt.plot(lambdas_boss_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
     plt.plot(wavelength, alphas * bd12_factor / wavelength / bc03_f(wavelength) * avg_bc03 * 5000, 'r', label='~ alphas / bc03 / wav')
 
-    plt.xlim(3800, 9200)
-    plt.ylim(0, 1)
+    plt.xlim(3800, 9200)  # later: expand to BOSS wavelength range
+    plt.ylim(0, .28)  # to match the BD12 paper
     plt.legend()
     plt.show()
 
