@@ -452,7 +452,7 @@ for p in paths[22:23]:
     print(alphas)
 
     # bin the alphas
-    lambdas_boss_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength)
+    lambdas_boss_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength, bin_offset=40)
     alphas_bin = alphas_bin[0]
 
     # scaling factors
@@ -465,6 +465,21 @@ for p in paths[22:23]:
         alphas_norad = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720.npy')
         plt.plot(wavelength, alphas_norad * 3 / 2, 'g', label='alphas (no radiative)')
 
+    # load bd12 plot for comparison
+    bd12_wd01 = np.loadtxt('/Users/blakechellew/Documents/DustProject/alphas_and_stds/bd12_fig3_green_052621.csv',
+                           delimiter=",")
+
+    # test: try a bunch of different binnings
+    # for b in range(50):
+    #    lambdas_boss_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength,
+    #                                                             bin_offset=b)
+    #    alphas_bin = alphas_bin[0]
+    #    plt.plot(lambdas_boss_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
+    #    plt.plot(bd12_wd01[:, 0], bd12_wd01[:, 1], 'green', label='bd12 wd01', drawstyle='steps-mid')
+    #    plt.title('Binning Offset: ' + b)
+    #    plt.show()
+
+    plt.plot(bd12_wd01[:, 0], bd12_wd01[:, 1], 'green', label='bd12 wd01', drawstyle='steps-mid')
     plt.plot(wavelength, wavelength * bc03_f(wavelength) / avg_bc03_wav / 2, 'b', label='~ wav*bc03')
     plt.plot(lambdas_boss_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
     plt.plot(wavelength, alphas * bd12_factor / wavelength / bc03_f(wavelength) * avg_bc03 * 5000, 'r', label='~ alphas / bc03 / wav')
