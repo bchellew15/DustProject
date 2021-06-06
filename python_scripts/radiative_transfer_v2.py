@@ -69,10 +69,10 @@ dust_albedo_f = interp1d(dust_wav, dust_albedo, kind='cubic')
 dust_cos_f = interp1d(dust_wav, dust_cos, kind='cubic')
 dust_cross_f = interp1d(dust_wav, dust_cross, kind='cubic')  # cm^2
 
+dust_wav = dust_wav[429:638]  # test. avoids interpolation error for I_tir currently.
+
 # choose a latitude
 b = 40 * np.pi / 180  # 40 degrees -> radians
-
-dust_wav = dust_wav[429:638]  # test
 
 # phase function
 def henyey(cos_xi, g):
@@ -245,7 +245,7 @@ def i_sca(lamb):
     # n_u = 20
     # n_tau = 20
     # n_beta = 20  # should be even to avoid beta=pi
-    n_theta = n_u = n_tau = n_beta = 30
+    n_theta = n_u = n_tau = n_beta = 20  # TEST, was 30
     theta_min = 0
     theta_max = 2 * np.pi
     h_theta = (theta_max - theta_min) / 2 / n_theta
@@ -451,10 +451,6 @@ for p in paths[22:23]:
     print(wavelength_partial)
     print(alphas)
 
-    # bin the alphas
-    lambdas_boss_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength, bin_offset=40)
-    alphas_bin = alphas_bin[0]
-
     # scaling factors
     bd12_factor = 0.49
     avg_bc03 = np.mean(bc03_f(wavelength_partial))
@@ -468,21 +464,51 @@ for p in paths[22:23]:
     # load bd12 plot for comparison
     bd12_wd01 = np.loadtxt('/Users/blakechellew/Documents/DustProject/alphas_and_stds/bd12_fig3_green_052621.csv',
                            delimiter=",")
+    # load plot from brandt code
+    brandt_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/brandt_radiative/integrals/'
+    brandt_alphas = np.load(brandt_path + 'alphas_wd.npy')
 
     # test: try a bunch of different binnings
-    # for b in range(50):
-    #    lambdas_boss_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength,
-    #                                                             bin_offset=b)
-    #    alphas_bin = alphas_bin[0]
-    #    plt.plot(lambdas_boss_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
-    #    plt.plot(bd12_wd01[:, 0], bd12_wd01[:, 1], 'green', label='bd12 wd01', drawstyle='steps-mid')
-    #    plt.title('Binning Offset: ' + b)
-    #    plt.show()
+    # currently getting an error because shifting the binning changes the total number of elements
+    # I would expect the ratio to be smooth...
+    for b in range(25, 75):
+        lambdas_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength,
+                                                            bin_offset=b)
+        alphas_bin = alphas_bin[0]
+        plt.plot(lambdas_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
+        plt.plot(bd12_wd01[:, 0], bd12_wd01[:, 1], 'green', label='bd12 wd01', drawstyle='steps-mid')
 
-    plt.plot(bd12_wd01[:, 0], bd12_wd01[:, 1], 'green', label='bd12 wd01', drawstyle='steps-mid')
+        ratio = bd12_wd01[:, 1][1:] / alphas_bin
+        plt.plot(lambdas_bin, ratio, 'pink', label='ratio')
+
+        plt.title('Binning Offset: ' + str(b))
+        plt.show()
+
+
+    # bin some alphas
+    lambdas_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength, bin_offset=40)
+    alphas_bin = alphas_bin[0]
+    _, brandt_alphas_bin, _ = generate_binned_alphas([brandt_alphas], [np.ones(alphas.shape)], wavelength, bin_offset=40)
+    brandt_alphas_bin = brandt_alphas_bin[0]
+
+    # todo:
+    # load alphas from brandt code
+    # load alphas from bd12
+    # plot ratios (might be hard because they aren't on the same wavelength... need to figure out the bin edges)
+    # add zda04 to my code
+
+    plt.plot(bd12_wd01[:, 0], bd12_wd01[:, 1], 'green', label='bd12 wd01', drawstyle='steps-post')
+    plt.plot(lambdas_bin, brandt_alphas_bin, 'cyan', label='brandt code', drawstyle='steps-mid')
     plt.plot(wavelength, wavelength * bc03_f(wavelength) / avg_bc03_wav / 2, 'b', label='~ wav*bc03')
-    plt.plot(lambdas_boss_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
+    plt.plot(lambdas_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps-mid')
     plt.plot(wavelength, alphas * bd12_factor / wavelength / bc03_f(wavelength) * avg_bc03 * 5000, 'r', label='~ alphas / bc03 / wav')
+
+    ratio_brandt_mine = brandt_alphas / (alphas * bd12_factor)
+    plt.plot(wavelength, ratio_brandt_mine, 'purple', label='ratio of brandt alphas to mine')
+    plt.plot(wavelength, np.ones(len(ratio_brandt_mine)), 'purple', linestyle='--')
+
+    ratio_bd12_mine = bd12_wd01[:, 1][1:] / (alphas_bin * bd12_factor)
+    plt.plot(lambdas_bin, ratio_bd12_mine, 'pink', label='ratio of bd12 alphas to mine')
 
     plt.xlim(3800, 9200)  # later: expand to BOSS wavelength range
     plt.ylim(0, .28)  # to match the BD12 paper
