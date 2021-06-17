@@ -1,11 +1,4 @@
 # TODO
-# check units again, for ex. cross section is cm^2
-# still need to verify if the masking for numerically bad functions is working
-
-# more things to verify:
-# double check that henyey fn is used correctly
-
-# verify density prefactor calculation
 
 # verifying the integral:
 # it should match the results from BC03
@@ -24,6 +17,7 @@ from generate_plots import generate_binned_alphas
 from astropy.io import fits
 
 boss = False  # whether to interpolate to BOSS wavelengths or SDSS
+wd01_model = False  # otherwise zda04 model
 
 # load some files
 paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
@@ -37,14 +31,21 @@ else:
     wavelength = np.array(hdulist_sdsswav[1].data)
 
 # load dust models
-dust_model_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/kext_albedo_WD_MW_3.1_60_D03.all'
-# column 0: wavelength (microns, but converted to angstroms below)
-# column 1: albedo
-# column 2: <cos>
-# column 3: cross section (cm^2)
-# column 5: <cos^2>
+if wd01_model:
+    dust_model_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/kext_albedo_WD_MW_3.1_60_D03.all'
+    skip_rows = 80
+    use_cols = (0, 1, 2, 3)
+    # column 0: wavelength (microns, but converted to angstroms below)
+    # column 1: albedo
+    # column 2: <cos>
+    # column 3: cross section (cm^2)
+    # column 5: <cos^2>
+else:  # zda04 dust model. it's sorted by wavelength.
+    dust_model_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/brandt_radiative/integrals/extcurv.out_ZDA04'
+    skip_rows = 15
+    use_cols = (0, 4, 3, 1)
 
-dust_model = np.loadtxt(dust_model_path, skiprows=80, usecols=(0, 1, 2, 3, 4, 5))
+dust_model = np.loadtxt(dust_model_path, skiprows=skip_rows, usecols=use_cols)
 
 # flip because wavelength goes largest to smallest
 dust_wav = np.flip(dust_model[:, 0].flatten()) * 10 ** 4  # convert to angstroms from um
@@ -57,22 +58,29 @@ dust_wav = dust_wav[sorted_idx]
 dust_albedo = dust_albedo[sorted_idx]
 dust_cos = dust_cos[sorted_idx]
 dust_cross = dust_cross[sorted_idx]
-# remove duplicate wavelength
-bad_idx = 125
-dust_wav = np.delete(dust_wav, bad_idx)
-dust_albedo = np.delete(dust_albedo, bad_idx)
-dust_cos = np.delete(dust_cos, bad_idx)
-dust_cross = np.delete(dust_cross, bad_idx)
+
+if wd01_model:
+    # remove duplicate wavelength
+    bad_idx = 125
+    dust_wav = np.delete(dust_wav, bad_idx)
+    dust_albedo = np.delete(dust_albedo, bad_idx)
+    dust_cos = np.delete(dust_cos, bad_idx)
+    dust_cross = np.delete(dust_cross, bad_idx)
 
 # interpolate dust model
 dust_albedo_f = interp1d(dust_wav, dust_albedo, kind='cubic')
 dust_cos_f = interp1d(dust_wav, dust_cos, kind='cubic')
 dust_cross_f = interp1d(dust_wav, dust_cross, kind='cubic')  # cm^2
 
-dust_wav = dust_wav[429:638]  # test. avoids interpolation error for I_tir currently.
+if wd01_model:
+    wav_min, wav_max = 429, 638
+else:
+    wav_min, wav_max = 690, 1023
+dust_wav = dust_wav[wav_min:wav_max]  # test. avoids interpolation error for I_tir currently.
 
 # choose a latitude
 b = 40 * np.pi / 180  # 40 degrees -> radians
+
 
 # phase function
 def henyey(cos_xi, g):
@@ -122,11 +130,11 @@ def cos_xi(z, rho, theta, beta):
     numer = rho * np.cos(beta)**2 - z * np.sin(beta) * np.cos(theta) / np.tan(b)
     denom_sqr = z**2 / np.tan(b)**2 + rho**2 * np.cos(beta)**2
     result = numer / np.sqrt(denom_sqr)
-    return np.abs(result)  #TEST: apply abs value
+    return np.abs(result)  #TEST: apply abs value (actually - is probably correct)
 
 # scale heights 300 pc and 1350 pc
-a_300 = 0.9
-a_1350 = 0.1
+a_300 = 0.9 # TEST was 0.9
+a_1350 = 0.1 # TEST was 0.1
 
 
 # surface power density (arbitrary units; any normalization factor will cancel out later)
@@ -153,7 +161,7 @@ def i_tir_integrand(lamb, z, rho, beta):
 # eqn A4: integrate over everything except wavelength
 def i_tir(bc03_f):
     n_lamb = 200
-    n_u = n_tau = n_beta = 30
+    n_u = n_tau = n_beta = 25
     # n_u = 30
     # n_tau = 30
     # n_beta = 30  # should be even to avoid beta=pi
@@ -162,7 +170,7 @@ def i_tir(bc03_f):
     # lamb_max = 15*10**4   # 10 ** 6
     # h_lamb = (lamb_max - lamb_min) / 2 / n_lamb
     # lamb_grid = np.linspace(lamb_min + h_lamb, lamb_max - h_lamb, n_lamb)  # 91 to 10**4 A  # min, max, n
-    lamb_grid = dust_wav  # temp, for using lambda grid from dust model
+    lamb_grid = dust_wav[30:-30]  # TEST, for using lambda grid from dust model
     n_lamb = len(lamb_grid)
 
     tau_min = 0
@@ -245,7 +253,7 @@ def i_sca(lamb):
     # n_u = 20
     # n_tau = 20
     # n_beta = 20  # should be even to avoid beta=pi
-    n_theta = n_u = n_tau = n_beta = 20  # TEST, was 30
+    n_theta = n_u = n_tau = n_beta = 25  # TEST, was 30
     theta_min = 0
     theta_max = 2 * np.pi
     h_theta = (theta_max - theta_min) / 2 / n_theta
@@ -341,7 +349,7 @@ def i_sca(lamb):
 # 5th to last: similar but t9e9
 
 # loop through the bc03 spectra
-for p in paths[22:23]:
+for p in paths[2:3]:
     print("verify path name:", p)
 
     # load and interpolate the bc03 spectra
@@ -452,7 +460,8 @@ for p in paths[22:23]:
     print(alphas)
 
     # scaling factors
-    bd12_factor = 0.49
+    bd12_factor = 0.49 if wd01_model else 0.52
+
     avg_bc03 = np.mean(bc03_f(wavelength_partial))
     avg_bc03_wav = np.mean(bc03_f(wavelength_partial) * wavelength_partial)
 
@@ -462,42 +471,27 @@ for p in paths[22:23]:
         plt.plot(wavelength, alphas_norad * 3 / 2, 'g', label='alphas (no radiative)')
 
     # load bd12 plot for comparison
-    bd12_wd01 = np.loadtxt('/Users/blakechellew/Documents/DustProject/alphas_and_stds/bd12_fig3_green_052621.csv',
-                           delimiter=",")
+    if wd01_model:
+        bd12_alphas = np.loadtxt('/Users/blakechellew/Documents/DustProject/alphas_and_stds/bd12_fig3_green_052621.csv',
+                                 delimiter=",")
+    else:
+        bd12_alphas = np.loadtxt('/Users/blakechellew/Documents/DustProject/alphas_and_stds/bd12_fig3_blue_052621.csv',
+                                 delimiter=",")
+
     # load plot from brandt code
     brandt_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/brandt_radiative/integrals/'
-    brandt_alphas = np.load(brandt_path + 'alphas_wd.npy')
-
-    # test: try a bunch of different binnings
-    # currently getting an error because shifting the binning changes the total number of elements
-    # I would expect the ratio to be smooth...
-    for b in range(25, 75):
-        lambdas_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength,
-                                                            bin_offset=b)
-        alphas_bin = alphas_bin[0]
-        plt.plot(lambdas_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
-        plt.plot(bd12_wd01[:, 0], bd12_wd01[:, 1], 'green', label='bd12 wd01', drawstyle='steps-mid')
-
-        ratio = bd12_wd01[:, 1][1:] / alphas_bin
-        plt.plot(lambdas_bin, ratio, 'pink', label='ratio')
-
-        plt.title('Binning Offset: ' + str(b))
-        plt.show()
-
+    if wd01_model:
+        brandt_alphas = np.load(brandt_path + 'alphas_wd.npy')
+    else:
+        brandt_alphas = np.load(brandt_path + 'alphas_zd.npy')
 
     # bin some alphas
-    lambdas_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength, bin_offset=40)
+    lambdas_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
     alphas_bin = alphas_bin[0]
-    _, brandt_alphas_bin, _ = generate_binned_alphas([brandt_alphas], [np.ones(alphas.shape)], wavelength, bin_offset=40)
+    _, brandt_alphas_bin, _ = generate_binned_alphas([brandt_alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
     brandt_alphas_bin = brandt_alphas_bin[0]
 
-    # todo:
-    # load alphas from brandt code
-    # load alphas from bd12
-    # plot ratios (might be hard because they aren't on the same wavelength... need to figure out the bin edges)
-    # add zda04 to my code
-
-    plt.plot(bd12_wd01[:, 0], bd12_wd01[:, 1], 'green', label='bd12 wd01', drawstyle='steps-post')
+    plt.plot(bd12_alphas[:, 0], bd12_alphas[:, 1], 'green', label='bd12 alphas', drawstyle='steps-post')
     plt.plot(lambdas_bin, brandt_alphas_bin, 'cyan', label='brandt code', drawstyle='steps-mid')
     plt.plot(wavelength, wavelength * bc03_f(wavelength) / avg_bc03_wav / 2, 'b', label='~ wav*bc03')
     plt.plot(lambdas_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps-mid')
@@ -507,11 +501,15 @@ for p in paths[22:23]:
     plt.plot(wavelength, ratio_brandt_mine, 'purple', label='ratio of brandt alphas to mine')
     plt.plot(wavelength, np.ones(len(ratio_brandt_mine)), 'purple', linestyle='--')
 
-    ratio_bd12_mine = bd12_wd01[:, 1][1:] / (alphas_bin * bd12_factor)
+    ratio_bd12_mine = bd12_alphas[:, 1][:-1] / (alphas_bin * bd12_factor)
     plt.plot(lambdas_bin, ratio_bd12_mine, 'pink', label='ratio of bd12 alphas to mine')
 
     plt.xlim(3800, 9200)  # later: expand to BOSS wavelength range
     plt.ylim(0, .28)  # to match the BD12 paper
+    if wd01_model:
+        plt.title("WD01 Model")
+    else:
+        plt.title("ZD04 Model")
     plt.legend()
     plt.show()
 
@@ -523,3 +521,28 @@ for p in paths[22:23]:
     save_path += p.split('/')[-1].rsplit('.spec')[0] + '.npy'
     print(save_path)
     np.save(save_path, alphas)
+
+
+#############################
+
+"""
+# test: try a bunch of different binnings
+# currently getting an error because shifting the binning changes the total number of elements
+# I would expect the ratio to be smooth...
+for b in range(60):
+    lambdas_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength,
+                                                        bin_offset=b)
+    alphas_bin = alphas_bin[0]
+    plt.plot(lambdas_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps')
+    plt.plot(bd12_alphas[:, 0], bd12_alphas[:, 1], 'green', label='bd12 wd01', drawstyle='steps-mid')
+
+    ratio1 = bd12_alphas[:, 1][:100] / alphas_bin[:100]
+    ratio2 = bd12_alphas[:, 1][1:101] / alphas_bin[:100]
+    ratio3 = bd12_alphas[:, 1][2:102] / alphas_bin[:100]
+    plt.plot(lambdas_bin[:100], ratio1, 'pink', label='ratio1')
+    plt.plot(lambdas_bin[:100], ratio2, 'purple', label='ratio2')
+    plt.plot(lambdas_bin[:100], ratio3, 'blue', label='ratio3')
+
+    plt.title('Binning Offset: ' + str(b))
+    plt.show()
+"""
