@@ -1,10 +1,3 @@
-# TODO
-
-# verifying the integral:
-# it should match the results from BC03
-# make sure it converges; should stay same if I increase the bounds, and number of divs
-# try to guestimate the value based on integrand plots?
-
 # take the BC03 model spectra and apply radiative transfer calculations.
 # based on the appendix of BD12.
 
@@ -18,14 +11,21 @@ from astropy.io import fits
 
 boss = False  # whether to interpolate to BOSS wavelengths or SDSS
 wd01_model = False  # otherwise zda04 model
+b = 40 * np.pi / 180  # latitude (should be 40 degrees -> radians)
+sig_dust = 1  # parsecs (from density eqn)   # TEST: change to 1 pc (should be 250)
+tau_def = 0.15  # fiducial value (see BD12 paper) (z = 0)
+V_band_wav = 5510  # A
+# stellar scale heights 300 pc and 1350 pc
+a_300 = .9  # 0.9
+a_1350 = .1  # 0.1
+p_num = 2  #which bc03 model to use. 2 is z=.008, 22 is z=.02
 
-# load some files
-paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
-if boss:
-    # BOSS wavelengths
+paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')  # bc03 model spectra
+
+# load wavelengths
+if boss:  # BOSS wavelengths
     wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')  # angstroms
-else:
-    # SDSS wavelengths (for comparisons)
+else:  # SDSS wavelengths
     hdulist_direc = '/Users/blakechellew/Documents/DustProject/BrandtFiles/'
     hdulist_sdsswav = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
     wavelength = np.array(hdulist_sdsswav[1].data)
@@ -39,12 +39,10 @@ if wd01_model:
     # column 1: albedo
     # column 2: <cos>
     # column 3: cross section (cm^2)
-    # column 5: <cos^2>
-else:  # zda04 dust model. it's sorted by wavelength.
+else:  # zda04 dust model
     dust_model_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/brandt_radiative/integrals/extcurv.out_ZDA04'
     skip_rows = 15
     use_cols = (0, 4, 3, 1)
-
 dust_model = np.loadtxt(dust_model_path, skiprows=skip_rows, usecols=use_cols)
 
 # flip because wavelength goes largest to smallest
@@ -72,28 +70,20 @@ dust_albedo_f = interp1d(dust_wav, dust_albedo, kind='cubic')
 dust_cos_f = interp1d(dust_wav, dust_cos, kind='cubic')
 dust_cross_f = interp1d(dust_wav, dust_cross, kind='cubic')  # cm^2
 
-if wd01_model:
-    wav_min, wav_max = 429, 638
-else:
-    wav_min, wav_max = 690, 1023
+cross_sec_V = dust_cross_f(V_band_wav)  # cm^2
+
+# set wavelength range
+if wd01_model:  # 80 header lines
+    wav_min, wav_max = len(dust_wav) - (631-80), len(dust_wav) - (429-80),
+else:  # 15 header lines
+    wav_min, wav_max = len(dust_wav) - (1023-15), len(dust_wav) - (690-15)
 dust_wav = dust_wav[wav_min:wav_max]  # test. avoids interpolation error for I_tir currently.
-
-# choose a latitude
-b = 40 * np.pi / 180  # 40 degrees -> radians
-
 
 # phase function
 def henyey(cos_xi, g):
-    g = g * (-1)  # TEST: not sure why * -1
     result = (1 - g ** 2) / (1 + g ** 2 - 2 * g * cos_xi) ** (3 / 2) / (4 * np.pi)
     assert result.shape == cos_xi.shape
     return result
-
-
-sig_dust = 1  # parsecs (from density eqn)   # TEST: change to 1 pc (should be 250)
-tau_def = 0.15  # fiducial value (see BD12 paper) (z = 0)
-V_band_wav = 5510  # A
-cross_sec_V = dust_cross_f(V_band_wav)  # cm^2
 
 # eqn A1
 # z should be in pc
@@ -103,7 +93,7 @@ cross_sec_V = dust_cross_f(V_band_wav)  # cm^2
 def tau_f(lamb, z):
     cross_section = dust_cross_f(lamb)  # cm^2
     tau_0 = tau_def * cross_section / cross_sec_V
-    tau_lambda = tau_0 * (1 + special.erf(z / sig_dust / np.sqrt(2))) # TEST: was 1 - erf
+    tau_lambda = tau_0 * (1 - special.erf(z / sig_dust / np.sqrt(2)))
     return tau_lambda  # unitless
 
 
@@ -130,11 +120,13 @@ def cos_xi(z, rho, theta, beta):
     numer = rho * np.cos(beta)**2 - z * np.sin(beta) * np.cos(theta) / np.tan(b)
     denom_sqr = z**2 / np.tan(b)**2 + rho**2 * np.cos(beta)**2
     result = numer / np.sqrt(denom_sqr)
-    return np.abs(result)  #TEST: apply abs value (actually - is probably correct)
 
-# scale heights 300 pc and 1350 pc
-a_300 = 0.9 # TEST was 0.9
-a_1350 = 0.1 # TEST was 0.1
+    beta_mask = np.abs(beta - np.pi/2) < 0.1
+    if (beta_mask).any() and (z[beta_mask] == 0).any():
+        print("BETA is not allowed")
+        print(beta[beta_mask][z[beta_mask] == 0])
+        print(result[beta_mask][z[beta_mask] == 0])
+    return -result
 
 
 # surface power density (arbitrary units; any normalization factor will cancel out later)
@@ -160,17 +152,17 @@ def i_tir_integrand(lamb, z, rho, beta):
 
 # eqn A4: integrate over everything except wavelength
 def i_tir(bc03_f):
-    n_lamb = 200
-    n_u = n_tau = n_beta = 25
-    # n_u = 30
-    # n_tau = 30
-    # n_beta = 30  # should be even to avoid beta=pi
+    n_lamb = 200  # not used currently
+    # n_beta needs to be even
+    n_u = 10  # 100
+    n_tau = 20  # 25
+    n_beta = 50  # should be even to avoid beta=pi, but hasn't been an issue since
 
     # lamb_min = 100
     # lamb_max = 15*10**4   # 10 ** 6
     # h_lamb = (lamb_max - lamb_min) / 2 / n_lamb
     # lamb_grid = np.linspace(lamb_min + h_lamb, lamb_max - h_lamb, n_lamb)  # 91 to 10**4 A  # min, max, n
-    lamb_grid = dust_wav[30:-30]  # TEST, for using lambda grid from dust model
+    lamb_grid = dust_wav  # TEST, for using lambda grid from dust model
     n_lamb = len(lamb_grid)
 
     tau_min = 0
@@ -182,6 +174,7 @@ def i_tir(bc03_f):
     beta_max = np.pi
     h_beta = (beta_max - beta_min) / 2 / n_beta
     beta_grid = np.linspace(beta_min + h_beta, beta_max - h_beta, n_beta)
+
     u_min = 0
     u_max = 1
     h_u = (u_max - u_min) / 2 / n_u
@@ -249,11 +242,13 @@ def i_sca_integrand(theta, tau, rho, beta, lamb):
 # still needs to be multiplied by bc03 flux
 def i_sca(lamb):
 
-    # n_theta = 20
-    # n_u = 20
-    # n_tau = 20
-    # n_beta = 20  # should be even to avoid beta=pi
-    n_theta = n_u = n_tau = n_beta = 25  # TEST, was 30
+    print("scattering integral:", lamb)  # to keep track of how long the code has left to run
+
+    n_u = 10  # 100
+    n_tau = 20  # 25
+    n_beta = 50  # should be even to avoid beta=pi
+    n_theta = 20  # 25
+
     theta_min = 0
     theta_max = 2 * np.pi
     h_theta = (theta_max - theta_min) / 2 / n_theta
@@ -344,12 +339,14 @@ def i_sca(lamb):
     return result
 
 
-# idx 21 and 22: exponential, 12 Gyr, z=.02 (.02 is correct)
+# idx 21: t=9e9, 12 Gyr, z=.02 (.02 is closest to "solar" metallicity)
+# idx 22: t=5e9, 12 Gyr, z=.02
 # index 2: t=5e9, 12 Gyr, Z=.008
+# index 34: t=9e9, 12 Gyr, Z=.008
 # 5th to last: similar but t9e9
 
 # loop through the bc03 spectra
-for p in paths[2:3]:
+for p in paths[p_num:p_num+1]:
     print("verify path name:", p)
 
     # load and interpolate the bc03 spectra
@@ -357,40 +354,6 @@ for p in paths[2:3]:
     wav = a[:, 0]  # angstroms (91 A to 1.6 * 10^6)
     bc03 = a[:, 1]
     bc03_f = interp1d(wav, bc03, kind='cubic')
-
-    """
-    plt.plot(wav, bc03, label='bc03')
-    plt.plot(wav, bc03 * wav, label='* wav')
-    plt.plot(wav, bc03 / wav, label='/ wav')
-    plt.semilogx()
-    plt.legend()
-    plt.xlim(800, 13000)
-    plt.show()
-    """
-
-    # plot previously saved stuff:
-    """
-    load_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
-    load_path += p.split('/')[-1].rsplit('.spec')[0] + '_021121.npy'  # 021121 or 022321
-    alphas_radiative = np.load(load_path)
-    bc03_factor = 3  # test
-    bd12_factor = 0.49
-    plt.plot(wavelength, alphas_radiative * bd12_factor, label='Radiative Transfer', drawstyle='steps')
-    plt.plot(wavelength, bc03_f(wavelength) / bc03_factor * bd12_factor, label='BC03 Model', drawstyle='steps')
-    plt.plot(wavelength, alphas_radiative / bc03_f(wavelength), drawstyle='steps')
-    plt.xlim(3000, 10000)
-    plt.ylim(0, 0.4)
-    plt.xlabel("Wavelength")
-    plt.ylabel("Alpha")
-    plt.legend()
-    plt.show()
-    """
-
-    # testing A4:
-    # i_tir = i_tir_integrand(6000, 2, bc03_f)
-    # print("I tir test")
-    # print(i_tir)
-    # exit(0)
 
     """
     # plots of integrand for I_TIR: (lambda, z, rho, beta)
@@ -424,9 +387,8 @@ for p in paths[2:3]:
     """
 
     # compute total infrared radiation
-    # (0 to inf throws an error)
     # (range of lambda for dust model is 10^-4 to 10^4 microns, or 1 to 10^8 angstroms)
-    # (note: range of lambda for bc03 is 91 to 1.6e6)
+    # (range of lambda for bc03 is 91 to 1.6e6)
 
     I_tir = i_tir(bc03_f)
     print("I_tir result")
@@ -439,6 +401,8 @@ for p in paths[2:3]:
     print("starting integral")
 
     wavelength_partial = dust_wav  # use wavelength grid from dust model file
+    # BOSS is 3600 to 10000
+    wavelength_partial = wavelength_partial[(wavelength_partial > 3500) & (wavelength_partial < 10500)]
     # wavelength_partial = wavelength[::40]
     # wavelength_partial = np.append(wavelength_partial, wavelength[-1])  # to avoid interpolation issues for SDSS array
 
@@ -461,14 +425,10 @@ for p in paths[2:3]:
 
     # scaling factors
     bd12_factor = 0.49 if wd01_model else 0.52
+    boss_fluxfactor = 1.38
 
     avg_bc03 = np.mean(bc03_f(wavelength_partial))
     avg_bc03_wav = np.mean(bc03_f(wavelength_partial) * wavelength_partial)
-
-    if boss:
-        # should get this for sdss also... maybe.
-        alphas_norad = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720.npy')
-        plt.plot(wavelength, alphas_norad * 3 / 2, 'g', label='alphas (no radiative)')
 
     # load bd12 plot for comparison
     if wd01_model:
@@ -488,23 +448,32 @@ for p in paths[2:3]:
     # bin some alphas
     lambdas_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
     alphas_bin = alphas_bin[0]
-    _, brandt_alphas_bin, _ = generate_binned_alphas([brandt_alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
-    brandt_alphas_bin = brandt_alphas_bin[0]
+
+    if boss:
+        # should get this for sdss also... maybe.
+        alphas_norad = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720.npy')
+        alphas_norad_bin_wav, alphas_norad_bin, _ = generate_binned_alphas([alphas_norad], [np.ones(alphas_norad.shape)], wavelength, bin_offset=0)
+        alphas_norad_bin = alphas_norad_bin[0]
+        plt.plot(alphas_norad_bin_wav, alphas_norad_bin / boss_fluxfactor, 'orange', label='boss alphas (observed)', drawstyle='steps-mid')
+
+    if not boss:
+        _, brandt_alphas_bin, _ = generate_binned_alphas([brandt_alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
+        brandt_alphas_bin = brandt_alphas_bin[0]
+        plt.plot(lambdas_bin, brandt_alphas_bin, 'cyan', label='brandt code', drawstyle='steps-mid')
+
+        ratio_brandt_mine = brandt_alphas / (alphas * bd12_factor)
+        ratio_bd12_mine = bd12_alphas[:, 1][:-1] / (alphas_bin * bd12_factor)
+
+        plt.plot(wavelength, ratio_brandt_mine, 'purple', label='ratio of brandt alphas to mine')
+        plt.plot(wavelength, np.ones(len(ratio_brandt_mine)), 'purple', linestyle='--')
+        plt.plot(lambdas_bin, ratio_bd12_mine, 'pink', label='ratio of bd12 alphas to mine')
 
     plt.plot(bd12_alphas[:, 0], bd12_alphas[:, 1], 'green', label='bd12 alphas', drawstyle='steps-post')
-    plt.plot(lambdas_bin, brandt_alphas_bin, 'cyan', label='brandt code', drawstyle='steps-mid')
-    plt.plot(wavelength, wavelength * bc03_f(wavelength) / avg_bc03_wav / 2, 'b', label='~ wav*bc03')
+    # plt.plot(wavelength, wavelength * bc03_f(wavelength) / avg_bc03_wav / 2, 'b', label='~ wav*bc03')
     plt.plot(lambdas_bin, alphas_bin * bd12_factor, 'k', label='~ alphas (radiative)', drawstyle='steps-mid')
     plt.plot(wavelength, alphas * bd12_factor / wavelength / bc03_f(wavelength) * avg_bc03 * 5000, 'r', label='~ alphas / bc03 / wav')
 
-    ratio_brandt_mine = brandt_alphas / (alphas * bd12_factor)
-    plt.plot(wavelength, ratio_brandt_mine, 'purple', label='ratio of brandt alphas to mine')
-    plt.plot(wavelength, np.ones(len(ratio_brandt_mine)), 'purple', linestyle='--')
-
-    ratio_bd12_mine = bd12_alphas[:, 1][:-1] / (alphas_bin * bd12_factor)
-    plt.plot(lambdas_bin, ratio_bd12_mine, 'pink', label='ratio of bd12 alphas to mine')
-
-    plt.xlim(3800, 9200)  # later: expand to BOSS wavelength range
+    plt.xlim(3600, 10400)  # later: expand to BOSS wavelength range
     plt.ylim(0, .28)  # to match the BD12 paper
     if wd01_model:
         plt.title("WD01 Model")
@@ -512,9 +481,6 @@ for p in paths[2:3]:
         plt.title("ZD04 Model")
     plt.legend()
     plt.show()
-
-    bc03_test = wav * bc03_f(wav)
-    print("bc03:", bc03_test[:100])
 
     # save the result
     save_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
