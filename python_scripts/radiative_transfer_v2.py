@@ -10,15 +10,17 @@ from generate_plots import generate_binned_alphas
 from astropy.io import fits
 
 boss = False  # whether to interpolate to BOSS wavelengths or SDSS
-wd01_model = False  # otherwise zda04 model
+wd01_model = True  # otherwise zda04 model
 b = 40 * np.pi / 180  # latitude (should be 40 degrees -> radians)
-sig_dust = 1  # parsecs (from density eqn)   # TEST: change to 1 pc (should be 250)
+sig_dust = 1  # 250 parsecs (from density eqn)   # TEST: change to 1 pc
 tau_def = 0.15  # fiducial value (see BD12 paper) (z = 0)
 V_band_wav = 5510  # A
 # stellar scale heights 300 pc and 1350 pc
-a_300 = .9  # 0.9
-a_1350 = .1  # 0.1
+a_300 = 1  # 0.9
+a_1350 = 0  # 0.1
 p_num = 2  #which bc03 model to use. 2 is z=.008, 22 is z=.02
+sig_star_1 = 1.2  # 300
+sig_star_2 = 1.2  # 1350
 
 paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')  # bc03 model spectra
 
@@ -133,8 +135,8 @@ def cos_xi(z, rho, theta, beta):
 # it's a function of height z_s
 # the bc03 flux will be multiplied later
 def surface_power_fn(z, rho, beta):  # z_s in pc
-    return a_300 * np.exp(-np.abs(z - rho * np.cos(beta)) / 300) \
-        + a_1350 * np.exp(-np.abs(z - rho * np.cos(beta)) / 1350)
+    return a_300 * np.exp(-np.abs(z - rho * np.cos(beta)) / sig_star_1) \
+        + a_1350 * np.exp(-np.abs(z - rho * np.cos(beta)) / sig_star_2)
 
 
 # eqn A4: integrand
@@ -154,9 +156,9 @@ def i_tir_integrand(lamb, z, rho, beta):
 def i_tir(bc03_f):
     n_lamb = 200  # not used currently
     # n_beta needs to be even
-    n_u = 10  # 100
+    n_u = 20  # 100
     n_tau = 20  # 25
-    n_beta = 50  # should be even to avoid beta=pi, but hasn't been an issue since
+    n_beta = 20  # should be even to avoid beta=pi, but hasn't been an issue since
 
     # lamb_min = 100
     # lamb_max = 15*10**4   # 10 ** 6
@@ -244,9 +246,9 @@ def i_sca(lamb):
 
     print("scattering integral:", lamb)  # to keep track of how long the code has left to run
 
-    n_u = 10  # 100
+    n_u = 20  # 100
     n_tau = 20  # 25
-    n_beta = 50  # should be even to avoid beta=pi
+    n_beta = 20  # should be even to avoid beta=pi
     n_theta = 20  # 25
 
     theta_min = 0
