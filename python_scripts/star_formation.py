@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import glob
 from scipy.interpolate import interp1d
 from scipy import stats # TEST
+from generate_plots import generate_binned_alphas
 
 # parameters
 # (poly_degree is for the polynomial added to the linear combo)
@@ -16,22 +17,29 @@ poly_order = poly_degree + 1
 continuum_deg = 5
 continuum_order = continuum_deg + 1
 bootstrap = True
-num_bootstrap_samples = 100
+num_bootstrap_samples = 200
 num_spectra = 3
-min_wav = 6000
-max_wav = 9000  # 10000
+min_wav = 4000
+max_wav = 10000  # 10000
 
 # paths for bc03 spectra
 paths_bc03 = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
 
 if bootstrap:
     alphas_bootstrap = np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_012720.npy')
-    alpha_stds_bootstrap = np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_012720.npy')
+    # alpha_stds_bootstrap = np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_012720.npy')
 # alphas and stds (boss):
 alphas_boss = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720_10.npy')
 alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_boss_iris_2d_012720_10.npy')
 wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
 
+if bootstrap:
+    # calculate bootstrap errors (ignoring flux calibration):
+    bootstrap_lower = np.nanpercentile(alphas_bootstrap, 16, axis=0)
+    bootstrap_upper = np.nanpercentile(alphas_bootstrap, 84, axis=0)
+    bootstrap_stds = (bootstrap_upper - bootstrap_lower) / 2
+
+# TEST set everything = 1
 # alphas_boss[:] = 1
 # alpha_stds_boss[:] = 1
 
@@ -43,9 +51,6 @@ plt.plot(wavelength, alphas_boss, 'k')
 plt.ylim(0, .6)
 plt.show()
 """
-
-# TEST
-chai_less_1 = []
 
 # TEST: 1d alphas
 #alphas = np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')
@@ -86,6 +91,7 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
         values = a[:, 1]
         f = interp1d(wav, values, kind='cubic')
         model_spectra[i] = np.array([f(w) for w in wavelength])
+    model_spectra_continuum = np.copy(model_spectra)
 
     # subtract continuum from the model spectra
     for i in range(len(paths)):
@@ -94,15 +100,15 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
         for j in range(continuum_order):
             continuum_fit += coeffs_i[-1-j] * np.power(wavelength, j)
         assert continuum_fit.shape == wavelength.shape
-        model_spectra[i] /= continuum_fit
+        model_spectra_continuum[i] = model_spectra[i] / continuum_fit
 
     # subtract continuum from the alphas
     coeffs_i = np.polyfit(wavelength, alphas, continuum_deg, w=1/alpha_stds)
     continuum_fit = 0
     for j in range(continuum_order):
         continuum_fit += coeffs_i[-1 - j] * np.power(wavelength, j)
-    alphas /= continuum_fit
-    alpha_stds /= continuum_fit
+    alphas_continuum = alphas / continuum_fit
+    alpha_stds_continuum = alpha_stds / continuum_fit
 
     # find best-fit linear combination using max likelihood estimator
     # and plot the best-fit spectrum against actual spectrum
@@ -110,10 +116,10 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     A = np.zeros((num_spectra, num_spectra))
     for i in range(num_spectra):
         for j in range(num_spectra):
-            A[i, j] = np.nansum(model_spectra[i]*model_spectra[j]/np.power(alpha_stds, 2))
+            A[i, j] = np.nansum(model_spectra_continuum[i]*model_spectra_continuum[j]/np.power(alpha_stds_continuum, 2))
     b = np.zeros(num_spectra)
     for i in range(num_spectra):
-        b[i] = np.nansum(alphas*model_spectra[i]/np.power(alpha_stds, 2))
+        b[i] = np.nansum(alphas_continuum*model_spectra_continuum[i]/np.power(alpha_stds_continuum, 2))
 
     print("rank", np.linalg.lstsq(A, b)[2])
     coeffs = np.linalg.solve(A, b)
@@ -132,54 +138,60 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     # here the "coeffs" are value of model spectrum at given wavelength
     fitted_model_vars = np.zeros(wavelength.shape)
     for i in range(len(wavelength)):
-        a = model_spectra[:, i]
+        a = model_spectra_continuum[:, i]
         a_col = a.reshape(len(a), 1)
         a_row = a.reshape(1, len(a))
         var_i = a_row.dot(Cov).dot(a_col)
         fitted_model_vars[i] = var_i
     fitted_model_stds = np.sqrt(fitted_model_vars)
 
-    # plot the best fit spectrum:
-    weighted_model_spectra = np.copy(model_spectra)
-
-    for i in range(len(coeffs)):
-        weighted_model_spectra[i] *= coeffs[i]
-    best_fit_model = np.sum(weighted_model_spectra, axis=0)
+    # combine to get the best fit spectrum:
+    best_fit_model = np.sum(model_spectra_continuum * coeffs[:, None], axis=0)
+    best_fit_uncorrected = np.sum(model_spectra * coeffs[:, None], axis=0)
 
     # find the chai squared:
     print("chai squared")
-    chai_squared = np.nansum(np.divide(np.power(best_fit_model - alphas, 2), np.power(alpha_stds, 2)))
+    chai_squared = np.nansum(np.divide(np.power(best_fit_model - alphas_continuum, 2), np.power(alpha_stds_continuum, 2)))
     print(chai_squared)
     print("per degree of freedom (for 3 spectra)")
     chai_df = chai_squared / (len(wavelength) + poly_order)
     print(chai_df)
 
-    # TEST
-    if chai_df < 1:
-        chai_less_1.append(chai_df)
-
     # find correlation:
-    corr = stats.pearsonr(alphas, best_fit_model)
+    corr = stats.pearsonr(alphas_continuum, best_fit_model)
     print("correlation coeff:", corr)
 
-    if showPlots:  # if bootstrapping there will be too many plots
-        plt.plot(wavelength, alphas, 'k', drawstyle='steps')
+    if showPlots:  # if bootstrapping there could be too many plots
+        plt.plot(wavelength, alphas_continuum, 'k', drawstyle='steps')
         plt.plot(wavelength, best_fit_model, 'r', drawstyle='steps')
         plt.fill_between(wavelength, best_fit_model + 3*fitted_model_stds, best_fit_model - 3*fitted_model_stds, color='r', alpha=0.5, step='pre')
-        plt.plot(wavelength, alpha_stds, 'g', drawstyle='steps')
+        plt.plot(wavelength, alpha_stds_continuum, 'g', drawstyle='steps')
         #plt.plot(wavelength, best_fit_model + 3*fitted_model_stds, 'r', drawstyle='steps')
         #plt.plot(wavelength, best_fit_model - 3*fitted_model_stds, 'r', drawstyle='steps')
         plt.xlim(3500, 10000)
         plt.ylim(0, 2)
         plt.show()
 
-    return coeffs
+        #try plotting without adjusting:
+        plt.plot(wavelength, alphas, 'k', drawstyle='steps')
+        plt.plot(wavelength, best_fit_uncorrected, 'r', drawstyle='steps')
+        plt.xlim(3500, 10000)
+        plt.ylim(0, 2)
+        plt.show()
+
+    print("shapes")
+    return coeffs, wavelength, best_fit_uncorrected
 
 if bootstrap:
     coeffs_array = np.zeros((num_bootstrap_samples, num_spectra))
+    # best to use a variable here. len(wavelength) changes due due masking / cutoffs.
+    best_fit_array = np.zeros((num_bootstrap_samples, 3916))
+    best_fit_wavelengths = None
+
     for i in range(num_bootstrap_samples):
         print("sample number", i)
-        coeffs_array[i] = alphas_to_coeffs(alphas_bootstrap[i], alpha_stds_boss, wavelength, paths_bc03, showPlots=False)  # TEST: non-bootstrap stds
+        # alpha_stds_boss is not the same as the bootstrap stds, but it's basically equal
+        coeffs_array[i], best_fit_wavelengths, best_fit_array[i] = alphas_to_coeffs(alphas_bootstrap[i], alpha_stds_boss, wavelength, paths_bc03, showPlots=False)  # TEST: was using alphas_bootstrap[i]
     print(coeffs_array)
 
     # combine the coefficients:
@@ -189,11 +201,27 @@ if bootstrap:
     print(avg_coeffs)
     print(coeff_stds)
 
-    # TEST
-    print(chai_less_1)
+    # bin the bootstrap stuff
+    # I think the std input here can be ones, but maybe there is something better?
+    print("best fit array:", best_fit_array.shape)
+    lambdas_bin, best_fit_bin, _ = generate_binned_alphas([best_fit_array], [np.ones(best_fit_array.shape)], best_fit_wavelengths, bin_offset=0)
+    best_fit_bin = best_fit_bin[0]
+    print("best fit bin:", best_fit_bin.shape)
+    # bin the boss stuff
+    lambdas_bin_boss, boss_bin, _ = generate_binned_alphas([alphas_boss], [alpha_stds_boss], wavelength, bin_offset=0)
+    boss_bin = boss_bin[0]
+    # percentiles
+    bootstrap_binned_lower = np.nanpercentile(best_fit_bin, 16, axis=0)  # 68 percent confidence interval
+    bootstrap_binned_upper = np.nanpercentile(best_fit_bin, 84, axis=0)
+    # TODO: need to run with the original alphas. for now take the mean.
+    plt.plot(lambdas_bin, np.mean(best_fit_bin, axis=0), 'k', drawstyle='steps')
+    plt.fill_between(lambdas_bin, bootstrap_binned_lower, bootstrap_binned_upper, linewidth=0.0, color='k',
+                     alpha=0.2, step='pre')
+    plt.plot(lambdas_bin_boss, boss_bin, 'r', drawstyle='steps')
+    plt.show()
 
 else:
-    coeffs = alphas_to_coeffs(alphas_boss, alpha_stds_boss, wavelength, paths_bc03)
+    coeffs, _, _ = alphas_to_coeffs(alphas_boss, alpha_stds_boss, wavelength, paths_bc03)
     print("returned coeffs:")
     print(coeffs)
 
