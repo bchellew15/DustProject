@@ -16,7 +16,7 @@ poly_degree = -1  # 1 is linear, etc.
 poly_order = poly_degree + 1
 continuum_deg = 5
 continuum_order = continuum_deg + 1
-bootstrap = True
+bootstrap = False
 num_bootstrap_samples = 200
 num_spectra = 3
 min_wav = 4000
@@ -82,6 +82,9 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
              paths[21],
              paths[22]]
 
+    print("verify paths:")
+    print(paths)
+
     # load the spectra and interpolate to same wavelength range
     # emission lines are effectively masked bc those wavelengths are removed
     model_spectra = np.zeros((len(paths)+poly_order, len(wavelength)))
@@ -91,6 +94,7 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
         values = a[:, 1]
         f = interp1d(wav, values, kind='cubic')
         model_spectra[i] = np.array([f(w) for w in wavelength])
+
     model_spectra_continuum = np.copy(model_spectra)
 
     # subtract continuum from the model spectra
@@ -109,6 +113,16 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
         continuum_fit += coeffs_i[-1 - j] * np.power(wavelength, j)
     alphas_continuum = alphas / continuum_fit
     alpha_stds_continuum = alpha_stds / continuum_fit
+
+    # TEST: plot each of the spectra alongside alphas
+    colors = ['r', 'g', 'b']
+    #plt.plot(wavelength, alphas_continuum, 'k', drawstyle='steps')
+    for i in range(len(paths)):
+        plt.plot(wavelength, model_spectra[i], colors[i], drawstyle='steps')
+    plt.show()
+    for i in range(len(paths)):
+        plt.plot(wavelength, model_spectra_continuum[i], colors[i], drawstyle='steps')
+    plt.show()
 
     # find best-fit linear combination using max likelihood estimator
     # and plot the best-fit spectrum against actual spectrum
