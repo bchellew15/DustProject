@@ -10,7 +10,7 @@ from generate_plots import generate_binned_alphas
 from astropy.io import fits
 
 boss = False  # whether to interpolate to BOSS wavelengths or SDSS
-wd01_model = True  # otherwise zda04 model
+wd01_model = False  # otherwise zda04 model
 b = 40 * np.pi / 180  # latitude (should be 40 degrees -> radians)
 sig_dust = 1  # 250 parsecs (from density eqn)   # TEST: change to 1 pc
 tau_def = 0.15  # fiducial value (see BD12 paper) (z = 0)
@@ -20,7 +20,17 @@ a_300 = 1  # 0.9
 a_1350 = 0  # 0.1
 p_num = 2  #which bc03 model to use. 2 is z=.008, 22 is z=.02
 sig_star_1 = 1.2  # 300
-sig_star_2 = 1.2  # 1350
+sig_star_2 = 1350  # 1350
+mistakes = False  # TEST
+rho_scale = .1  # 1000  #.1 matches brandt code for sig = 1
+
+# number of grid points (for TIR and scattering):
+n_lamb = 200  # not used currently
+# n_beta needs to be even
+n_u = 20  # 100
+n_tau = 20  # 25
+n_beta = 20  # should be even to avoid beta=pi, but hasn't been an issue since
+n_theta = 20  # 25
 
 paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')  # bc03 model spectra
 
@@ -83,6 +93,8 @@ dust_wav = dust_wav[wav_min:wav_max]  # test. avoids interpolation error for I_t
 
 # phase function
 def henyey(cos_xi, g):
+    if mistakes:
+        g *= -1  # TEST
     result = (1 - g ** 2) / (1 + g ** 2 - 2 * g * cos_xi) ** (3 / 2) / (4 * np.pi)
     assert result.shape == cos_xi.shape
     return result
@@ -95,7 +107,10 @@ def henyey(cos_xi, g):
 def tau_f(lamb, z):
     cross_section = dust_cross_f(lamb)  # cm^2
     tau_0 = tau_def * cross_section / cross_sec_V
-    tau_lambda = tau_0 * (1 - special.erf(z / sig_dust / np.sqrt(2)))
+    if mistakes:
+        tau_lambda = tau_0 * (1 + special.erf(z / sig_dust / np.sqrt(2)))
+    else:
+        tau_lambda = tau_0 * (1 - special.erf(z / sig_dust / np.sqrt(2)))
     return tau_lambda  # unitless
 
 
@@ -128,7 +143,10 @@ def cos_xi(z, rho, theta, beta):
         print("BETA is not allowed")
         print(beta[beta_mask][z[beta_mask] == 0])
         print(result[beta_mask][z[beta_mask] == 0])
+    if mistakes:
+        return np.abs(result)  # TEST
     return -result
+
 
 
 # surface power density (arbitrary units; any normalization factor will cancel out later)
@@ -149,16 +167,11 @@ def i_tir_integrand(lamb, z, rho, beta):
     term3 = np.exp(-A_f(lamb, z, rho, beta))
     term4 = np.sin(beta)
     result = prefactor * term1 * term2 * term3 * term4
-    result = result * 1000 * np.exp(rho/1000)  # transform rho to u
+    result = result * rho_scale * np.exp(rho/rho_scale)  # transform rho to u
     return result
 
 # eqn A4: integrate over everything except wavelength
 def i_tir(bc03_f):
-    n_lamb = 200  # not used currently
-    # n_beta needs to be even
-    n_u = 20  # 100
-    n_tau = 20  # 25
-    n_beta = 20  # should be even to avoid beta=pi, but hasn't been an issue since
 
     # lamb_min = 100
     # lamb_max = 15*10**4   # 10 ** 6
@@ -198,7 +211,7 @@ def i_tir(bc03_f):
     betas = betas[None, ...] + zeros
     us = us[None, ...] + zeros
     taus = tau_grid[..., None, None] + zeros
-    rhos = -1000*np.log(us)
+    rhos = -rho_scale*np.log(us)
     assert lambs.shape == (n_tau, n_lamb, n_beta, n_u)
 
     ww = i_tir_integrand(lambs, z_of_tau(lambs, taus), rhos, betas)
@@ -235,7 +248,7 @@ def i_sca_integrand(theta, tau, rho, beta, lamb):
     term4 = np.exp(-A_f(lamb, z, rho, beta))
     term5 = np.sin(beta)
     result = prefactor * term1 * term2 * term3 * term4 * term5
-    result = result * 1000 * np.exp(rho / 1000)  # transform rho to u
+    result = result * rho_scale * np.exp(rho / rho_scale)  # transform rho to u
 
     return result
 
@@ -245,11 +258,6 @@ def i_sca_integrand(theta, tau, rho, beta, lamb):
 def i_sca(lamb):
 
     print("scattering integral:", lamb)  # to keep track of how long the code has left to run
-
-    n_u = 20  # 100
-    n_tau = 20  # 25
-    n_beta = 20  # should be even to avoid beta=pi
-    n_theta = 20  # 25
 
     theta_min = 0
     theta_max = 2 * np.pi
@@ -276,9 +284,22 @@ def i_sca(lamb):
     tau_temp = tau_f(lamb, 0) / 3
     u_temp = 0.5
     beta_temp = np.pi / 4
+    # plot vs. u
+    h_u_temp = (u_max - u_min) / 2 / n_plot_pts
+    us_temp = np.linspace(u_min + h_u_temp, u_max - h_u_temp, n_plot_pts)
+    integrand_vals = i_sca_integrand(theta_temp, tau_temp, -rho_scale * np.log(us_temp), beta_temp, lamb)
+    print("us", integrand_vals)
+    assert np.count_nonzero(np.isnan(integrand_vals)) == 0
+    plt.plot(us_temp, integrand_vals, '.')
+    plt.title('I_sca integrand vs. e^(-rho / ' + str(rho_scale) + ' pc)')
+    plt.show()
+
+    exit(0)
+    """
+
+    """
     h_theta_temp = (theta_max - theta_min) / 2 / n_plot_pts
     h_tau_temp = (tau_max - tau_min) / 2 / n_plot_pts
-    h_u_temp = (u_max - u_min) / 2 / n_plot_pts
     h_beta_temp = (beta_max - beta_min) / 2 / n_plot_pts
     # plot vs. theta
     thetas_temp = np.linspace(theta_min + h_theta_temp, theta_max - h_theta_temp, n_plot_pts)
@@ -295,14 +316,6 @@ def i_sca(lamb):
     assert np.count_nonzero(np.isnan(integrand_vals)) == 0
     plt.plot(taus_temp, integrand_vals, '.')
     plt.title('I_sca integrand vs. tau')
-    plt.show()
-    # plot vs. u
-    us_temp = np.linspace(u_min + h_u_temp, u_max - h_u_temp, n_plot_pts)
-    integrand_vals = i_sca_integrand(theta_temp, tau_temp, -1000 * np.log(us_temp), beta_temp, lamb, bc03_f)
-    print("us", integrand_vals)
-    assert np.count_nonzero(np.isnan(integrand_vals)) == 0
-    plt.plot(us_temp, integrand_vals, '.')
-    plt.title('I_sca integrand vs. e^(-rho / 1000 pc)')
     plt.show()
     # plot vs. beta
     betas_temp = np.linspace(beta_min + h_beta_temp, beta_max + h_beta_temp, n_plot_pts)
@@ -329,7 +342,7 @@ def i_sca(lamb):
     """
 
     taus, betas, us, thetas = np.meshgrid(tau_grid, beta_grid, u_grid, theta_grid, indexing='ij')
-    rhos = -1000*np.log(us)
+    rhos = -rho_scale*np.log(us)
     ww = i_sca_integrand(thetas, taus, rhos, betas, lamb)
 
     # sum over grid
