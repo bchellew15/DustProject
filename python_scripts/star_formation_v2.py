@@ -16,8 +16,8 @@ from scipy.optimize import curve_fit
 # (continuum_degree is for ???)
 poly_degree = -1  # 1 is linear, etc.
 poly_order = poly_degree + 1
-continuum_deg = 3
-alpha_continuum_deg = 3
+continuum_deg = 10
+alpha_continuum_deg = 10
 continuum_order = continuum_deg + 1
 bootstrap = False
 num_bootstrap_samples = 200
@@ -43,8 +43,8 @@ if bootstrap:
     bootstrap_stds = (bootstrap_upper - bootstrap_lower) / 2
 
 # TEST set everything = 1
-alphas_boss[:] = 1
-alpha_stds_boss[:] = 1
+# alphas_boss[:] = 1
+# alpha_stds_boss[:] = 1
 
 # TEST: 1d alphas
 # alphas = np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')
