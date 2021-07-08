@@ -1,3 +1,9 @@
+##############################################
+# THIS VERSION IS OUTDATED.
+# SEE STAR_FORMATION_V2 FOR CODE WHERE EVERY MODEL SPECTRUM IS DIVIDED BY SAME POLYNOMIAL.
+##############################################
+
+
 # code to compare alphas to star formation files
 # in order to find best-fit spectra
 # (Lick index stuff at the end)
