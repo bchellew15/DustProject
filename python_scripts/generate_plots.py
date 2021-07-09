@@ -1,3 +1,4 @@
+# this should run on ahab.
 # run this after generate_alphas_ahab.py. If want to use bootstrapping, also have to run bootstrap_ahab.py first.
 # generate plots of correlation spectra (overall and certain sections)
 # need to run 2x to cover all figures for the paper:
@@ -11,6 +12,7 @@ from matplotlib.ticker import MultipleLocator
 import numpy as np
 from astropy.io import fits
 import sys #for command line args
+import pickle
 from math import floor #for binning range
 
 '''
@@ -72,99 +74,88 @@ if __name__ == "__main__":
 
     sdss_fluxfactor = 1.38
     boss_fluxfactor = 1.38
+    if boss:
+        fluxfactor = boss_fluxfactor
+    else:
+        fluxfactor = sdss_fluxfactor
 
     # load in npy files
     # original, tao, tao AND iris, iris
 
-    #boss alphas:
-    alphas_boss = [np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
-                   np.load(alpha_direc + 'alphas_boss_iris_2d_south_' + loadkey + '.npy'), \
-                   np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy')]
-    alpha_stds_boss = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
-                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
-                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
-
-    #sdss alphas
-    alphas_sdss = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
-                   np.load(alpha_direc + 'alphas_sdss_2d_' + loadkey + '.npy'), \
-                   np.load(alpha_direc + 'alphas_sdss_iris_2d_' + loadkey + '.npy'), \
-                   np.load(alpha_direc + 'alphas_sdss_iris_1d_' + loadkey + '.npy'), \
-                   np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy')] #don't change the last element
-    alpha_stds_sdss = [np.load(alpha_direc + 'alpha_stds_sdss_1d_' + loadkey + '.npy'), \
-                       np.load(alpha_direc + 'alpha_stds_sdss_2d_' + loadkey + '.npy'), \
-                       np.load(alpha_direc + 'alpha_stds_sdss_iris_2d_' + loadkey + '.npy'), \
-                       np.load(alpha_direc + 'alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
-                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
+    # load alphas
+    if boss:
+        alphas = [np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
+                  np.load(alpha_direc + 'alphas_boss_iris_2d_south_' + loadkey + '.npy'), \
+                  np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy')]
+        alpha_stds = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
+                      np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
+                      np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
+    else:
+        alphas = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
+                  np.load(alpha_direc + 'alphas_sdss_2d_' + loadkey + '.npy'), \
+                  np.load(alpha_direc + 'alphas_sdss_iris_2d_' + loadkey + '.npy'), \
+                  np.load(alpha_direc + 'alphas_sdss_iris_1d_' + loadkey + '.npy'), \
+                  np.load(alpha_direc + 'alphas_boss_iris_2d_' + loadkey + '_10.npy')] #don't change the last element
+        alpha_stds = [np.load(alpha_direc + 'alpha_stds_sdss_1d_' + loadkey + '.npy'), \
+                      np.load(alpha_direc + 'alpha_stds_sdss_2d_' + loadkey + '.npy'), \
+                      np.load(alpha_direc + 'alpha_stds_sdss_iris_2d_' + loadkey + '.npy'), \
+                      np.load(alpha_direc + 'alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
+                      np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
+    #flux conversion factor:
+    alphas = [a / fluxfactor for a in alphas]
+    alpha_stds = [a / fluxfactor for a in alpha_stds]
 
     if bootstrap:
-        bootstrap_alphas_boss = [np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_south_' + loadkey + '.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_10.npy')]
-        bootstrap_alpha_stds_boss = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
-                                     np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
-                                     np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
-
-        bootstrap_alphas_sdss = [np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_1d_' + loadkey + '.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_2d_' + loadkey + '.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_iris_2d_' + loadkey + '.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alphas_sdss_iris_1d_' + loadkey + '.npy'), \
-                                 np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_10.npy')]
-        bootstrap_alpha_stds_sdss = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_1d_' + loadkey + '.npy'), \
-                                     np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_2d_' + loadkey + '.npy'), \
-                                     np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_iris_2d_' + loadkey + '.npy'), \
-                                     np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
-                                     np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
-
-        '''
-        #temporary: truncate bootstrap arrays to make it faster
-        num_samples = 1000
-        bootstrap_alphas_boss = [b[:num_samples, :] for b in bootstrap_alphas_boss] #temp
-        bootstrap_alpha_stds_boss = [b[:num_samples, :] for b in bootstrap_alpha_stds_boss] #temp
-        bootstrap_alphas_sdss = [b[:num_samples, :] for b in bootstrap_alphas_sdss] #temp
-        bootstrap_alpha_stds_sdss = [b[:num_samples, :] for b in bootstrap_alpha_stds_sdss] #temp
-        '''
-
         if boss:
-            bootstrap_lower = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
-            bootstrap_upper = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_alphas_boss]
-            bootstrap_stds = [(bootstrap_upper[i] - bootstrap_lower[i])/2 for i in range(len(bootstrap_lower))]
+            with open(alpha_direc_boot + 'bootstrap_lower_boss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_lower = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_upper_boss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_upper = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_stds_boss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_stds = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_lower_boss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_lower = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_upper_boss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_upper = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_stds_boss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_stds = pickle.load(pf)
         else:
-            bootstrap_lower = [np.nanpercentile(b, 16, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
-            bootstrap_upper = [np.nanpercentile(b, 84, axis=0) / sdss_fluxfactor for b in bootstrap_alphas_sdss]
-            bootstrap_stds = [(bootstrap_upper[i] - bootstrap_lower[i])/2 for i in range(len(bootstrap_lower))]
-
-
-    #flux conversion factor:
-    alphas_sdss = [a/sdss_fluxfactor for a in alphas_sdss]
-    alphas_boss = [a/boss_fluxfactor for a in alphas_boss]
-    alpha_stds_sdss = [a/sdss_fluxfactor for a in alpha_stds_sdss]
-    alpha_stds_boss = [a/boss_fluxfactor for a in alpha_stds_boss]
-
-    if boss:
-        alphas = alphas_boss
-        alpha_stds = alpha_stds_boss
-        if bootstrap:
-            bootstrap_alphas = bootstrap_alphas_boss
-            bootstrap_alpha_stds = bootstrap_alpha_stds_boss
-    else:
-        alphas = alphas_sdss
-        alpha_stds = alpha_stds_sdss
-        if bootstrap:
-            bootstrap_alphas = bootstrap_alphas_sdss
-            bootstrap_alpha_stds = bootstrap_alpha_stds_sdss
+            with open(alpha_direc_boot + 'bootstrap_lower_sdss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_lower = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_upper_sdss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_upper = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_stds_sdss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_stds = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_lower_sdss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_lower = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_upper_sdss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_upper = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_stds_sdss' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_stds = pickle.load(pf)
+            # load the relevant boss alphas
+            bootstrap_binned_lower_boss = np.load(alpha_direc_boot + 'bootstrap_binned_lower_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor
+            bootstrap_binned_upper_boss = np.load(alpha_direc_boot + 'bootstrap_binned_upper_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor
+            bootstrap_binned_stds_boss = np.load(alpha_direc_boot + 'bootstrap_binned_stds_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor
+        # flux conversion factor
+        bootstrap_lower = [b / fluxfactor for b in bootstrap_lower]
+        bootstrap_upper = [b / fluxfactor for b in bootstrap_upper]
+        bootstrap_stds = [b / fluxfactor for b in bootstrap_stds]
+        bootstrap_binned_lower = [b / fluxfactor for b in bootstrap_binned_lower]
+        bootstrap_binned_upper = [b / fluxfactor for b in bootstrap_binned_upper]
+        bootstrap_binned_stds = [b / fluxfactor for b in bootstrap_binned_stds]
 
     num_arrays = len(alphas)
 
-#plot unbinned spectra (wavelength ranges: 4830-5040 and 6530-6770)
+# plot unbinned spectra (wavelength ranges: 4830-5040 and 6530-6770)
 def plot_emissions(alpha_indices, labels, colors):
     plt.figure(figsize=(12, 5))
    
-    #plot 4830 - 5040
+    # plot 4830 - 5040
     ax1 = plt.subplot(1, 2, 1)
     for i, idx in enumerate(alpha_indices):
         ax1.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
         if bootstrap:
-            #ax1.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
+            # ax1.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
             ax1.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
         else:
             ax1.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
@@ -246,7 +237,8 @@ plt.show()
        
 def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, boss=False, bin_offset=0):
     #plot binned alpha vs wavelength (original)
-    #wavelength_all is the one that determines the binned lambdas
+    # "wavelength_all" is the one that determines the binned lambdas.
+    # "wavelength" determines the emission line masking.
     
     if wavelength is None:
         wavelength = wavelength_all
@@ -307,27 +299,10 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, 
     return binned_lambdas, binned_alphas, binned_stds
 
 if __name__ == "__main__":
+    # bin the regular spectra
     binned_lambdas, binned_alphas, binned_stds = generate_binned_alphas(alphas, alpha_stds, wavelength, boss=boss)
-    if not boss: #calculate binned spectrum for 1d boss
+    if not boss: #calculate binned spectrum for boss, but using bins based on sdss
         binned_lambdas_boss, binned_alphas_boss, binned_stds_boss = generate_binned_alphas([alphas[-1]], [alpha_stds[-1]], wavelength, wavelength_boss, boss=boss)
-
-
-    if bootstrap:
-        #bin all the bootstrap spectra
-        #use one spectrum to get binned wavelength
-        _, bootstrap_binned_alphas, _ = generate_binned_alphas(bootstrap_alphas, bootstrap_alpha_stds, wavelength, boss=boss)
-
-        #now look at percentiles:
-        bootstrap_binned_lower = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas] #68 percent confidence interval
-        bootstrap_binned_upper = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas]
-        bootstrap_binned_stds = [(bootstrap_binned_upper[i] - bootstrap_binned_lower[i])/2 for i in range(len(bootstrap_binned_lower))]
-
-        if not boss:
-            _, bootstrap_binned_alphas_boss, _ = generate_binned_alphas([bootstrap_alphas[-1]], [bootstrap_alpha_stds[-1]], wavelength, wavelength_boss, boss=boss)
-            bootstrap_binned_lower_boss = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss] #68 percent confidence interval
-            bootstrap_binned_upper_boss = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_boss]
-            bootstrap_binned_stds_boss = [(bootstrap_binned_upper_boss[i] - bootstrap_binned_lower_boss[i])/2 for i in range(len(bootstrap_binned_lower_boss))]
-
 
     if boss:
         y_max = 0.3
@@ -364,8 +339,8 @@ if __name__ == "__main__":
 
         ax2.plot(binned_lambdas_boss, binned_alphas_boss[0], c='k', drawstyle='steps', label='BOSS')
         ax2.plot(binned_lambdas_boss, binned_stds_boss[0], c='k', drawstyle='steps', linestyle='--')
-        ax2.plot(binned_lambdas_boss, bootstrap_binned_stds_boss[0], c='m', drawstyle='steps', linestyle='--')
-        ax2.fill_between(binned_lambdas_boss, bootstrap_binned_lower_boss[0], bootstrap_binned_upper_boss[0], linewidth=0.0, color='k', alpha=0.2, step='pre')
+        ax2.plot(binned_lambdas_boss, bootstrap_binned_stds_boss, c='m', drawstyle='steps', linestyle='--')
+        ax2.fill_between(binned_lambdas_boss, bootstrap_binned_lower_boss, bootstrap_binned_upper_boss, linewidth=0.0, color='k', alpha=0.2, step='pre')
 
         temp = y_max
         y_max = 0.29
@@ -553,49 +528,34 @@ if __name__ == "__main__":
                                 np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_30.npy')]
 
         if bootstrap:
-            #bootstrap alphas and stds
-            bootstrap_alphas_thresh_1d = [np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_10.npy'), \
-                                          np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_15.npy'), \
-                                          np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_20.npy'), \
-                                          np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_25.npy'), \
-                                          np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_30.npy')]
-            bootstrap_alpha_stds_thresh_1d = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_10.npy'), \
-                                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_15.npy'), \
-                                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_20.npy'), \
-                                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_25.npy'), \
-                                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_1d_' + loadkey + '_30.npy')]
-            bootstrap_alphas_thresh_2d = [np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_10.npy'), \
-                                          np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_15.npy'), \
-                                          np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_20.npy'), \
-                                          np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_25.npy'), \
-                                          np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_2d_' + loadkey + '_30.npy')]
-            bootstrap_alpha_stds_thresh_2d = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_10.npy'), \
-                                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_15.npy'), \
-                                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_20.npy'), \
-                                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_25.npy'), \
-                                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_30.npy')]
+            with open(alpha_direc_boot + 'bootstrap_binned_lower_thresh_1d' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_lower_thresh_1d = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_upper_thresh_1d' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_upper_thresh_1d = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_stds_thresh_1d' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_stds_thresh_1d = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_lower_thresh_2d' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_lower_thresh_2d = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_upper_thresh_2d' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_upper_thresh_2d = pickle.load(pf)
+            with open(alpha_direc_boot + 'bootstrap_binned_stds_thresh_2d' + loadkey + '.p', 'rb') as pf:
+                bootstrap_binned_stds_thresh_2d = pickle.load(pf)
 
-        #flux factor corrections:
-        alphas_thresh_1d = [a/boss_fluxfactor for a in alphas_thresh_1d]
-        alphas_stds_thresh_1d = [a/boss_fluxfactor for a in alpha_stds_thresh_1d]
-        alphas_thresh_2d = [a/boss_fluxfactor for a in alphas_thresh_2d]
-        alphas_stds_thresh_2d = [a/boss_fluxfactor for a in alpha_stds_thresh_2d]
+        # flux factor corrections:
+        alphas_thresh_1d = [a / boss_fluxfactor for a in alphas_thresh_1d]
+        alphas_stds_thresh_1d = [a / boss_fluxfactor for a in alpha_stds_thresh_1d]
+        alphas_thresh_2d = [a / boss_fluxfactor for a in alphas_thresh_2d]
+        alphas_stds_thresh_2d = [a / boss_fluxfactor for a in alpha_stds_thresh_2d]
+        bootstrap_binned_lower_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_lower_thresh_1d]
+        bootstrap_binned_upper_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_upper_thresh_1d]
+        bootstrap_binned_stds_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_stds_thresh_1d]
+        bootstrap_binned_lower_thresh_2d = [b / boss_fluxfactor for b in bootstrap_binned_lower_thresh_2d]
+        bootstrap_binned_upper_thresh_2d = [b / boss_fluxfactor for b in bootstrap_binned_upper_thresh_2d]
+        bootstrap_binned_stds_thresh_2d = [b / boss_fluxfactor for b in bootstrap_binned_stds_thresh_2d]
 
         #binning
         binned_lambdas, binned_alphas_1d, binned_stds_1d = generate_binned_alphas(alphas_thresh_1d, alpha_stds_thresh_1d, wavelength, boss=boss)
         binned_lambdas, binned_alphas_2d, binned_stds_2d = generate_binned_alphas(alphas_thresh_2d, alpha_stds_thresh_2d, wavelength, boss=boss)
-        if bootstrap:
-            _, bootstrap_binned_alphas_thresh_1d, _ = generate_binned_alphas(bootstrap_alphas_thresh_1d, bootstrap_alpha_stds_thresh_1d, wavelength, boss=boss)
-            _, bootstrap_binned_alphas_thresh_2d, _ = generate_binned_alphas(bootstrap_alphas_thresh_2d, bootstrap_alpha_stds_thresh_2d, wavelength, boss=boss)
-
-        if bootstrap:
-            #bootstrap percentiles
-            bootstrap_binned_lower_thresh_1d = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_1d] #68 percent confidence interval
-            bootstrap_binned_upper_thresh_1d = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_1d]
-            bootstrap_binned_stds_thresh_1d = [(bootstrap_binned_upper_thresh_1d[i] - bootstrap_binned_lower_thresh_1d[i])/2 for i in range(len(bootstrap_binned_lower_thresh_1d))]
-            bootstrap_binned_lower_thresh_2d = [np.nanpercentile(b, 16, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_2d] #68 percent confidence interval
-            bootstrap_binned_upper_thresh_2d = [np.nanpercentile(b, 84, axis=0) / boss_fluxfactor for b in bootstrap_binned_alphas_thresh_2d]
-            bootstrap_binned_stds_thresh_2d = [(bootstrap_binned_upper_thresh_2d[i] - bootstrap_binned_lower_thresh_2d[i])/2 for i in range(len(bootstrap_binned_lower_thresh_2d))]
 
         fig = plt.figure(figsize=(12, 5), dpi=200)
         x_min = 3700
@@ -659,86 +619,87 @@ if __name__ == "__main__":
     else:
         pass #don't want to plot SDSS thresholds right now
 
+##################################################
 
-        '''
-        #alphas with various thresholds (SDSS, 1d, SFD)
-        alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_91019_5.npy'), \
-                            np.load('../alphas_and_stds/alphas_91019_75.npy'), \
-                            np.load('../alphas_and_stds/alphas_91019_10.npy'), \
-                            np.load('../alphas_and_stds/alphas_91019_125.npy'), \
-                            np.load('../alphas_and_stds/alphas_91019_15.npy'), \
-                            np.load('../alphas_and_stds/alphas_1d_92719_20.npy'), \
-                            np.load('../alphas_and_stds/alphas_1d_92719_25.npy'), \
-                            np.load('../alphas_and_stds/alphas_1d_92719_30.npy')]
-        alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_91019_5.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_91019_75.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_91019_10.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_91019_125.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_91019_15.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_1d_92719_20.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_1d_92719_25.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_1d_92719_30.npy')]
-        #alphas with various thresholds (SDSS, 2d, SFD)
-        alphas_thresh_2d = [np.load('../alphas_and_stds/alphas_2d_91119_5.npy'), \
-                            np.load('../alphas_and_stds/alphas_2d_91119_75.npy'), \
-                            np.load('../alphas_and_stds/alphas_2d_91119_10.npy'), \
-                            np.load('../alphas_and_stds/alphas_2d_91119_125.npy'), \
-                            np.load('../alphas_and_stds/alphas_2d_91119_15.npy'), \
-                            np.load('../alphas_and_stds/alphas_2d_92719_20.npy'), \
-                            np.load('../alphas_and_stds/alphas_2d_92719_25.npy'), \
-                            np.load('../alphas_and_stds/alphas_2d_92719_30.npy')]
-        alpha_stds_thresh_2d = [np.load('../alphas_and_stds/alpha_stds_2d_91119_5.npy'),
-                                np.load('../alphas_and_stds/alpha_stds_2d_91119_75.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_2d_91119_10.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_2d_91119_125.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_2d_91119_15.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_2d_92719_20.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_2d_92719_25.npy'), \
-                                np.load('../alphas_and_stds/alpha_stds_2d_92719_30.npy')]
-    
-        binned_lambdas, binned_alphas_1d, binned_stds_1d = generate_binned_alphas(alphas_thresh_1d, alpha_stds_thresh_1d, wavelength)
-        binned_lambdas, binned_alphas_2d, binned_stds_2d = generate_binned_alphas(alphas_thresh_2d, alpha_stds_thresh_2d, wavelength)
-        fig = plt.figure(figsize=(8, 4), dpi=200)
-        x_min = 3850
-        x_max = 9200
-        y_max = .41
-    
-        ax = fig.add_subplot(121)
-        plt.text(0.02, 0.98, 'Original\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
-    
-        colors = ['k', 'b', 'g', 'r', 'm', 'y', 'brown', 'cyan']
-        labels = ['5', '7.5', '10', '12.5', '15', '20', '25', '30']
-        for i in range(len(labels)):
-            plt.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
-            plt.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps')
-            plt.xlabel(r"Wavelength ($\AA$)")
-            plt.ylabel(r"$\alpha_\lambda$")
-            plt.xlim(x_min, x_max)
-            plt.ylim(0, y_max)
-    
-        leg = plt.legend(frameon=False, loc='lower center')
-        plt.setp(leg.texts, family='monospace')
-    
-        plt.text(0, 100, 'Original\nModel')
-    
-        ax = fig.add_subplot(122)
-        plt.text(0.02, 0.98, 'Tao\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
-    
-        for i in range(len(labels)):
-            plt.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
-            plt.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps')
-            plt.xlabel(r"Wavelength ($\AA$)")
-            plt.ylabel(r"$\alpha_\lambda$")
-            plt.xlim(x_min, x_max)
-            plt.ylim(0, y_max)
-    
-        leg = plt.legend(frameon=False, loc='lower center')
-        plt.setp(leg.texts, family='monospace')
-        plt.text(0, 100, 'Tao Model')
-        plt.tight_layout()
-    
-        plt.show()
-        '''
+'''
+#alphas with various thresholds (SDSS, 1d, SFD)
+alphas_thresh_1d = [np.load('../alphas_and_stds/alphas_91019_5.npy'), \
+                    np.load('../alphas_and_stds/alphas_91019_75.npy'), \
+                    np.load('../alphas_and_stds/alphas_91019_10.npy'), \
+                    np.load('../alphas_and_stds/alphas_91019_125.npy'), \
+                    np.load('../alphas_and_stds/alphas_91019_15.npy'), \
+                    np.load('../alphas_and_stds/alphas_1d_92719_20.npy'), \
+                    np.load('../alphas_and_stds/alphas_1d_92719_25.npy'), \
+                    np.load('../alphas_and_stds/alphas_1d_92719_30.npy')]
+alpha_stds_thresh_1d = [np.load('../alphas_and_stds/alpha_stds_91019_5.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_91019_75.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_91019_10.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_91019_125.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_91019_15.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_1d_92719_20.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_1d_92719_25.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_1d_92719_30.npy')]
+#alphas with various thresholds (SDSS, 2d, SFD)
+alphas_thresh_2d = [np.load('../alphas_and_stds/alphas_2d_91119_5.npy'), \
+                    np.load('../alphas_and_stds/alphas_2d_91119_75.npy'), \
+                    np.load('../alphas_and_stds/alphas_2d_91119_10.npy'), \
+                    np.load('../alphas_and_stds/alphas_2d_91119_125.npy'), \
+                    np.load('../alphas_and_stds/alphas_2d_91119_15.npy'), \
+                    np.load('../alphas_and_stds/alphas_2d_92719_20.npy'), \
+                    np.load('../alphas_and_stds/alphas_2d_92719_25.npy'), \
+                    np.load('../alphas_and_stds/alphas_2d_92719_30.npy')]
+alpha_stds_thresh_2d = [np.load('../alphas_and_stds/alpha_stds_2d_91119_5.npy'),
+                        np.load('../alphas_and_stds/alpha_stds_2d_91119_75.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_2d_91119_10.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_2d_91119_125.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_2d_91119_15.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_2d_92719_20.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_2d_92719_25.npy'), \
+                        np.load('../alphas_and_stds/alpha_stds_2d_92719_30.npy')]
+
+binned_lambdas, binned_alphas_1d, binned_stds_1d = generate_binned_alphas(alphas_thresh_1d, alpha_stds_thresh_1d, wavelength)
+binned_lambdas, binned_alphas_2d, binned_stds_2d = generate_binned_alphas(alphas_thresh_2d, alpha_stds_thresh_2d, wavelength)
+fig = plt.figure(figsize=(8, 4), dpi=200)
+x_min = 3850
+x_max = 9200
+y_max = .41
+
+ax = fig.add_subplot(121)
+plt.text(0.02, 0.98, 'Original\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
+
+colors = ['k', 'b', 'g', 'r', 'm', 'y', 'brown', 'cyan']
+labels = ['5', '7.5', '10', '12.5', '15', '20', '25', '30']
+for i in range(len(labels)):
+    plt.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+    plt.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps')
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.xlim(x_min, x_max)
+    plt.ylim(0, y_max)
+
+leg = plt.legend(frameon=False, loc='lower center')
+plt.setp(leg.texts, family='monospace')
+
+plt.text(0, 100, 'Original\nModel')
+
+ax = fig.add_subplot(122)
+plt.text(0.02, 0.98, 'Tao\nModel', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=10, fontweight='bold')
+
+for i in range(len(labels)):
+    plt.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+    plt.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps')
+    plt.xlabel(r"Wavelength ($\AA$)")
+    plt.ylabel(r"$\alpha_\lambda$")
+    plt.xlim(x_min, x_max)
+    plt.ylim(0, y_max)
+
+leg = plt.legend(frameon=False, loc='lower center')
+plt.setp(leg.texts, family='monospace')
+plt.text(0, 100, 'Tao Model')
+plt.tight_layout()
+
+plt.show()
+'''
 
 
 
