@@ -1,5 +1,7 @@
 # this should run on ahab.
 # run this after generate_alphas_ahab.py. If want to use bootstrapping, also have to run bootstrap_ahab.py first.
+# also need to run create_bootstrap_envelopes to get the bootstrap envelopes.
+
 # generate plots of correlation spectra (overall and certain sections)
 # need to run 2x to cover all figures for the paper:
 #   boss=0 and bootstrap=1
@@ -13,7 +15,6 @@ import numpy as np
 from astropy.io import fits
 import sys #for command line args
 import pickle
-from math import floor #for binning range
 
 '''
 COMMAND LINE OPTIONS:
@@ -35,6 +36,17 @@ if __name__ == "__main__":
     bootstrap = int(sys.argv[3])
     loadkey = sys.argv[4]
 
+    # specify parameters
+    alpha_direc = '../alphas_and_stds/'
+    alpha_direc_boot = '../data/'  # '../alphas_and_stds'
+    hdulist_direc = '../data/'  # '/Users/blakechellew/Documents/DustProject/BrandtFiles/'
+    sdss_fluxfactor = 1.38
+    boss_fluxfactor = 1.38
+    if boss:
+        fluxfactor = boss_fluxfactor
+    else:
+        fluxfactor = sdss_fluxfactor
+
     # global plotting options
     matplotlib.rcParams['axes.labelsize'] = 'large'
     matplotlib.rcParams['xtick.labelsize'] = 'large'
@@ -50,18 +62,6 @@ if __name__ == "__main__":
     matplotlib.rcParams['ytick.minor.size'] = 3.0
     matplotlib.rcParams['xtick.minor.size'] = 3.0
     matplotlib.rcParams['xtick.major.size'] = 6.0
-    #matplotlib.rcParams['font.size'] = 'large'
-
-    ahab = True
-
-    if ahab:
-        alpha_direc = '../alphas_and_stds/'
-        alpha_direc_boot = '../data/'  #'../alphas_and_stds'
-        hdulist_direc = '../data/'  #'/Users/blakechellew/Documents/DustProject/BrandtFiles/'
-    else:
-        alpha_direc = '../alphas_and_stds/'
-        alpha_direc_boot = '../alphas_and_stds'
-        hdulist_direc = '/Users/blakechellew/Documents/DustProject/BrandtFiles/'
 
     # load wavelengths
     wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
@@ -71,16 +71,6 @@ if __name__ == "__main__":
         wavelength = wavelength_boss
     else:
         wavelength = wavelength_sdss
-
-    sdss_fluxfactor = 1.38
-    boss_fluxfactor = 1.38
-    if boss:
-        fluxfactor = boss_fluxfactor
-    else:
-        fluxfactor = sdss_fluxfactor
-
-    # load in npy files
-    # original, tao, tao AND iris, iris
 
     # load alphas
     if boss:
@@ -101,7 +91,7 @@ if __name__ == "__main__":
                       np.load(alpha_direc + 'alpha_stds_sdss_iris_2d_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
-    #flux conversion factor:
+    # flux conversion factor:
     alphas = [a / fluxfactor for a in alphas]
     alpha_stds = [a / fluxfactor for a in alpha_stds]
 
@@ -143,8 +133,6 @@ if __name__ == "__main__":
         bootstrap_binned_lower = [b / fluxfactor for b in bootstrap_binned_lower]
         bootstrap_binned_upper = [b / fluxfactor for b in bootstrap_binned_upper]
         bootstrap_binned_stds = [b / fluxfactor for b in bootstrap_binned_stds]
-
-    num_arrays = len(alphas)
 
 # plot unbinned spectra (wavelength ranges: 4830-5040 and 6530-6770)
 def plot_emissions(alpha_indices, labels, colors):
@@ -215,25 +203,6 @@ def plot_emissions(alpha_indices, labels, colors):
     #ax2.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
     #actual continuum for NII:
     #ax2.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
-
-if __name__ == "__main__":
-    if boss:
-        plot_emissions([0, 1, 2], ["North", "South", "Full Sky"], ['#004488', '#BB5566', '#DDAA33'])
-        if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/unbinned_' + loadkey + '.pdf', bbox_inches='tight')
-            plt.clf()
-        else:
-            plt.show()
-
-'''
-#unbinned plots, SFD 1d vs 3 others
-plot_emissions([0, 1], ["SFD", r"With $\tau$ Correction"], ['k', 'r'])
-plt.show()
-plot_emissions([0, 3], ["SFD", "With IRIS data"], ['k', 'r'])
-plt.show()
-plot_emissions([0, 2], ["SFD", r"With $\tau$ and IRIS"], ['k', 'r'])
-plt.show()
-'''
        
 def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, boss=False, bin_offset=0):
     #plot binned alpha vs wavelength (original)
@@ -298,23 +267,66 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, 
 
     return binned_lambdas, binned_alphas, binned_stds
 
+
 if __name__ == "__main__":
     # bin the regular spectra
     binned_lambdas, binned_alphas, binned_stds = generate_binned_alphas(alphas, alpha_stds, wavelength, boss=boss)
     if not boss: #calculate binned spectrum for boss, but using bins based on sdss
         binned_lambdas_boss, binned_alphas_boss, binned_stds_boss = generate_binned_alphas([alphas[-1]], [alpha_stds[-1]], wavelength, wavelength_boss, boss=boss)
 
+
+# plot binned alphas
+# takes alphas already binned. use generate_binned_alphas
+def plot_binned(alpha_indices, colors, labels, envelope=False):
+    fig, ax = plt.subplots()
+
+    for i, idx in enumerate(alpha_indices):
+        ax.plot(binned_lambdas, binned_alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        if bootstrap:
+            ax.plot(binned_lambdas, bootstrap_binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+        else:
+            ax.plot(binned_lambdas, binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+        if envelope:
+            ax.fill_between(binned_lambdas, bootstrap_binned_lower[idx], bootstrap_binned_upper[idx], linewidth=0.0,
+                            color=colors[i], alpha=0.2, step='pre')
+
+    ax.xaxis.set_major_locator(MultipleLocator(1000))
+    ax.yaxis.set_major_locator(MultipleLocator(0.1))
+    ax.xaxis.set_minor_locator(MultipleLocator(200))
+    ax.yaxis.set_minor_locator(MultipleLocator(0.02))
+    # ax.figure(figsize=(6, 5))
+    ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+    ax.set_ylabel(r"$\alpha_\lambda$")
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(0, .35)
+    ax.legend(frameon=False)
+
+if __name__ == "__main__":
+
+    ###############################
+    # PLOT: ALPHAS VS BC03 WITH RAD. TRANSFER
+    ###############################
+
+
+    #################################
+    # PLOT: BOSS NORTH VS SOUTH
+    #################################
     if boss:
-        y_max = 0.3
-        x_min = 3700
-        x_max = 10000
-    else:
+        plot_emissions([0, 1, 2], ["North", "South", "Full Sky"], ['#004488', '#BB5566', '#DDAA33'])
+        if save != '0' and bootstrap:
+            plt.savefig('../paper_figures/unbinned_' + loadkey + '.pdf', bbox_inches='tight')
+            plt.clf()
+        else:
+            plt.show()
+
+    #################################
+    # 2-PANEL BOSS VS SDSS (both 1d, etc.)
+    #################################
+    if not boss and bootstrap:
         y_max = 0.3
         x_min = 3850
         x_max = 9200
 
-    #2-panel plot, BOSS compared to SDSS (both 1d, etc.)
-    if not boss and bootstrap:
         plt.figure(figsize=(12, 5))
 
         ax1 = plt.subplot(1, 2, 1)
@@ -342,148 +354,27 @@ if __name__ == "__main__":
         ax2.plot(binned_lambdas_boss, bootstrap_binned_stds_boss, c='m', drawstyle='steps', linestyle='--')
         ax2.fill_between(binned_lambdas_boss, bootstrap_binned_lower_boss, bootstrap_binned_upper_boss, linewidth=0.0, color='k', alpha=0.2, step='pre')
 
-        temp = y_max
-        y_max = 0.29
         ax2.legend(frameon=False)
         ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         ax2.set_ylabel(r"$\alpha_\lambda$")
         ax2.set_xlim(x_min, x_max)
-        ax2.set_ylim(0, y_max)
+        ax2.set_ylim(0, 0.29)
 
         ax2.xaxis.set_major_locator(MultipleLocator(1000))
         ax2.xaxis.set_minor_locator(MultipleLocator(200))
         ax2.yaxis.set_major_locator(MultipleLocator(0.05))
         ax2.yaxis.set_minor_locator(MultipleLocator(0.01))
 
-        # plt.tight_layout()
-
         if save != '0':
             plt.savefig('../paper_figures/compare_boss_sdss_' + loadkey + '.pdf', bbox_inches='tight')
             plt.clf()
         else:
             plt.show()
-        y_max = temp
 
-#plot binned alphas
-#takes alphas already binned. use generate_binned_alphas
-def plot_binned(alpha_indices, colors, labels, envelope=False):
-    fig, ax = plt.subplots()
-
-    for i, idx in enumerate(alpha_indices):
-        ax.plot(binned_lambdas, binned_alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
-        if bootstrap:
-            ax.plot(binned_lambdas, bootstrap_binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
-        else:
-            ax.plot(binned_lambdas, binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
-        if envelope:
-            ax.fill_between(binned_lambdas, bootstrap_binned_lower[idx], bootstrap_binned_upper[idx], linewidth=0.0, color=colors[i], alpha=0.2, step='pre')
-            
-    y_max = 0.35
-    ax.xaxis.set_major_locator(MultipleLocator(1000))
-    ax.yaxis.set_major_locator(MultipleLocator(0.1))
-    ax.xaxis.set_minor_locator(MultipleLocator(200))
-    ax.yaxis.set_minor_locator(MultipleLocator(0.02))
-    #ax.figure(figsize=(6, 5))
-    ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-    ax.set_ylabel(r"$\alpha_\lambda$")
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(0, y_max)
-    ax.legend(frameon=False)
-    y_max = 0.3
-
-if __name__ == "__main__":
-    if boss and bootstrap:
-        #calculate difference between average north and average south
-        #also compare a color index
-        #using bootstrapping to get the std devs
-
-        #color index:
-        wavelength_deltas = np.array([wavelength[i+1] - wavelength[i] for i in range(len(wavelength)-1)])
-        wavelength_deltas = np.append(wavelength_deltas, wavelength_deltas[-1])
-        idx_4000 = np.argmin(np.abs(wavelength-4000))
-        idx_5000 = np.argmin(np.abs(wavelength-5000))
-        idx_6000 = np.argmin(np.abs(wavelength-6000))
-        idx_7000 = np.argmin(np.abs(wavelength-7000))
-        idx_8000 = np.argmin(np.abs(wavelength-8000))
-        idx_9000 = np.argmin(np.abs(wavelength-9000))
-
-        #north:
-        variance = np.power(bootstrap_stds[0], 2)
-        rel_alphas = alphas[0]
-        numerator = np.nansum(np.divide(rel_alphas, variance))
-        denominator = np.nansum(np.divide(1, variance))
-        avg_north = numerator / denominator
-        avg_north_var = np.nanvar(avg_north)
-        avg_north = np.nanmean(avg_north)
-
-        integrand = np.multiply(rel_alphas, wavelength_deltas)
-        integrand_std = np.multiply(variance, wavelength_deltas**2)
-        integral_4_5 = np.nansum(integrand[idx_4000:idx_5000])
-        integral_6_7 = np.nansum(integrand[idx_6000:idx_7000])
-        integral_8_9 = np.nansum(integrand[idx_8000:idx_9000])
-        integral_4_5_std = np.sqrt(np.nansum(integrand_std[idx_4000:idx_5000]))
-        integral_6_7_std = np.sqrt(np.nansum(integrand_std[idx_6000:idx_7000]))
-        integral_8_9_std = np.sqrt(np.nansum(integrand_std[idx_8000:idx_9000]))
-        north_color_idx = integral_8_9 - integral_4_5
-        north_color_idx_avg = np.mean(north_color_idx)
-        north_color_idx_var = np.nanvar(north_color_idx)
-        north_ere = 2 * integral_6_7 / (integral_4_5 + integral_8_9)
-        north_ere_frac_1 = np.sqrt(integral_4_5_std**2 + integral_8_9_std**2)/(integral_4_5 + integral_8_9)
-        north_ere_frac_2 = integral_6_7_std / integral_6_7
-        north_ere_std = 2 * np.sqrt(north_ere_frac_1**2 + north_ere_frac_2**2)
-
-        #south:
-        variance = np.power(bootstrap_stds[1], 2)
-        rel_alphas = alphas[1]
-        numerator = np.nansum(np.divide(rel_alphas, variance))
-        denominator = np.nansum(np.divide(1, variance))
-        avg_south = numerator / denominator
-        avg_south_var = np.nanvar(avg_south)
-        avg_south = np.nanmean(avg_south)
-
-        integrand = np.multiply(rel_alphas, wavelength_deltas)
-        integrand_std = np.multiply(variance, wavelength_deltas ** 2)
-        integral_4_5 = np.nansum(integrand[idx_4000:idx_5000])
-        integral_6_7 = np.nansum(integrand[idx_6000:idx_7000])
-        integral_8_9 = np.nansum(integrand[idx_8000:idx_9000])
-        integral_4_5_std = np.sqrt(np.nansum(integrand_std[idx_4000:idx_5000]))
-        integral_6_7_std = np.sqrt(np.nansum(integrand_std[idx_6000:idx_7000]))
-        integral_8_9_std = np.sqrt(np.nansum(integrand_std[idx_8000:idx_9000]))
-        south_color_idx = integral_8_9 - integral_4_5
-        south_color_idx_avg = np.mean(south_color_idx)
-        south_color_idx_var = np.nanvar(south_color_idx)
-        south_ere = 2 * integral_6_7 / (integral_4_5 + integral_8_9)
-        south_ere_frac_1 = np.sqrt(integral_4_5_std ** 2 + integral_8_9_std ** 2) / (integral_4_5 + integral_8_9)
-        south_ere_frac_2 = integral_6_7_std / integral_6_7
-        south_ere_std = 2 * np.sqrt(south_ere_frac_1 ** 2 + south_ere_frac_2 ** 2)
-
-        #print results
-        print("north avg:", avg_north)
-        print("south avg:", avg_south)
-        print("north idx:", north_color_idx_avg)
-        print("south idx:", south_color_idx_avg)
-        print("north ere:", north_ere, north_ere_std)
-        print("south ere:", south_ere, south_ere_std)
-
-        #calculate significance:
-        #estimate variance:
-        var_diff = avg_north_var + avg_south_var
-        z = (avg_north - avg_south) / np.sqrt(var_diff)
-        print("z value for avg:")
-        print(z)
-
-        var_diff = north_color_idx_var + south_color_idx_var
-        z = (north_color_idx_avg - south_color_idx_avg) / np.sqrt(var_diff)
-        print("z value for idx:")
-        print(z)
-
-        var_diff = north_ere_std**2 + south_ere_std**2
-        z = (south_ere - north_ere) / np.sqrt(var_diff)
-        print("z value for ere", z)
-
-
-    #plot original with 2 modifications, all on one plot
-    #new model, IRIS
+    ##############################
+    # PLOT ORIGINAL AND 2 MODS
+    # (new model, IRIS)
+    ##############################
     if not boss:
         plot_binned([0, 1, 3], ['#004488', '#BB5566', '#DDAA33'], ['SFD', 'Nonlinear Model', 'IRIS'])
         if save != '0' and bootstrap:
@@ -492,7 +383,9 @@ if __name__ == "__main__":
         else:
             plt.show()
 
-    #plot north and south on same plot (boss)
+    ##############################
+    # PLOT NORTH AND SOUTH BOSS
+    ##############################
     if boss:
         envelope = bootstrap
         plot_binned([0, 1], ['#004488', '#BB5566'], ['North', 'South'], envelope=envelope)
@@ -502,7 +395,9 @@ if __name__ == "__main__":
         else:
             plt.show()
 
-    #threshold plots:
+    ##############################
+    # THRESHOLD PLOTS
+    ##############################
     if boss:
         #alphas with various thresholds (BOSS, 1d, IRIS)
         alphas_thresh_1d = [np.load(alpha_direc + 'alphas_boss_iris_1d_' + loadkey + '_10.npy'), \
@@ -616,8 +511,97 @@ if __name__ == "__main__":
         else:
             plt.show()
 
-    else:
-        pass #don't want to plot SDSS thresholds right now
+    #############################
+    # CALCULATIONS COMPARING NORTH AND SOUTH
+    ################################
+    if boss and bootstrap:
+        #calculate difference between average north and average south
+        #also compare a color index
+        #using bootstrapping to get the std devs
+
+        #color index:
+        wavelength_deltas = np.array([wavelength[i+1] - wavelength[i] for i in range(len(wavelength)-1)])
+        wavelength_deltas = np.append(wavelength_deltas, wavelength_deltas[-1])
+        idx_4000 = np.argmin(np.abs(wavelength-4000))
+        idx_5000 = np.argmin(np.abs(wavelength-5000))
+        idx_6000 = np.argmin(np.abs(wavelength-6000))
+        idx_7000 = np.argmin(np.abs(wavelength-7000))
+        idx_8000 = np.argmin(np.abs(wavelength-8000))
+        idx_9000 = np.argmin(np.abs(wavelength-9000))
+
+        #north:
+        variance = np.power(bootstrap_stds[0], 2)
+        rel_alphas = alphas[0]
+        numerator = np.nansum(np.divide(rel_alphas, variance))
+        denominator = np.nansum(np.divide(1, variance))
+        avg_north = numerator / denominator
+        avg_north_var = np.nanvar(avg_north)
+        avg_north = np.nanmean(avg_north)
+
+        integrand = np.multiply(rel_alphas, wavelength_deltas)
+        integrand_std = np.multiply(variance, wavelength_deltas**2)
+        integral_4_5 = np.nansum(integrand[idx_4000:idx_5000])
+        integral_6_7 = np.nansum(integrand[idx_6000:idx_7000])
+        integral_8_9 = np.nansum(integrand[idx_8000:idx_9000])
+        integral_4_5_std = np.sqrt(np.nansum(integrand_std[idx_4000:idx_5000]))
+        integral_6_7_std = np.sqrt(np.nansum(integrand_std[idx_6000:idx_7000]))
+        integral_8_9_std = np.sqrt(np.nansum(integrand_std[idx_8000:idx_9000]))
+        north_color_idx = integral_8_9 - integral_4_5
+        north_color_idx_avg = np.mean(north_color_idx)
+        north_color_idx_var = np.nanvar(north_color_idx)
+        north_ere = 2 * integral_6_7 / (integral_4_5 + integral_8_9)
+        north_ere_frac_1 = np.sqrt(integral_4_5_std**2 + integral_8_9_std**2)/(integral_4_5 + integral_8_9)
+        north_ere_frac_2 = integral_6_7_std / integral_6_7
+        north_ere_std = 2 * np.sqrt(north_ere_frac_1**2 + north_ere_frac_2**2)
+
+        #south:
+        variance = np.power(bootstrap_stds[1], 2)
+        rel_alphas = alphas[1]
+        numerator = np.nansum(np.divide(rel_alphas, variance))
+        denominator = np.nansum(np.divide(1, variance))
+        avg_south = numerator / denominator
+        avg_south_var = np.nanvar(avg_south)
+        avg_south = np.nanmean(avg_south)
+
+        integrand = np.multiply(rel_alphas, wavelength_deltas)
+        integrand_std = np.multiply(variance, wavelength_deltas ** 2)
+        integral_4_5 = np.nansum(integrand[idx_4000:idx_5000])
+        integral_6_7 = np.nansum(integrand[idx_6000:idx_7000])
+        integral_8_9 = np.nansum(integrand[idx_8000:idx_9000])
+        integral_4_5_std = np.sqrt(np.nansum(integrand_std[idx_4000:idx_5000]))
+        integral_6_7_std = np.sqrt(np.nansum(integrand_std[idx_6000:idx_7000]))
+        integral_8_9_std = np.sqrt(np.nansum(integrand_std[idx_8000:idx_9000]))
+        south_color_idx = integral_8_9 - integral_4_5
+        south_color_idx_avg = np.mean(south_color_idx)
+        south_color_idx_var = np.nanvar(south_color_idx)
+        south_ere = 2 * integral_6_7 / (integral_4_5 + integral_8_9)
+        south_ere_frac_1 = np.sqrt(integral_4_5_std ** 2 + integral_8_9_std ** 2) / (integral_4_5 + integral_8_9)
+        south_ere_frac_2 = integral_6_7_std / integral_6_7
+        south_ere_std = 2 * np.sqrt(south_ere_frac_1 ** 2 + south_ere_frac_2 ** 2)
+
+        #print results
+        print("north avg:", avg_north)
+        print("south avg:", avg_south)
+        print("north idx:", north_color_idx_avg)
+        print("south idx:", south_color_idx_avg)
+        print("north ere:", north_ere, north_ere_std)
+        print("south ere:", south_ere, south_ere_std)
+
+        #calculate significance:
+        #estimate variance:
+        var_diff = avg_north_var + avg_south_var
+        z = (avg_north - avg_south) / np.sqrt(var_diff)
+        print("z value for avg:")
+        print(z)
+
+        var_diff = north_color_idx_var + south_color_idx_var
+        z = (north_color_idx_avg - south_color_idx_avg) / np.sqrt(var_diff)
+        print("z value for idx:")
+        print(z)
+
+        var_diff = north_ere_std**2 + south_ere_std**2
+        z = (south_ere - north_ere) / np.sqrt(var_diff)
+        print("z value for ere", z)
 
 ##################################################
 
@@ -698,6 +682,16 @@ plt.setp(leg.texts, family='monospace')
 plt.text(0, 100, 'Tao Model')
 plt.tight_layout()
 
+plt.show()
+'''
+
+'''
+#unbinned plots, SFD 1d vs 3 others
+plot_emissions([0, 1], ["SFD", r"With $\tau$ Correction"], ['k', 'r'])
+plt.show()
+plot_emissions([0, 3], ["SFD", "With IRIS data"], ['k', 'r'])
+plt.show()
+plot_emissions([0, 2], ["SFD", r"With $\tau$ and IRIS"], ['k', 'r'])
 plt.show()
 '''
 
