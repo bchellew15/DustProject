@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from generate_plots import generate_binned_alphas
 from astropy.io import fits
 
-boss = False  # whether to interpolate to BOSS wavelengths or SDSS
+boss = True  # whether to interpolate to BOSS wavelengths or SDSS
 wd01_model = False  # otherwise zda04 model
 b = 40 * np.pi / 180  # latitude (should be 40 degrees -> radians)
 sig_dust = 1  # 250 parsecs (from density eqn)   # TEST: change to 1 pc
@@ -18,11 +18,11 @@ V_band_wav = 5510  # A
 # stellar scale heights 300 pc and 1350 pc
 a_300 = 1  # 0.9
 a_1350 = 0  # 0.1
-p_num = 2  #which bc03 model to use. 2 is z=.008, 22 is z=.02
+p_num = 22  #which bc03 model to use. 2 is z=.008, 22 is z=.02
 sig_star_1 = 1.2  # 300
 sig_star_2 = 1350  # 1350
 mistakes = False  # TEST
-rho_scale = .1  # 1000  #.1 matches brandt code for sig = 1
+rho_scale = 5  # 1000  #.1 matches brandt code for sig = 1
 
 # number of grid points (for TIR and scattering):
 n_lamb = 200  # not used currently
@@ -417,7 +417,7 @@ for p in paths[p_num:p_num+1]:
 
     wavelength_partial = dust_wav  # use wavelength grid from dust model file
     # BOSS is 3600 to 10000
-    wavelength_partial = wavelength_partial[(wavelength_partial > 3500) & (wavelength_partial < 10500)]
+    wavelength_partial = wavelength_partial[(wavelength_partial > 3400) & (wavelength_partial < 10500)]
     # wavelength_partial = wavelength[::40]
     # wavelength_partial = np.append(wavelength_partial, wavelength[-1])  # to avoid interpolation issues for SDSS array
 
@@ -464,11 +464,12 @@ for p in paths[p_num:p_num+1]:
     lambdas_bin, alphas_bin, _ = generate_binned_alphas([alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
     alphas_bin = alphas_bin[0]
 
+
+    # should get this for sdss also... maybe.
+    alphas_norad = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720.npy')
+    alphas_norad_bin_wav, alphas_norad_bin, _ = generate_binned_alphas([alphas_norad], [np.ones(alphas_norad.shape)], wavelength, bin_offset=0)
+    alphas_norad_bin = alphas_norad_bin[0]
     if boss:
-        # should get this for sdss also... maybe.
-        alphas_norad = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720.npy')
-        alphas_norad_bin_wav, alphas_norad_bin, _ = generate_binned_alphas([alphas_norad], [np.ones(alphas_norad.shape)], wavelength, bin_offset=0)
-        alphas_norad_bin = alphas_norad_bin[0]
         plt.plot(alphas_norad_bin_wav, alphas_norad_bin / boss_fluxfactor, 'orange', label='boss alphas (observed)', drawstyle='steps-mid')
 
     if not boss:
@@ -489,7 +490,7 @@ for p in paths[p_num:p_num+1]:
     plt.plot(wavelength, alphas * bd12_factor / wavelength / bc03_f(wavelength) * avg_bc03 * 5000, 'r', label='~ alphas / bc03 / wav')
 
     plt.xlim(3600, 10400)  # later: expand to BOSS wavelength range
-    plt.ylim(0, .28)  # to match the BD12 paper
+    plt.ylim(0, .34)
     if wd01_model:
         plt.title("WD01 Model")
     else:
@@ -499,9 +500,41 @@ for p in paths[p_num:p_num+1]:
 
     # save the result
     save_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
-    save_path += p.split('/')[-1].rsplit('.spec')[0] + '.npy'
+    save_path += p.split('/')[-1].rsplit('.spec')[0]
+    if wd01_model:
+         save_path += 'wd.npy'
+    else:
+         save_path += 'zd.npy'
     print(save_path)
     np.save(save_path, alphas)
+
+    ##########################
+    # PLOT BOSS WITH MULTIPLE DUST MODELS.
+    # SEE WHAT SCALING LOOKS GOOD.
+    ##########################
+    if boss:
+        load_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
+        scale_factor_wd = .4
+        scale_factor_zd = .5
+        wd_filename = 't5e9_12gyr_z02wd_070921.npy'
+        zd_filename = 't5e9_12gyr_z02zd_070921.npy'
+        wd01_alphas = np.load(load_path + wd_filename)
+        zd01_alphas = np.load(load_path + zd_filename)
+        # bin the alphas
+        _, wd01_bin, _ = generate_binned_alphas([wd01_alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
+        wd01_bin = wd01_bin[0]
+        _, zd01_bin, _ = generate_binned_alphas([zd01_alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
+        zd01_bin = zd01_bin[0]
+
+        plt.title('BOSS alphas with WD and ZD dust models')
+        plt.plot(alphas_norad_bin_wav, alphas_norad_bin / boss_fluxfactor, 'orange', label='boss alphas (observed)', drawstyle='steps-mid')
+        plt.plot(lambdas_bin, wd01_bin * scale_factor_wd, 'k', label='WD01 Model (x ' + str(scale_factor_wd) + ')', drawstyle='steps-mid')
+        plt.plot(lambdas_bin, zd01_bin * scale_factor_zd, 'blue', label='ZDA01 Model (x ' + str(scale_factor_zd) + ')', drawstyle='steps-mid')
+        plt.ylim(0, 0.35)
+        plt.xlim(3650, 10200)
+        plt.legend()
+        plt.show()
+
 
 
 #############################
