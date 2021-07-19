@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize
 from scipy import stats # TEST
 from scipy import integrate
 from generate_plots import generate_binned_alphas
@@ -267,7 +268,7 @@ print("new coeffs")
 print(coeffs)
 """
 
-# LICK INDEX STUFF BELOW THIS POINT #############################################
+# LICK INDEX STUFF #############################################
 
 # some important lick index tuples:
 h_beta_bounds = (4847.875, 4876.625, 4827.875, 4847.875, 4876.625, 4891.625, 0)
@@ -292,21 +293,27 @@ def calc_lick_idx(alphas, alpha_stds, bounds, wavelength, show_plots=False):
     variance = np.power(alpha_stds, 2)
 
     alphas_center = alphas[(wavelength > c1) * (wavelength < c2)]
+    sigmas_center = alpha_stds[(wavelength > c1) * (wavelength < c2)]
     variance_center = variance[(wavelength > c1) * (wavelength < c2)]
-    num_center = np.nansum(np.divide(alphas_center, variance_center))
-    denom_center = np.nansum(np.divide(1, variance_center))
+    wavelength_center = wavelength[(wavelength > c1) * (wavelength < c2)]
+    delta_wav_center = np.diff(wavelength_center)
+    delta_wav_center = np.append(delta_wav_center, delta_wav_center[-1])
+    num_center = np.sum(np.divide(alphas_center, variance_center))
+    denom_center = np.sum(np.divide(1, variance_center))
     avg_center = num_center / denom_center
     
     alphas_left = alphas[(wavelength > l1) * (wavelength < l2)]
+    sigmas_left = alpha_stds[(wavelength > l1) * (wavelength < l2)]
     variance_left = variance[(wavelength > l1) * (wavelength < l2)]
-    num_left = np.nansum(np.divide(alphas_left, variance_left))
-    denom_left = np.nansum(np.divide(1, variance_left))
+    num_left = np.sum(np.divide(alphas_left, variance_left))
+    denom_left = np.sum(np.divide(1, variance_left))
     avg_left = num_left / denom_left
 
     alphas_right = alphas[(wavelength > r1) * (wavelength < r2)]
+    sigmas_right = alpha_stds[(wavelength > r1) * (wavelength < r2)]
     variance_right = variance[(wavelength > r1) * (wavelength < r2)]
-    num_right = np.nansum(np.divide(alphas_right, variance_right))
-    denom_right = np.nansum(np.divide(1, variance_right))
+    num_right = np.sum(np.divide(alphas_right, variance_right))
+    denom_right = np.sum(np.divide(1, variance_right))
     avg_right = num_right / denom_right
 
     # define continuum line between centers of left and right continua
@@ -314,6 +321,7 @@ def calc_lick_idx(alphas, alpha_stds, bounds, wavelength, show_plots=False):
     right_center = (r1 + r2) / 2
     continuum_slope = (avg_right - avg_left) / (right_center - left_center)
     continuum_intercept = avg_right - continuum_slope * right_center
+
     def continuum(w):
         return continuum_slope * w + continuum_intercept
     def flux_ratio(w):
@@ -322,6 +330,16 @@ def calc_lick_idx(alphas, alpha_stds, bounds, wavelength, show_plots=False):
 
     # now integrate (continuum - spectrum) / continuum
     ratio_integral, err = integrate.quad(flux_ratio, c1, c2)
+
+    # error bars (see iPad notes)
+    center_term = np.sum(np.power(delta_wav_center * sigmas_center / continuum(wavelength_center), 2))
+    dm_dalph_left = (1 / variance_left) / (right_center - left_center) / np.sum(1 / variance_left)
+    dm_dalph_right = (1 / variance_right) / (right_center - left_center) / np.sum(1 / variance_right)
+    dR_dalph_left = dm_dalph_left * np.sum(delta_wav_center * alphas_center / continuum(wavelength_center)**2 * np.abs(wavelength_center - right_center))
+    dR_dalph_right = dm_dalph_right * np.sum(delta_wav_center * alphas_center / continuum(wavelength_center)**2 * np.abs(wavelength_center - left_center))
+    left_term = np.sum(np.power(sigmas_left * dR_dalph_left, 2))
+    right_term = np.sum(np.power(sigmas_right * dR_dalph_right, 2))
+    ratio_err = np.sqrt(center_term + left_term + right_term)
 
     if c1 == 4319.75:
         # plot to help with interpretation:
@@ -334,30 +352,34 @@ def calc_lick_idx(alphas, alpha_stds, bounds, wavelength, show_plots=False):
         plt.show()
 
     if idx_type == 0: #units: angstroms
-        # return (avg_side - avg_center) / avg_side * center_width
         equiv_width = (c2 - c1) - ratio_integral
-        return equiv_width
+        return equiv_width, ratio_err
     else: #units: magnitudes
         # return -2.5 * np.log(1 - avg_center / avg_side)
         mag = -2.5 * np.log( (1 / (c2 - c1)) * ratio_integral)
-        return mag
+        mag_err = 2.5 / ratio_integral * ratio_err
+        return mag, mag_err
 
+# we are ignoring the balmer series because there are emission lines there in the observed data.
 def calc_lick(alphas, alpha_stds, wavelength):
     
-    h_beta = calc_lick_idx(alphas, alpha_stds, h_beta_bounds, wavelength)
-    mg1 = calc_lick_idx(alphas, alpha_stds, mg1_bounds, wavelength)
-    mg2 = calc_lick_idx(alphas, alpha_stds, mg2_bounds, wavelength)
-    h_gamma_a = calc_lick_idx(alphas, alpha_stds, h_gamma_a_bounds, wavelength)
-    h_delta_a = calc_lick_idx(alphas, alpha_stds, h_delta_a_bounds, wavelength)
-    fe_4531 = calc_lick_idx(alphas, alpha_stds, fe_4531_bounds, wavelength)
-    fe_5015 = calc_lick_idx(alphas, alpha_stds, fe_5015_bounds, wavelength)
-    fe_5270 = calc_lick_idx(alphas, alpha_stds, fe_5270_bounds, wavelength)
-    fe_5335 = calc_lick_idx(alphas, alpha_stds, fe_5335_bounds, wavelength)
-    mg_b = calc_lick_idx(alphas, alpha_stds, mg_b_bounds, wavelength)
-    
+    # h_beta = calc_lick_idx(alphas, alpha_stds, h_beta_bounds, wavelength)
+    mg1, mg1_err = calc_lick_idx(alphas, alpha_stds, mg1_bounds, wavelength)
+    mg2, mg2_err = calc_lick_idx(alphas, alpha_stds, mg2_bounds, wavelength)
+    # h_gamma_a = (alphas, alpha_stds, h_gamma_a_bounds, wavelength)
+    # h_delta_a = calc_lick_idx(alphas, alpha_stds, h_delta_a_bounds, wavelength)
+    fe_4531, fe_4531_err = calc_lick_idx(alphas, alpha_stds, fe_4531_bounds, wavelength)
+    fe_5015, fe_5015_err = calc_lick_idx(alphas, alpha_stds, fe_5015_bounds, wavelength)
+    fe_5270, fe_5270_err = calc_lick_idx(alphas, alpha_stds, fe_5270_bounds, wavelength)
+    fe_5335, fe_5335_err = calc_lick_idx(alphas, alpha_stds, fe_5335_bounds, wavelength)
+    mg_b, mg_b_err = calc_lick_idx(alphas, alpha_stds, mg_b_bounds, wavelength)
+
     mg1_fe = 0.6*mg1 + 0.4*np.log(fe_4531 + fe_5015)
+    mg1_fe_err = np.sqrt(.36 * mg1_err**2 + (.16 / (fe_4531 + fe_5015))**2 * (fe_4531_err**2 + fe_5015_err**2))
     mg2_fe = 0.6*mg2 + 0.4*np.log(fe_4531 + fe_5015)
+    mg2_fe_err = np.sqrt(.36 * mg2_err ** 2 + (.16 / (fe_4531 + fe_5015)) ** 2 * (fe_4531_err ** 2 + fe_5015_err ** 2))
     mg_fe_p = np.sqrt(mg_b * (.72*fe_5270 + .28*fe_5335))
+    mg_fe_p_err = 1 / 2 / np.sqrt(mg_fe_p) * np.sqrt((.72*fe_5270 + .28*fe_5335)**2 * mg_b_err**2 + (.72**2*fe_5270_err**2 + .28**2*fe_5335_err**2) * mg_b**2)
 
     #4000A discontinuity index
     #ratio of avg in 3850-3950 to 4000-4100
@@ -366,29 +388,26 @@ def calc_lick(alphas, alpha_stds, wavelength):
     idx_4000 = np.argmin(np.abs(wavelength-4000))
     idx_4100 = np.argmin(np.abs(wavelength-4100))
     left_break = np.sum(alphas[idx_3850:idx_3950])
+    left_errs = alpha_stds[idx_3850:idx_3950]
     right_break = np.sum(alphas[idx_4000:idx_4100])
+    right_errs = alpha_stds[idx_4000:idx_4100]
     delta = left_break / right_break
+    delta_err = np.sqrt(1 / right_break**2 * np.sum(left_errs**2) + (left_break**2 / right_break**4) * np.sum(right_errs**2))
 
-    #print("selected lines")
-    #print(mg_b)
-    #print(fe_5270)
-    #print(fe_5335)
-    #print(mg_fe_p)
-    
-    return np.array([h_beta, h_gamma_a, h_delta_a, mg_fe_p, mg1_fe, mg2_fe, delta])
+    return_indices = np.array([mg_fe_p, mg1_fe, mg2_fe, delta])
+    return_errors = np.array([mg_fe_p_err, mg1_fe_err, mg2_fe_err, delta_err])
 
-#metric to compare index results from different spectra
-def distance_metric(indices_1, indices_2):
-    default_indices = [3.168, 0.972, 0.477, 2.066, 5.014, 4.02, 0.738]
-    indices_1_scale = indices_1 / default_indices
-    indices_2_scale = indices_2 / default_indices
-    
-    return np.sum(np.power(indices_1_scale - indices_2_scale, 2))
+    return (return_indices, return_errors)
+
+def chi_squared(measured_indices, measured_errors, model_indices):
+    return np.sum((measured_indices - model_indices)**2 / measured_errors**2)
 
 
-measured_indices = calc_lick(alphas_boss, alpha_stds_boss, wavelength)
+measured_indices, measured_errs = calc_lick(alphas_boss, alpha_stds_boss, wavelength)
 print("measured indices")
 print(measured_indices)
+print(measured_errs)
+
 plt.plot(wavelength, alphas_boss)
 plt.title("BOSS alphas")
 plt.ylim(0, .6)
@@ -404,17 +423,25 @@ for p in [paths_bc03[29], paths_bc03[21]]:
     values = a[:, 1]
     stds = np.ones(len(wav)) #all same, no effect
 
-    indices = calc_lick(values, stds, wav)
+    indices, _ = calc_lick(values, stds, wav)
     print("indices for path: ", p)
     print(indices)
+    print("chi squared")
+    chi_sqr = chi_squared(measured_indices, measured_errs, indices)
+    print(chi_sqr)
+    print("per degree of freedom")
+    print(chi_sqr / 4)
 
-    if np.isnan(indices[4]):
-        print("found NAN")
-        print(p)
+    # try with raditative transfer
+    bc03_rad = np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/t5e9_12gyr_z02zd.npy')
+    stds = np.ones(len(wavelength))
+    rad_indices, _ = calc_lick(bc03_rad, stds, wavelength)
+    chi_sqr = chi_squared(measured_indices, measured_errs, rad_indices)
+    print("chi squared radiative")
+    print(chi_sqr)
+    print("per degree of freedom")
+    print(chi_sqr / 4)
 
-    #compare to alphas:
-    measured_indices = calc_lick(alphas_boss, alpha_stds_boss, wavelength)
-    dist = distance_metric(indices, measured_indices)
 
     #print out and plot the ones that are a good match
     #if dist < 10:
@@ -429,6 +456,7 @@ for p in [paths_bc03[29], paths_bc03[21]]:
     #print(dist)
 
 
+# find best-fit coefficients for a linear combo of 2 model spectra
 def linear_combo_2(coeffs, p1, p2):
 
     a1 = np.loadtxt(p1)
@@ -439,11 +467,19 @@ def linear_combo_2(coeffs, p1, p2):
     stds = np.ones(len(wav)) #all same, no effect
     
     values = coeffs[0]*values1 + coeffs[1]*values2
-    indices = calc_lick(values, stds, wav)
+    indices, index_errs = calc_lick(values, stds, wav)
 
-    measured_indices = calc_lick(alphas[0], alpha_stds[0], wavelength)
-    return distance_metric(indices, measured_indices)
-    
+    return chi_squared(measured_indices, measured_errs, indices)
+
+exit(0)  # bc takes a long time
+
+# find best-fit coeffs for const vs. exponential
+p1 = paths_bc03[29]
+p2 = paths_bc03[21]
+min_res = minimize(linear_combo_2, [1, 1], args=(p1, p2))
+print(min_res)
+
+
 
 """   
 #best combos of 2:
