@@ -50,22 +50,30 @@ if bootstrap:
 # alphas = np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')
 # alpha_stds = np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy')
 
-def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
+def truncate_wav(w, a, s):
     # limit the wavelength range to 4000 to 10000 A:
     # (BOSS goes from 3550 to 10,400)
-    alphas = alphas[(wavelength > min_wav) & (wavelength < max_wav)]
-    alpha_stds = alpha_stds[(wavelength > min_wav) & (wavelength < max_wav)]
-    wavelength = wavelength[(wavelength > min_wav) & (wavelength < max_wav)]
+    alphas = a[(w > min_wav) & (w < max_wav)]
+    alpha_stds = s[(w > min_wav) & (w < max_wav)]
+    wavelength = w[(w > min_wav) & (w < max_wav)]
+    return wavelength, alphas, alpha_stds
 
+def mask_emission(w, a, s):
     # mask emission lines
-    emission_line_mask = np.zeros(len(wavelength), dtype=int)
+    emission_line_mask = np.zeros(len(w), dtype=int)
     emission_lines = [3727, 4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
     for line in emission_lines:
-        peak_idx = np.argmin(np.abs(wavelength - line))
+        peak_idx = np.argmin(np.abs(w - line))
         emission_line_mask[peak_idx - 3:peak_idx + 4] = 1
-    alphas = alphas[np.logical_not(emission_line_mask)]
-    alpha_stds = alpha_stds[np.logical_not(emission_line_mask)]
-    wavelength = wavelength[np.logical_not(emission_line_mask)]
+    alphas = a[np.logical_not(emission_line_mask)]
+    alpha_stds = s[np.logical_not(emission_line_mask)]
+    wavelength = w[np.logical_not(emission_line_mask)]
+    return wavelength, alphas, alpha_stds
+
+def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
+
+    wavelength, alphas, alpha_stds = truncate_wav(wavelength, alphas, alpha_stds)
+    wavelength, alphas, alpha_stds = mask_emission(wavelength, alphas, alpha_stds)
 
     # if only 3 model spectra:
     # cst_6gyr_z02 [idx 29]
@@ -118,6 +126,19 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     best_fit_model = func(wavelength, coeffs[0], coeffs[1], coeffs[2])
     plt.plot(wavelength, alphas_continuum, 'k', drawstyle='steps')
     plt.plot(wavelength, best_fit_model, 'r', drawstyle='steps')
+    plt.title("Continuum subtracted; compare to best-fit spectrum")
+    plt.show()
+
+    # plot with just one spectrum
+    single_model_corrected = func(wavelength, 0, 1, 0)
+    plt.plot(wavelength, alphas_continuum, 'k', drawstyle='steps', label='BOSS')
+    plt.plot(wavelength, best_fit_model, 'r', drawstyle='steps', label='BC03')
+    plt.title("Continnum subtracted, no fitting, compare to t9e9")
+    # plt.xlim(6000, 8000)  # big wiggles
+    # plt.ylim(.55, 1.45)
+    plt.xlim(5025, 5450)  # small wiggles
+    plt.ylim(.7, 1.25)
+    plt.legend()
     plt.show()
 
     # TODO: multiply by the continuum to reconstruct the spectrum...
