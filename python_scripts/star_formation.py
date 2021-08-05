@@ -15,6 +15,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import minimize
 from scipy import stats # TEST
 from scipy import integrate
+from scipy import ndimage
 from generate_plots import generate_binned_alphas
 
 import warnings
@@ -42,6 +43,11 @@ if bootstrap:
 # alphas and stds (boss):
 alphas_boss = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720_10.npy')
 alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_boss_iris_2d_012720_10.npy')
+
+# TEST: look at south only
+alphas_boss = np.load('../alphas_and_stds/alphas_south011720.npy')
+alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_south011720.npy')
+
 wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
 
 if bootstrap:
@@ -67,23 +73,32 @@ plt.show()
 #alphas = np.load('../alphas_and_stds/alphas_boss_iris_1d_91119_10.npy')
 #alpha_stds = np.load('../alphas_and_stds/alpha_stds_boss_iris_1d_91119_10.npy')
 
-def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
-
+def truncate_wav(w, a, s):
     # limit the wavelength range to 4000 to 10000 A:
     # (BOSS goes from 3550 to 10,400)
-    alphas = alphas[(wavelength > min_wav) & (wavelength < max_wav)]
-    alpha_stds = alpha_stds[(wavelength > min_wav) & (wavelength < max_wav)]
-    wavelength = wavelength[(wavelength > min_wav) & (wavelength < max_wav)]
+    alphas = a[(w > min_wav) & (w < max_wav)]
+    alpha_stds = s[(w > min_wav) & (w < max_wav)]
+    wavelength = w[(w > min_wav) & (w < max_wav)]
+    return wavelength, alphas, alpha_stds
 
+def mask_emission(w, a, s):
     # mask emission lines
-    emission_line_mask = np.zeros(len(wavelength), dtype=int)
+    emission_line_mask = np.zeros(len(w), dtype=int)
     emission_lines = [3727, 4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
     for line in emission_lines:
-        peak_idx = np.argmin(np.abs(wavelength-line))
-        emission_line_mask[peak_idx-3:peak_idx+4] = 1
-    alphas = alphas[np.logical_not(emission_line_mask)]
-    alpha_stds = alpha_stds[np.logical_not(emission_line_mask)]
-    wavelength = wavelength[np.logical_not(emission_line_mask)]
+        peak_idx = np.argmin(np.abs(w - line))
+        emission_line_mask[peak_idx - 3:peak_idx + 4] = 1
+    alphas = a[np.logical_not(emission_line_mask)]
+    alpha_stds = s[np.logical_not(emission_line_mask)]
+    wavelength = w[np.logical_not(emission_line_mask)]
+    return wavelength, alphas, alpha_stds
+
+# mask emission for the boss alphas
+wav_masked, alphas_boss_masked, alpha_stds_boss_masked = mask_emission(wavelength, alphas_boss, alpha_stds_boss)
+
+def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
+    wavelength, alphas, alpha_stds = truncate_wav(wavelength, alphas, alpha_stds)
+    wavelength, alphas, alpha_stds = mask_emission(wavelength, alphas, alpha_stds)
 
     # if only 3 model spectra:
     # cst_6gyr_z02 [idx 29]
@@ -284,8 +299,8 @@ mg_b_bounds = (5160.125, 5192.625, 5142.625, 5161.375, 5191.375, 5206.375, 0)
 
 
 # calculate lick indices:
-# following procedure in Worthey 1994
-def calc_lick_idx(alphas, alpha_stds, bounds, wavelength, show_plots=False):
+# following procedure is from Worthey 1994
+def calc_lick_idx(alphas, alpha_stds, bounds, wavelength):
 
     (c1, c2, l1, l2, r1, r2, idx_type) = bounds
 
@@ -400,61 +415,145 @@ def calc_lick(alphas, alpha_stds, wavelength):
     return (return_indices, return_errors)
 
 def chi_squared(measured_indices, measured_errors, model_indices):
+    # TEST: remove the first one
+    measured_indices = measured_indices[1:]
+    measured_errors = measured_errors[1:]
+    model_indices = model_indices[1:]
+
     return np.sum((measured_indices - model_indices)**2 / measured_errors**2)
 
-
+# get indices from measured alphas
 measured_indices, measured_errs = calc_lick(alphas_boss, alpha_stds_boss, wavelength)
 print("measured indices")
 print(measured_indices)
 print(measured_errs)
 
-plt.plot(wavelength, alphas_boss)
-plt.title("BOSS alphas")
-plt.ylim(0, .6)
-plt.xlim(4000, 10000)
-plt.show()
+# calculate lick indices for simulated spectra
+# (no radiative transfer)
+for p in [paths_bc03[21], paths_bc03[22], paths_bc03[29]]:
+# for p in paths_bc03:
+    print("path:")
 
-
-#calculate lick indices for the simulated spectra
-#(need to interpolate?)
-for p in [paths_bc03[29], paths_bc03[21]]:
     a = np.loadtxt(p)
     wav = a[:, 0]
     values = a[:, 1]
-    stds = np.ones(len(wav)) #all same, no effect
+    stds = np.ones(len(wav))  # all same, no effect
 
     indices, _ = calc_lick(values, stds, wav)
-    print("indices for path: ", p)
+    print("measured vs. indices for path: ", p)
+    print(measured_indices)
     print(indices)
-    print("chi squared")
+    print("chi squared and per df")
     chi_sqr = chi_squared(measured_indices, measured_errs, indices)
     print(chi_sqr)
-    print("per degree of freedom")
     print(chi_sqr / 4)
 
-    # try with raditative transfer
-    bc03_rad = np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/t5e9_12gyr_z02zd.npy')
-    stds = np.ones(len(wavelength))
+print("\n")
+
+# now with radiative transfer
+# (the spectrum here was already interpolated to the BOSS wavelengths)
+# order: t9e9, t5e9, CST
+bc03_rads =[np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/t9e9_12gyr_z02zd072121.npy'),
+           np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/t5e9_12gyr_z02zd072121.npy'),
+           np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/cst_6gyr_z02zd072121.npy')]
+bc03_rads_masked = [mask_emission(wavelength, a, np.ones(len(wavelength)))[1] for a in bc03_rads]
+stds = np.ones(len(wavelength))
+for bc03_rad in bc03_rads:
     rad_indices, _ = calc_lick(bc03_rad, stds, wavelength)
     chi_sqr = chi_squared(measured_indices, measured_errs, rad_indices)
-    print("chi squared radiative")
+    print("chi squared and per df (radiative)")
     print(chi_sqr)
-    print("per degree of freedom")
     print(chi_sqr / 4)
+    print("measured indices and model:")
+    print(measured_indices)
+    print(rad_indices)
+
+print("\n")
+
+# test smoothing
+boss_wavelength_7000 = wavelength[2955]
+boss_diff_7000 = np.diff(wavelength)[2955]
+boss_dlambda_over_lambda = boss_diff_7000 / boss_wavelength_7000  # should be .0002306
+
+#interlude: plot the smoothed spectra
+def top_hat_smooth(model_spectra, width):
+
+    width_A = int(width / boss_diff_7000)
+    print("width", width_A)
+    boss_smoothed = ndimage.uniform_filter1d(alphas_boss_masked, width_A)
+    boss_norm = alphas_boss_masked / boss_smoothed
+
+    for i, model_spectrum in enumerate(model_spectra):
+        model_smoothed = ndimage.uniform_filter1d(model_spectrum, width_A)
+        model_norm = model_spectrum / model_smoothed
+        # plt.plot(wav_masked, model_spectrum, label='bc03')
+        # plt.plot(wav_masked, model_smoothed, label='bc03 smooth')
+        plt.plot(wav_masked, model_norm, label='bc03 norm' + str(i))
+
+    plt.plot(wav_masked, alphas_boss_masked, label='BOSS')
+    plt.plot(wav_masked, boss_smoothed, label='BOSS smooth')
+    plt.plot(wav_masked, boss_norm, label='BOSS norm')
+    plt.ylim(0, 2)
+    # plt.xlim(3850, 4100)  # TEST
+    # plt.xlim(4945, 5065)  # TEST
+    plt.legend()
+    plt.show()
 
 
-    #print out and plot the ones that are a good match
-    #if dist < 10:
-    #    plt.plot(wav, values, drawstyle='steps')
-    #    plt.plot(wavelength, alphas[0], drawstyle='steps')
-    #    plt.xlim(3500, 10000)
-    #    plt.ylim(0, 1)
-    #    plt.show()
+top_hat_smooth(bc03_rads_masked, 400)
 
-    #print("\npath and distance")
-    #print(p)
-    #print(dist)
+exit(0)
 
+# convolve with a gaussian
+# v_dispersion should be in km/s
+def test_smoothing(model_spectrum, v_dispersion=100, plot=False):
+    sigma_over_lambda = v_dispersion / (3 * 10**5)
+    sigma_pixels = sigma_over_lambda / boss_dlambda_over_lambda
+    model_smoothed = ndimage.gaussian_filter(model_spectrum, sigma_pixels, mode='nearest')
+
+    if plot:
+        # plot to make sure it was smoothed
+        plt.plot(wavelength, bc03_rads[1], label='original')
+        plt.plot(wavelength, model_smoothed, label='smooth')
+        plt.title("Dispersion: " + str(v_dispersion) + " km/s")
+        plt.legend()
+        plt.show()
+
+    stds = np.ones(len(wavelength))
+    rad_indices_smoothed, _ = calc_lick(model_smoothed, stds, wavelength)
+    chi_sqr = chi_squared(measured_indices, measured_errs, rad_indices_smoothed)
+    return chi_sqr, chi_sqr/4, rad_indices_smoothed
+
+# disps = [70, 80, 90, 100, 110, 120, 130, 150, 170, 190, 220, 250, 280]
+disps = [100]
+chi_sqrds = []
+for disp in disps:
+    chi_sqr, per_df, indices = test_smoothing(bc03_rads[1], disp, plot=True)
+    print("dispersion:", disp)
+    print("chi sqr", chi_sqr)
+    print("per df", per_df)
+    print("indices")
+    print(indices)
+    chi_sqrds = np.append(chi_sqrds, per_df)
+
+# plot chi^2 as fn of degree of smoothing
+plt.plot(disps, chi_sqrds)
+plt.title("Chi Squared Per Df")
+plt.show()
+
+print("\n")
+
+# now compare models with radiative AND smoothing:
+disp_fiducial = 150
+for bc03_rad in bc03_rads:
+    chi_sqr, per_df, indices = test_smoothing(bc03_rad, disp_fiducial)
+
+    print("chi squared and per df (radiative and smoothed)")
+    print(chi_sqr)
+    print(chi_sqr / 4)
+    print("measured indices and model:")
+    print(measured_indices)
+    print(indices)
 
 # find best-fit coefficients for a linear combo of 2 model spectra
 def linear_combo_2(coeffs, p1, p2):
@@ -471,18 +570,46 @@ def linear_combo_2(coeffs, p1, p2):
 
     return chi_squared(measured_indices, measured_errs, indices)
 
-exit(0)  # bc takes a long time
+
+# try some linear combos
+"""
+print("\nTry some linear combos")
+p1 = paths_bc03[29]
+p2 = paths_bc03[22]
+chi2 = linear_combo_2([0, 1], p1, p2)
+print(str(chi2) + " for coeffs 0")
+chi2 = linear_combo_2([.1, .9], p1, p2)
+print(str(chi2) + " for coeffs 0.1")
+chi2 = linear_combo_2([.2, .8], p1, p2)
+print(str(chi2) + " for coeffs 0.2")
+chi2 = linear_combo_2([.3, .7], p1, p2)
+print(str(chi2) + " for coeffs 0.3")
+chi2 = linear_combo_2([.4, .6], p1, p2)
+print(str(chi2) + " for coeffs 0.4")
+chi2 = linear_combo_2([.5, .5], p1, p2)
+print(str(chi2) + " for coeffs 0.5")
+chi2 = linear_combo_2([.6, .4], p1, p2)
+print(str(chi2) + " for coeffs 0.6")
+chi2 = linear_combo_2([.7, .3], p1, p2)
+print(str(chi2) + " for coeffs 0.7")
+chi2 = linear_combo_2([.8, .2], p1, p2)
+print(str(chi2) + " for coeffs 0.8")
+chi2 = linear_combo_2([.9, .1], p1, p2)
+print(str(chi2) + " for coeffs 0.9")
+chi2 = linear_combo_2([1, 0], p1, p2)
+print(str(chi2) + " for coeffs 1")
+"""
 
 # find best-fit coeffs for const vs. exponential
-p1 = paths_bc03[29]
-p2 = paths_bc03[21]
+# (takes a long time)
+"""
 min_res = minimize(linear_combo_2, [1, 1], args=(p1, p2))
 print(min_res)
+"""
 
 
-
-"""   
 #best combos of 2:
+"""   
 for p1 in paths_bc03:
     for p2 in paths_bc03:
         min_res = minimize(linear_combo_2, [1, 1], args=(p1, p2))
@@ -492,3 +619,15 @@ for p1 in paths_bc03:
             print(p1)
             print(p2)
 """
+
+# print out and plot the ones that are a good match
+# if dist < 10:
+#    plt.plot(wav, values, drawstyle='steps')
+#    plt.plot(wavelength, alphas[0], drawstyle='steps')
+#    plt.xlim(3500, 10000)
+#    plt.ylim(0, 1)
+#    plt.show()
+
+# print("\npath and distance")
+# print(p)
+# print(dist)
