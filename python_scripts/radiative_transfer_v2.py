@@ -12,17 +12,17 @@ from astropy.io import fits
 boss = True  # whether to interpolate to BOSS wavelengths or SDSS
 wd01_model = False  # otherwise zda04 model
 b = 40 * np.pi / 180  # latitude (should be 40 degrees -> radians)
-sig_dust = 1  # 250 parsecs (from density eqn)   # TEST: change to 1 pc
+sig_dust = 250  # 250 parsecs (from density eqn)   # TEST: change to 1 pc
 tau_def = 0.15  # fiducial value (see BD12 paper) (z = 0)
 V_band_wav = 5510  # A
 # stellar scale heights 300 pc and 1350 pc
 a_300 = 1  # 0.9
 a_1350 = 0  # 0.1
 p_num = 22  #which bc03 model to use. 2 is z=.008, 22 is z=.02
-sig_star_1 = 1.2  # 300
+sig_star_1 = 300  # 300
 sig_star_2 = 1350  # 1350
 mistakes = False  # TEST
-rho_scale = 5  # 1000  #.1 matches brandt code for sig = 1
+rho_scale = 1000  # 5 or 1000  #.1 matches brandt code for sig = 1
 
 # number of grid points (for TIR and scattering):
 n_lamb = 200  # not used currently
@@ -356,9 +356,15 @@ def i_sca(lamb):
 
 # idx 21: t=9e9, 12 Gyr, z=.02 (.02 is closest to "solar" metallicity)
 # idx 22: t=5e9, 12 Gyr, z=.02
+# idx 29: cst, 6 Gyr, z=.02
+
 # index 2: t=5e9, 12 Gyr, Z=.008
 # index 34: t=9e9, 12 Gyr, Z=.008
 # 5th to last: similar but t9e9
+
+# for i, p in enumerate(paths):
+#     print(i)
+#     print(p)
 
 # loop through the bc03 spectra
 for p in paths[p_num:p_num+1]:
@@ -499,12 +505,13 @@ for p in paths[p_num:p_num+1]:
     plt.show()
 
     # save the result
+    date = ''
     save_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
     save_path += p.split('/')[-1].rsplit('.spec')[0]
     if wd01_model:
-         save_path += 'wd.npy'
+         save_path += 'wd' + date + '.npy'
     else:
-         save_path += 'zd.npy'
+         save_path += 'zd' + date + '.npy'
     print(save_path)
     np.save(save_path, alphas)
 
@@ -559,4 +566,20 @@ for b in range(60):
 
     plt.title('Binning Offset: ' + str(b))
     plt.show()
+"""
+
+"""
+# run for different longitude / latitude ranges
+elif location == 3:
+	ivar[b < 50] = 0 # above 50 degrees
+elif location == 4:
+	ivar[b < 50] = 0
+	ivar[l > 120] = 0
+elif location == 5:
+	ivar[b < 50] = 0
+	ivar[l < 120] = 0
+	ivar[l > 240] = 0
+elif location == 6:
+	ivar[b < 50] = 0
+	ivar[l < 240] = 0
 """
