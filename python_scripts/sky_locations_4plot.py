@@ -74,7 +74,8 @@ ax = fig.add_subplot(222)
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
 densities = np.load('../alphas_and_stds/boss_skyfiber_densities.npy')
-densities[densities>256] = 256 #max on scale
+boss_colorbar_max = 256  # this is 256 * (9/4) to compare with SDSS
+densities[densities > boss_colorbar_max] = boss_colorbar_max
 
 #mask coordinates:
 longs = np.delete(longs, mask)
@@ -122,6 +123,7 @@ cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
 tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
 cb.set_ticklabels(tick_labels)
 
+
 # subtract from 360 to invert the coordinates
 x1, y1 = m(360-20.7, 70.8)
 x2, y2 = m(360-279.3, 75.3)
@@ -138,7 +140,7 @@ ax = fig.add_subplot(224)
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
 densities = np.load('../alphas_and_stds/boss_skyfiber_densities_weighted.npy')
-densities[densities>256] = 256 #max on scale
+densities[densities > boss_colorbar_max] = boss_colorbar_max #max on scale
 densities[densities<1] = 1 #min on scale
 
 #mask coordinates:
@@ -330,7 +332,7 @@ cb.set_ticklabels(tick_labels)
 #plt.title("Sky Fiber Density")
 
 if save:
-    plt.savefig('../paper_figures/skyfibers_4plot_013120.png', bbox_inches='tight')
+    plt.savefig('../paper_figures/skyfibers_4plot_082221.png', bbox_inches='tight')
 else:
     plt.show()
 
