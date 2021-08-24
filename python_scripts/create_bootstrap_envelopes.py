@@ -40,17 +40,20 @@ bootstrap_alpha_stds_thresh_2d = [np.load(alpha_direc_boot + 'bootstrap_alpha_st
                                   np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_20.npy'),
                                   np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_25.npy'),
                                   np.load(alpha_direc_boot + 'bootstrap_alpha_stds_boss_iris_2d_' + loadkey + '_30.npy')]
+print("loaded threshold alphas")
 
 _, bootstrap_binned_alphas_thresh_1d, _ = generate_binned_alphas(bootstrap_alphas_thresh_1d, bootstrap_alpha_stds_thresh_1d, wavelength_boss, boss=True)
 _, bootstrap_binned_alphas_thresh_2d, _ = generate_binned_alphas(bootstrap_alphas_thresh_2d, bootstrap_alpha_stds_thresh_2d, wavelength_boss, boss=True)
+print("done binning")
 
 # bootstrap percentiles
-bootstrap_binned_lower_thresh_1d = [np.nanpercentile(b, 16, axis=0) for b in bootstrap_binned_alphas_thresh_1d]  # 68 percent confidence interval
-bootstrap_binned_upper_thresh_1d = [np.nanpercentile(b, 84, axis=0) for b in bootstrap_binned_alphas_thresh_1d]
+bootstrap_binned_lower_thresh_1d = [np.percentile(b, 16, axis=0) for b in bootstrap_binned_alphas_thresh_1d]  # 68 percent confidence interval
+bootstrap_binned_upper_thresh_1d = [np.percentile(b, 84, axis=0) for b in bootstrap_binned_alphas_thresh_1d]
 bootstrap_binned_stds_thresh_1d = [(bootstrap_binned_upper_thresh_1d[i] - bootstrap_binned_lower_thresh_1d[i]) / 2 for i in range(len(bootstrap_binned_lower_thresh_1d))]
-bootstrap_binned_lower_thresh_2d = [np.nanpercentile(b, 16, axis=0) for b in bootstrap_binned_alphas_thresh_2d]  # 68 percent confidence interval
-bootstrap_binned_upper_thresh_2d = [np.nanpercentile(b, 84, axis=0) for b in bootstrap_binned_alphas_thresh_2d]
+bootstrap_binned_lower_thresh_2d = [np.percentile(b, 16, axis=0) for b in bootstrap_binned_alphas_thresh_2d]  # 68 percent confidence interval
+bootstrap_binned_upper_thresh_2d = [np.percentile(b, 84, axis=0) for b in bootstrap_binned_alphas_thresh_2d]
 bootstrap_binned_stds_thresh_2d = [(bootstrap_binned_upper_thresh_2d[i] - bootstrap_binned_lower_thresh_2d[i]) / 2 for i in range(len(bootstrap_binned_lower_thresh_2d))]
+print("done with percentiles")
 
 # save
 with open(alpha_direc_boot + 'bootstrap_binned_lower_thresh_1d' + loadkey + '.p', 'wb') as fp:
@@ -65,6 +68,7 @@ with open(alpha_direc_boot + 'bootstrap_binned_upper_thresh_2d' + loadkey + '.p'
     pickle.dump(bootstrap_binned_upper_thresh_2d, fp)
 with open(alpha_direc_boot + 'bootstrap_binned_stds_thresh_2d' + loadkey + '.p', 'wb') as fp:
     pickle.dump(bootstrap_binned_stds_thresh_2d, fp)
+print("done saving")
 
 #########################################################
 
@@ -84,10 +88,11 @@ bootstrap_alpha_stds_sdss = [np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sd
                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_2d_' + loadkey + '.npy'),
                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_iris_2d_' + loadkey + '.npy'),
                              np.load(alpha_direc_boot + 'bootstrap_alpha_stds_sdss_iris_1d_' + loadkey + '.npy')]
+print("loaded main alphas")
 
 # BOSS:
-bootstrap_lower_boss = [np.nanpercentile(b, 16, axis=0) for b in bootstrap_alphas_boss]
-bootstrap_upper_boss = [np.nanpercentile(b, 84, axis=0) for b in bootstrap_alphas_boss]
+bootstrap_lower_boss = [np.percentile(b, 16, axis=0) for b in bootstrap_alphas_boss]
+bootstrap_upper_boss = [np.percentile(b, 84, axis=0) for b in bootstrap_alphas_boss]
 bootstrap_stds_boss = [(bootstrap_upper_boss[i] - bootstrap_lower_boss[i]) / 2 for i in range(len(bootstrap_lower_boss))]
 for i in range(len(bootstrap_stds_boss)):
     assert bootstrap_stds_boss[i].ndim == 1
@@ -95,8 +100,8 @@ for i in range(len(bootstrap_stds_boss)):
 print("check 1")
 
 # SDSS:
-bootstrap_lower_sdss = [np.nanpercentile(b, 16, axis=0) for b in bootstrap_alphas_sdss]
-bootstrap_upper_sdss = [np.nanpercentile(b, 84, axis=0) for b in bootstrap_alphas_sdss]
+bootstrap_lower_sdss = [np.percentile(b, 16, axis=0) for b in bootstrap_alphas_sdss]
+bootstrap_upper_sdss = [np.percentile(b, 84, axis=0) for b in bootstrap_alphas_sdss]
 bootstrap_stds_sdss = [(bootstrap_upper_sdss[i] - bootstrap_lower_sdss[i]) / 2 for i in range(len(bootstrap_lower_sdss))]
 for i in range(len(bootstrap_stds_boss)):
     assert bootstrap_stds_boss[i].ndim == 1
@@ -112,20 +117,21 @@ _, bootstrap_binned_alphas_boss_to_sdss, _ = generate_binned_alphas([bootstrap_a
 # percentiles for binned plots:
 
 # BOSS
-bootstrap_binned_lower_boss = [np.nanpercentile(b, 16, axis=0) for b in bootstrap_binned_alphas_boss] #68 percent confidence interval
-bootstrap_binned_upper_boss = [np.nanpercentile(b, 84, axis=0) for b in bootstrap_binned_alphas_boss]
+bootstrap_binned_lower_boss = [np.percentile(b, 16, axis=0) for b in bootstrap_binned_alphas_boss] #68 percent confidence interval
+bootstrap_binned_upper_boss = [np.percentile(b, 84, axis=0) for b in bootstrap_binned_alphas_boss]
 bootstrap_binned_stds_boss = [(bootstrap_binned_upper_boss[i] - bootstrap_binned_lower_boss[i])/2 for i in range(len(bootstrap_binned_lower_boss))]
 
 # SDSS
-bootstrap_binned_lower_sdss = [np.nanpercentile(b, 16, axis=0) for b in bootstrap_binned_alphas_sdss] #68 percent confidence interval
-bootstrap_binned_upper_sdss = [np.nanpercentile(b, 84, axis=0) for b in bootstrap_binned_alphas_sdss]
+bootstrap_binned_lower_sdss = [np.percentile(b, 16, axis=0) for b in bootstrap_binned_alphas_sdss] #68 percent confidence interval
+bootstrap_binned_upper_sdss = [np.percentile(b, 84, axis=0) for b in bootstrap_binned_alphas_sdss]
 bootstrap_binned_stds_sdss = [(bootstrap_binned_upper_sdss[i] - bootstrap_binned_lower_sdss[i])/2 for i in range(len(bootstrap_binned_lower_sdss))]
 
 # boss to sdss:
-bootstrap_binned_lower_boss_to_sdss = np.nanpercentile(bootstrap_binned_alphas_boss_to_sdss[0], 16, axis=0)  #68 percent confidence interval
-bootstrap_binned_upper_boss_to_sdss = np.nanpercentile(bootstrap_binned_alphas_boss_to_sdss[0], 84, axis=0)
+bootstrap_binned_lower_boss_to_sdss = np.percentile(bootstrap_binned_alphas_boss_to_sdss[0], 16, axis=0)  #68 percent confidence interval
+bootstrap_binned_upper_boss_to_sdss = np.percentile(bootstrap_binned_alphas_boss_to_sdss[0], 84, axis=0)
 bootstrap_binned_stds_boss_to_sdss = (bootstrap_binned_upper_boss_to_sdss - bootstrap_binned_lower_boss_to_sdss)/2
 assert bootstrap_binned_stds_boss_to_sdss.ndim == 1
+print("done with binning")
 
 # save unbinned
 with open(alpha_direc_boot + 'bootstrap_lower_boss' + loadkey + '.p', 'wb') as fp:
@@ -157,5 +163,6 @@ with open(alpha_direc_boot + 'bootstrap_binned_stds_sdss' + loadkey + '.p', 'wb'
 np.save(alpha_direc_boot + 'bootstrap_binned_lower_boss_to_sdss' + loadkey + '.npy', bootstrap_binned_lower_boss_to_sdss)
 np.save(alpha_direc_boot + 'bootstrap_binned_upper_boss_to_sdss' + loadkey + '.npy', bootstrap_binned_upper_boss_to_sdss)
 np.save(alpha_direc_boot + 'bootstrap_binned_stds_boss_to_sdss' + loadkey + '.npy', bootstrap_binned_stds_boss_to_sdss)
+print("done saving")
 
 ###############################################
