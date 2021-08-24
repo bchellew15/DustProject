@@ -28,13 +28,14 @@ loadkey: alphas will be loaded based on this key
 if __name__ == "__main__":
 
     #command line options
-    if len(sys.argv) != 5:
-        print("Usage: generate_plots.py [boss: 0, 1] [save: 0, savekey] [bootstrap: 0, 1] [loadkey]")
+    if len(sys.argv) != 6:
+        print("Usage: generate_plots.py [boss: 0, 1] [save: 0, savekey] [bootstrap: 0, 1] [show_plots: 0, 1] [loadkey]")
         exit(0)
     boss = int(sys.argv[1])
     save = sys.argv[2]
     bootstrap = int(sys.argv[3])
-    loadkey = sys.argv[4]
+    show_plots = int(sys.argv[4])
+    loadkey = sys.argv[5]
 
     # specify parameters
     alpha_direc = '../alphas_and_stds/'
@@ -297,7 +298,10 @@ def plot_binned(alpha_indices, colors, labels, envelope=False):
     # ax.figure(figsize=(6, 5))
     ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
     ax.set_ylabel(r"$\alpha_\lambda$")
-    ax.set_xlim(x_min, x_max)
+    if boss:
+        ax.set_xlim(3700, 10000)
+    else:
+        ax.set_xlim(3850, 9200)
     ax.set_ylim(0, .35)
     ax.legend(frameon=False)
 
@@ -316,7 +320,7 @@ if __name__ == "__main__":
         if save != '0' and bootstrap:
             plt.savefig('../paper_figures/unbinned_' + loadkey + '.pdf', bbox_inches='tight')
             plt.clf()
-        else:
+        elif show_plots:
             plt.show()
 
     #################################
@@ -368,7 +372,7 @@ if __name__ == "__main__":
         if save != '0':
             plt.savefig('../paper_figures/compare_boss_sdss_' + loadkey + '.pdf', bbox_inches='tight')
             plt.clf()
-        else:
+        elif show_plots:
             plt.show()
 
     ##############################
@@ -380,7 +384,7 @@ if __name__ == "__main__":
         if save != '0' and bootstrap:
             plt.savefig('../paper_figures/all_3_mods_' + loadkey + '.pdf', bbox_inches='tight')
             plt.clf()
-        else:
+        elif show_plots:
             plt.show()
 
     ##############################
@@ -392,7 +396,7 @@ if __name__ == "__main__":
         if save != '0' and bootstrap:
             plt.savefig('../paper_figures/boss_north_south_' + loadkey + '.pdf', bbox_inches='tight')
             plt.clf()
-        else:
+        elif show_plots:
             plt.show()
 
     ##############################
@@ -508,7 +512,7 @@ if __name__ == "__main__":
         if save != '0' and bootstrap:
             plt.savefig('../paper_figures/boss_thresholds_2panel_' + loadkey + '.pdf', bbox_inches='tight')
             plt.clf()
-        else:
+        elif show_plots:
             plt.show()
 
     #############################
@@ -530,16 +534,21 @@ if __name__ == "__main__":
         idx_9000 = np.argmin(np.abs(wavelength-9000))
 
         #north:
-        variance = np.power(bootstrap_stds[0], 2)
-        rel_alphas = alphas[0]
-        numerator = np.nansum(np.divide(rel_alphas, variance))
-        denominator = np.nansum(np.divide(1, variance))
+        std_north = bootstrap_stds[0]
+        rel_std_north = std_north[(wavelength > 5000) & (wavelength < 8000)]
+        rel_variance_north = rel_std_north**2
+        avg_north_std = np.nanmean(rel_std_north)
+        north_alphas = alphas[0]
+        rel_north_alphas = north_alphas[(wavelength > 5000) & (wavelength < 8000)]
+        numerator = np.nansum(np.divide(rel_north_alphas, rel_variance_north))
+        denominator = np.nansum(np.divide(1, rel_variance_north))
         avg_north = numerator / denominator
-        avg_north_var = np.nanvar(avg_north)
-        avg_north = np.nanmean(avg_north)
+        print("avg north:", avg_north)
+        print(avg_north.shape)
+        print("avg north std:", avg_north_std)
 
-        integrand = np.multiply(rel_alphas, wavelength_deltas)
-        integrand_std = np.multiply(variance, wavelength_deltas**2)
+        integrand = np.multiply(north_alphas, wavelength_deltas)
+        integrand_std = np.multiply(std_north**2, wavelength_deltas**2)
         integral_4_5 = np.nansum(integrand[idx_4000:idx_5000])
         integral_6_7 = np.nansum(integrand[idx_6000:idx_7000])
         integral_8_9 = np.nansum(integrand[idx_8000:idx_9000])
@@ -555,16 +564,20 @@ if __name__ == "__main__":
         north_ere_std = 2 * np.sqrt(north_ere_frac_1**2 + north_ere_frac_2**2)
 
         #south:
-        variance = np.power(bootstrap_stds[1], 2)
-        rel_alphas = alphas[1]
-        numerator = np.nansum(np.divide(rel_alphas, variance))
-        denominator = np.nansum(np.divide(1, variance))
+        std_south = bootstrap_stds[1]
+        rel_std_south = std_south[(wavelength > 5000) & (wavelength < 8000)]
+        rel_variance_south = rel_std_south**2
+        avg_south_std = np.nanmean(rel_std_south)
+        south_alphas = alphas[1]
+        rel_south_alphas = south_alphas[(wavelength > 5000) & (wavelength < 8000)]
+        numerator = np.nansum(np.divide(rel_south_alphas, rel_variance_south))
+        denominator = np.nansum(np.divide(1, rel_variance_south))
         avg_south = numerator / denominator
-        avg_south_var = np.nanvar(avg_south)
-        avg_south = np.nanmean(avg_south)
+        print("avg south:", avg_south)
+        print("avg south std:", avg_south_std)
 
-        integrand = np.multiply(rel_alphas, wavelength_deltas)
-        integrand_std = np.multiply(variance, wavelength_deltas ** 2)
+        integrand = np.multiply(south_alphas, wavelength_deltas)
+        integrand_std = np.multiply(std_south**2, wavelength_deltas ** 2)
         integral_4_5 = np.nansum(integrand[idx_4000:idx_5000])
         integral_6_7 = np.nansum(integrand[idx_6000:idx_7000])
         integral_8_9 = np.nansum(integrand[idx_8000:idx_9000])
@@ -579,6 +592,17 @@ if __name__ == "__main__":
         south_ere_frac_2 = integral_6_7_std / integral_6_7
         south_ere_std = 2 * np.sqrt(south_ere_frac_1 ** 2 + south_ere_frac_2 ** 2)
 
+        # overall BOSS:
+        rel_std_boss = bootstrap_stds[2][(wavelength > 5000) & (wavelength < 8000)]
+        rel_variance_boss = rel_std_boss ** 2
+        avg_boss_std = np.nanmean(rel_std_boss)
+        rel_boss_alphas = alphas[2][(wavelength > 5000) & (wavelength < 8000)]
+        numerator = np.nansum(np.divide(rel_boss_alphas, rel_variance_boss))
+        denominator = np.nansum(np.divide(1, rel_variance_boss))
+        avg_boss = numerator / denominator
+        print("avg BOSS:", avg_boss)
+        print("avg BOSS std:", avg_boss_std)
+
         #print results
         print("north avg:", avg_north)
         print("south avg:", avg_south)
@@ -589,7 +613,7 @@ if __name__ == "__main__":
 
         #calculate significance:
         #estimate variance:
-        var_diff = avg_north_var + avg_south_var
+        var_diff = avg_north_std**2 + avg_south_std**2
         z = (avg_north - avg_south) / np.sqrt(var_diff)
         print("z value for avg:")
         print(z)
@@ -602,6 +626,19 @@ if __name__ == "__main__":
         var_diff = north_ere_std**2 + south_ere_std**2
         z = (south_ere - north_ere) / np.sqrt(var_diff)
         print("z value for ere", z)
+
+    if not boss and bootstrap:
+        # find average and uncertainty for SDSS
+        rel_std_sdss = bootstrap_stds[2][(wavelength > 5000) & (wavelength < 8000)]
+        rel_variance_sdss = rel_std_sdss ** 2
+        avg_sdss_std = np.nanmean(rel_std_sdss)
+        rel_sdss_alphas = alphas[2][(wavelength > 5000) & (wavelength < 8000)]
+        numerator = np.nansum(np.divide(rel_sdss_alphas, rel_variance_sdss))
+        denominator = np.nansum(np.divide(1, rel_variance_sdss))
+        avg_sdss = numerator / denominator
+        print("avg SDSS:", avg_sdss)
+        print("avg SDSS std:", avg_sdss_std)
+
 
 ##################################################
 
