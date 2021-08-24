@@ -184,8 +184,6 @@ if bootstrap:
     yxsigs_bootstrap = np.zeros((len(unique_plates), 0))
     xxsigs_bootstrap = np.zeros((len(unique_plates), 0))
 
-total_num_fibers = 0
-
 #preprocessing and calculate alphas for each file
 for j in range(num_files):
     if boss:
@@ -206,10 +204,6 @@ for j in range(num_files):
             print("masking whole plate")
         # lower threshold, to check bias factor
         ivar[(plate == p) & (np.abs(i100_old - mean_i100_p) < min_thresh)] = 0
-
-    # print number of sky fibers
-    num_unmasked_fibers = np.count_nonzero(ivar[:, 0])
-    print("unmasked fibers:", num_unmasked_fibers)
 
     if boss:
         ivar[3178] = 0 #data at this location is bad
@@ -287,6 +281,10 @@ for j in range(num_files):
         alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
         wavelength_10 = np.append(wavelength_10, wavelength_i)
 
+# print number of sky fibers
+num_unmasked_fibers = np.count_nonzero(ivar[:, 0])
+print("unmasked fibers:", num_unmasked_fibers)
+
 print("saving alphas")
 
 if bootstrap:
@@ -295,15 +293,23 @@ if bootstrap:
 elif save != '0':
 
     save_path = '../alphas_and_stds/alphas_' + save + '.npy'
+    save_num_fibers = '../alphas_and_stds/num_fibers_' + save + '.npy'
     import os.path
     if os.path.isfile(save_path):
+        # save alphas
         alphas_from_file = np.load(save_path)
         alphas_10 = np.reshape(alphas_10, (1, len(alphas_10)))
         appended = np.concatenate((alphas_from_file, alphas_10))
         np.save(save_path, appended)
+
+        # save num fibers
+        num_fibers_arr = np.load(save_num_fibers)
+        num_fibers_arr = np.append(num_fibers_arr, num_unmasked_fibers)
+        np.save(save_num_fibers, num_fibers_arr)
     else:
         alphas_10 = np.reshape(alphas_10, (1, len(alphas_10)))
         np.save(save_path, alphas_10)
+        np.save(save_num_fibers, [num_unmasked_fibers])
 
     # np.save('../alphas_and_stds/alpha_stds_' + save + '.npy', alpha_std_10)
     # np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
