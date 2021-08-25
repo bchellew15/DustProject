@@ -655,12 +655,16 @@ for p in paths[p_num:p_num+1]:
         ax2.plot(wav_clipped, south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3], 'grey', label='south - zd',
                  drawstyle='steps-mid')
         ax2.plot(wav_clipped, south_fn(wav_clipped) / boss_fluxfactor - zd_fns[0](wav_clipped) * scale_factors_zd_south[0], 'blue',
-                 label='north - zd', drawstyle='steps-mid')
+                 label='south - zd', drawstyle='steps-mid')
 
         ax2.fill_between(wav_clipped,
                          bootstrap_binned_lower_north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0],
                          bootstrap_binned_upper_north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0],
                          linewidth=0.0, color='green', alpha=0.2, step='mid')
+        ax2.fill_between(wav_clipped,
+                         bootstrap_binned_lower_south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3],
+                         bootstrap_binned_upper_south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3],
+                         linewidth=0.0, color='grey', alpha=0.2, step='mid')
         ax2.fill_between(wav_clipped,
                          bootstrap_binned_lower_south_fn(wav_clipped) / boss_fluxfactor - zd_fns[0](wav_clipped) * scale_factors_zd_south[0],
                          bootstrap_binned_upper_south_fn(wav_clipped) / boss_fluxfactor - zd_fns[0](wav_clipped) * scale_factors_zd_south[0],
@@ -668,7 +672,7 @@ for p in paths[p_num:p_num+1]:
         ax2.legend()
         ax2.hlines(0, 3650, 10200)
         ax2.set_ylim(-0.1, 0.15)
-        ax2.set_xlim(3650, 10200)
+        ax2.set_xlim(4000, 9000)
         plt.show()
 
         plt.title('South - North')
@@ -692,12 +696,14 @@ for p in paths[p_num:p_num+1]:
         integral_south_minus_north_err = np.sqrt(np.sum(north_south_errors_fn(wav_clipped) ** 2)) / boss_fluxfactor
         print("Integral of south - north:", integral_south_minus_north, "+/-", integral_south_minus_north_err)
         # integrate north - model and south - model (assuming no model errors)
-        integral_south_minus_model = np.sum(south_fn(wav_clipped) / boss_fluxfactor - zd_fns[3](wav_clipped) * scale_factors_zd_south[3])
-        integral_north_minus_model = np.sum(north_fn(wav_clipped) / boss_fluxfactor - zd_fns[0](wav_clipped) * scale_factors_zd_north[0])
+        integral_south_minus_model = np.sum(south_fn(wav_clipped) / boss_fluxfactor - zd_fns[0](wav_clipped) * scale_factors_zd_south[0])
+        integral_south_minus_combo = np.sum(south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3])
+        integral_north_minus_model = np.sum(north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0])
         integral_south_minus_model_err = np.sqrt(np.sum(south_errors_fn(wav_clipped) ** 2))
         integral_north_minus_model_err = np.sqrt(np.sum(north_errors_fn(wav_clipped) ** 2))
         print("Integral of south - model:", integral_south_minus_model, "+/-", integral_south_minus_model_err)
         print("Integral of north - model:", integral_north_minus_model, "+/-", integral_north_minus_model_err)
+        print("Integral of south - combo:", integral_south_minus_combo)
 
         # total flux:
         total_flux_south = np.sum(south_fn(wav_clipped) / boss_fluxfactor)
@@ -708,6 +714,7 @@ for p in paths[p_num:p_num+1]:
         # flux ratio:
         south_ERE_ratio = integral_south_minus_model / (total_flux_south - integral_south_minus_model)
         north_ERE_ratio = integral_north_minus_model / (total_flux_north - integral_north_minus_model)
+        south_ERE_ratio_combo = integral_south_minus_model / (total_flux_south - integral_south_minus_combo)
         print("ratio ERE to scattered, south:", south_ERE_ratio)
         print("ratio ERE to scattered, north:", north_ERE_ratio)
 
