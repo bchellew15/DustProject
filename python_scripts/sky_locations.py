@@ -32,7 +32,7 @@ if boss:
 
     i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
     i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
-    i100 = i100[:,2941] # around the halfway point in terms of wavelength
+    i100 = i100[:,2941] # around the halfway point in terms of wavelength. (6977.5 A)
 
     hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + 'skyfibers_lam0.fits')
     plate = hdulist[6].data
@@ -43,7 +43,10 @@ else:
     coords = np.loadtxt('/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/infile.txt')
     fiberinfo = np.loadtxt('/Users/blakechellew/Documents/DustProject/BrandtFiles/fiberinfo_halpha.dat')
     i100_old = np.array(fiberinfo[:, 4])
-    i100 = i100_old
+
+    # update: use nonlinear and IRIS (was i100 = i100_old)
+    i100 = np.load('/Volumes/Toshiba/Dust_Overflow/i100_iris_tao.npy')
+    i100 = i100[:, 2749]  # wavelength 6977.4 (to match BOSS above)
 
     hdulist = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
     plate = np.array(hdulist[0].data)
@@ -67,6 +70,8 @@ if save and not weighted:
     densities = np.zeros(len(longs))
     for i in range(len(longs)):
         densities[i] = np.sum((longs > longs[i] - 1) * (longs < longs[i] + 1) * (lats > lats[i] - 1) * (lats < lats[i] + 1))
+        if i % 1000 == 0:
+            print("progress:", i)
 
     #apply mask:
     densities = np.delete(densities, mask)
@@ -94,7 +99,9 @@ elif save and weighted:
         i100_sqr_p = np.power(i100_p, 2)
         var = np.mean(i100_sqr_p) - np.power(np.mean(i100_p), 2)
         var_p[plate==p] = var
-        
+
+    print("done calculating weights")
+
     avg_var = np.mean(np.unique(var_p))
     #print("avg var:", avg_var)
     #print("median var:", np.median(np.unique(var_p)))
@@ -107,6 +114,8 @@ elif save and weighted:
         densities[i] = np.sum((longs > longs[i] - 1) * (longs < longs[i] + 1) * (lats > lats[i] - 1) * (lats < lats[i] + 1))
         densities[i] *= var_p[i] / avg_var
         #print("weight:", var_p[i] / avg_var)
+        if i % 1000 == 0:
+            print("progress:", i)
 
     #apply mask:
     densities = np.delete(densities, mask)
