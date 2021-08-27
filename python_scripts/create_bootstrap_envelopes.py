@@ -109,8 +109,8 @@ for i in range(len(bootstrap_stds_boss)):
 print("check 2")
 
 # binning:
-_, bootstrap_binned_alphas_boss, _ = generate_binned_alphas(bootstrap_alphas_boss, bootstrap_alpha_stds_boss, wavelength_boss, boss=True)
-_, bootstrap_binned_alphas_sdss, _ = generate_binned_alphas(bootstrap_alphas_sdss, bootstrap_alpha_stds_sdss, wavelength_sdss, boss=False)
+wav_boss_binned, bootstrap_binned_alphas_boss, _ = generate_binned_alphas(bootstrap_alphas_boss, bootstrap_alpha_stds_boss, wavelength_boss, boss=True)
+wav_sdss_binned, bootstrap_binned_alphas_sdss, _ = generate_binned_alphas(bootstrap_alphas_sdss, bootstrap_alpha_stds_sdss, wavelength_sdss, boss=False)
 # bin the boss alphas according to sdss wavelengths
 _, bootstrap_binned_alphas_boss_to_sdss, _ = generate_binned_alphas([bootstrap_alphas_boss[-1]], [bootstrap_alpha_stds_boss[-1]], wavelength_sdss, wavelength_boss, boss=True)
 
@@ -166,3 +166,48 @@ np.save(alpha_direc_boot + 'bootstrap_binned_stds_boss_to_sdss' + loadkey + '.np
 print("done saving")
 
 ###############################################
+
+# misc calculations:
+# averages and percentiles for some of these
+select_north = bootstrap_binned_alphas_boss[0][:, (wav_boss_binned > 5000) & (wav_boss_binned < 8000)]
+select_south = bootstrap_binned_alphas_boss[1][:, (wav_boss_binned > 5000) & (wav_boss_binned < 8000)]
+select_boss = bootstrap_binned_alphas_boss[2][:, (wav_boss_binned > 5000) & (wav_boss_binned < 8000)]
+select_sdss = bootstrap_binned_alphas_sdss[2][:, (wav_sdss_binned > 5000) & (wav_sdss_binned < 8000)]
+means_north = np.mean(select_north, axis=1).flatten()
+means_south = np.mean(select_south, axis=1).flatten()
+means_sdss = np.mean(select_sdss, axis=1).flatten()
+means_boss = np.mean(select_boss, axis=1).flatten()
+means_north_lower = np.percentile(means_north, 16)
+means_north_upper = np.percentile(means_north, 84)
+means_north_err = (means_north_upper - means_north_lower) / 2
+means_south_lower = np.percentile(means_south, 16)
+means_south_upper = np.percentile(means_south, 84)
+means_south_err = (means_south_upper - means_south_lower) / 2
+means_sdss_lower = np.percentile(means_sdss, 16)
+means_sdss_upper = np.percentile(means_sdss, 84)
+means_sdss_err = (means_sdss_upper - means_sdss_lower) / 2
+means_boss_lower = np.percentile(means_boss, 16)
+means_boss_upper = np.percentile(means_boss, 84)
+means_boss_err = (means_boss_upper - means_boss_lower) / 2
+print("means north err:", means_north_err)
+print("means south err:", means_south_err)
+print("means sdss err:", means_sdss_err)
+print("means boss err:", means_boss_err)
+# 50th percentiles:
+means_south_50th = np.percentile(means_south, 50)
+means_north_50th = np.percentile(means_north, 50)
+print("50th percentiles:", means_south_50th, means_north_50th)
+# try from 50th to inside:
+means_south_diff_50 = means_south_50th - means_south_lower
+means_north_diff_50 = means_north_upper - means_north_50th
+print("means from 50th: (south, north)", means_south_diff_50, means_north_diff_50)
+# compare to average bootstrap error:
+bootstrap_stds_north = bootstrap_binned_stds_boss[0][(wav_boss_binned > 5000) & (wav_boss_binned < 8000)]
+bootstrap_stds_south = bootstrap_binned_stds_boss[1][(wav_boss_binned > 5000) & (wav_boss_binned < 8000)]
+bootstrap_mean_north = np.mean(bootstrap_stds_north)
+bootstrap_mean_south = np.mean(bootstrap_stds_south)
+print("avg bootstrap stds:")
+print("north:", bootstrap_mean_north)
+print("south:", bootstrap_mean_south)
+
+
