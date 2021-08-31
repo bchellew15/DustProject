@@ -453,7 +453,7 @@ print("\n")
 # now with radiative transfer
 # (the spectrum here was already interpolated to the BOSS wavelengths)
 # order: t9e9, t5e9, CST
-bc03_rads =[np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/t9e9_12gyr_z02zd072121.npy'),
+bc03_rads =[np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/t9e9_12gyr_z02zd082221.npy'),
            np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/t5e9_12gyr_z02zd072121.npy'),
            np.load('/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/cst_6gyr_z02zd072121.npy')]
 bc03_rads_masked = [mask_emission(wavelength, a, np.ones(len(wavelength)))[1] for a in bc03_rads]
