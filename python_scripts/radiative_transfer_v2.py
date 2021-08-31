@@ -680,6 +680,8 @@ for p in paths[p_num:p_num+1]:
         # combine errors:
         south_errors_fn = interp1d(alphas_norad_bin_wav, bootstrap_binned_stds_south)
         north_errors_fn = interp1d(alphas_norad_bin_wav, bootstrap_binned_stds_north)
+        boss_errors_fn = interp1d(alphas_norad_bin_wav, bootstrap_binned_stds_boss)
+        sdss_errors_fn = interp1d(sdss_bin_wav, bootstrap_binned_stds_sdss)
         bootstrap_binned_stds_sdss_fn = interp1d(sdss_bin_wav, bootstrap_binned_stds_sdss)
         def north_south_errors_fn(args):
             return np.sqrt(south_errors_fn(args) ** 2 + north_errors_fn(args) ** 2)
@@ -687,6 +689,13 @@ for p in paths[p_num:p_num+1]:
             return south_fn(args) - north_fn(args)
         # ax2.plot(wav_clipped, north_south_diff_fn(wav_clipped), 'grey', label='South - North', drawstyle='steps-mid')
         # plt.plot(wav_clipped, north_south_errors_fn(wav_clipped), label='Bootstrap errors', drawstyle='steps-mid')
+
+        # find median signal to noise for boss vs. sdss
+        boss_signal_to_noise =  boss_fn(wav_clipped) / boss_errors_fn(wav_clipped)
+        sdss_signal_to_noise = sdss_fn(wav_clipped) / sdss_errors_fn(wav_clipped)
+        print("median signal to noise:")
+        print("BOSS:", np.median(boss_signal_to_noise))
+        print("SDSS:", np.median(sdss_signal_to_noise))
 
         # TEST: was using ZD dust model for the last one
 
