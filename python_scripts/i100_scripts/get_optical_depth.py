@@ -31,6 +31,11 @@ def get_boss_tao():
     num_intervals = int(round((max(hdulist[2].data) - min(hdulist[2].data)) / 0.0001))
     lams = 10**( min(hdulist[2].data) + np.arange(num_intervals + flam.shape[0])*1e-4 )
     #lams has 4968 elements
+
+    # save the full BOSS wavelength array
+    # (so far I've been using a partial array, but need this for avg i100)
+    np.save("/Users/blakechellew/Documents/DustProject/wavelength_boss_full.npy", lams)
+    exit(0)
     
     ebv = np.load("/Users/blakechellew/Documents/DustProject/ebv_boss.npy")
     taos = np.array([f99(lams, item) for item in ebv])
@@ -43,8 +48,8 @@ def load_data():
     print("taos: ", taos)
     print("Avg: ", np.mean(taos))
 
-load_data()
-#get_boss_tao()
+# load_data()
+get_boss_tao()
 #get_tao()
 
 
