@@ -17,6 +17,7 @@ from scipy import ndimage
 # parameters
 # (poly_degree is for the polynomial added to the linear combo)
 # (continuum_degree is for ???)
+save = True
 poly_degree = -1  # 1 is linear, etc.
 poly_order = poly_degree + 1
 continuum_deg = 10
@@ -65,6 +66,9 @@ def gaussian_smoothing(model_spectrum, v_dispersion=100):
     sigma_over_lambda = v_dispersion / (3 * 10**5)
     sigma_pixels = sigma_over_lambda / boss_dlambda_over_lambda
     model_smoothed = ndimage.gaussian_filter(model_spectrum, sigma_pixels, mode='nearest')
+    print("FWHM in pixels:", 2 * sigma_pixels)
+    print("v disp:", v_dispersion)
+    print("FWHM in angstroms:", 2 * sigma_pixels * boss_diff_7000)
     return model_smoothed
 
 def chi_squared(data, model, errs):
@@ -165,7 +169,7 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     best_fit_model = continuum_norm(wavelength_trunc, coeffs[0], coeffs[1], coeffs[2])
     best_fit_model = continuum_norm(wavelength_trunc, 0, 0, 1)  # TEST: manually set the coeffs
     # and smooth it:
-    best_fit_model_smooth = gaussian_smoothing(best_fit_model, 70)
+    best_fit_model_smooth = gaussian_smoothing(best_fit_model, 100)
     plt.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps')
     plt.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps')
     plt.plot(wavelength_trunc, best_fit_model_smooth, 'green', drawstyle='steps')
@@ -194,16 +198,31 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     print("chi squared of flat line:", chi_squared_line)
     print("per dof:", chi_squared_line / (len(wavelength_trunc)))
 
-    # plot with just one spectrum
-    single_model_corrected = continuum_norm(wavelength_trunc, 1, 0, 0)
-    plt.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='BOSS')
-    plt.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03')
-    plt.title("Continnum subtracted, no fitting, compare to t9e9")
-    # plt.xlim(6000, 8000)  # big wiggles
-    # plt.ylim(.55, 1.45)
-    plt.xlim(5025, 5450)  # small wiggles
-    plt.ylim(.7, 1.25)
-    plt.legend()
+    # plot the wiggles (2-panel)
+    # no fitting, just t5e9
+    plt.figure(figsize=(12, 6))
+    # panel 1
+    ax1 = plt.subplot(2, 1, 1)
+    single_model_corrected = continuum_norm(wavelength_trunc, 0, 0, 1)  # (0, 0, 1) is t5e9
+    ax1.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='BOSS')
+    ax1.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03')
+    ax1.set_title("Observed DGL vs. Model Stellar Spectrum (t5e9)")
+    ax1.set_xlim(5025, 5450)  # small wiggles
+    ax1.set_ylim(.7, 1.25)
+    # ax1.set_ylim(- .5, .5)
+    ax1.legend()
+    # panel 2
+    ax2 = plt.subplot(2, 1, 2)
+    ax2.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='BOSS')
+    ax2.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03')
+    ax2.set_xlim(6000, 8000)  # big wiggles
+    ax2.set_ylim(.55, 1.45)
+    # ax2.set_ylim(-.5, .5)
+    ax2.legend()
+    ax2.set_xlabel('Wavelength ($\AA$)')
+    plt.tight_layout()
+    if save:
+        plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/unbinned_model_compare_090121.pdf')
     plt.show()
 
     best_fit_uncorrected = best_fit_model  # TEMP
