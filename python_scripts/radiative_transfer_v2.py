@@ -40,11 +40,13 @@ n_theta = 20  # 25
 paths = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')  # bc03 model spectra
 
 # load wavelengths
-wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')  # angstroms
+wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')  # angstroms
 hdulist_direc = '/Users/blakechellew/Documents/DustProject/BrandtFiles/'
 hdulist_sdsswav = fits.open('/Users/blakechellew/Documents/DustProject/BrandtFiles/SDSS_allskyspec.fits')
 wavelength_sdss = np.array(hdulist_sdsswav[1].data)
-if not boss:
+if boss:
+    wavelength = wavelength_boss
+else:
     wavelength = wavelength_sdss
 
 # load dust models
@@ -732,24 +734,32 @@ for p in paths[p_num:p_num+1]:
         plt.show()
 
         # some ERE calculations:
+        # preliminary 100 micron avg:
+        prelim_avg_100um = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/mean_i100.npy')[:4681]
+        prelim_avg_100um_f = interp1d(wavelength_boss, prelim_avg_100um)
+
         # integrate south - north:
         integrand_south_minus_north = north_south_diff_fn(wav_clipped) / boss_fluxfactor
         integrand_south_minus_north /= wav_clipped
         integral_south_minus_north = 50 * np.sum(integrand_south_minus_north)
         integral_south_minus_north_err = np.sqrt(np.sum(north_south_errors_fn(wav_clipped) ** 2)) / boss_fluxfactor
         print("Integral of south - north:", integral_south_minus_north, "+/-", integral_south_minus_north_err)
-        # integrate north - model and south - model (assuming no model errors)
 
+        # integrate north - model and south - model (assuming no model errors)
         integrand_north_minus_model = np.sum(north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0])
         integrand_north_minus_model /= wav_clipped  # to get a unitless integral
-        integral_north_minus_model = 50 * np.sum(integrand_north_minus_model)  # multiply by bin width 50 A
+        integral_north_minus_model = 50 * np.sum(integrand_north_minus_model * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))  # multiply by bin width 50 A
         integrand_south_minus_combo = south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3]
         integrand_south_minus_combo /= wav_clipped
-        integral_south_minus_combo = 50 * np.sum(integrand_south_minus_combo)
+        integral_south_minus_combo = 50 * np.sum(integrand_south_minus_combo * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
         integrand_south_minus_model = south_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_south[0]
         integrand_south_minus_model /= wav_clipped
-        integral_south_minus_model = 50 * np.sum(integrand_south_minus_model)
-        # then multiplying by (nu*I_nu)_100 should give and actual value
+        integral_south_minus_model = 50 * np.sum(integrand_south_minus_model * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        # multiplying by (nu*I_nu)_100 should give and actual value
+        # units here are MJy / sr * A  (bc i100 is MJy / sr, and multiply by A in the integral)
+        # convert:
+        # 2.8 * 10^12 MJy / sr * A
+        # ->
 
         integral_south_minus_model_err = np.sqrt(np.sum(south_errors_fn(wav_clipped) ** 2))
         integral_north_minus_model_err = np.sqrt(np.sum(north_errors_fn(wav_clipped) ** 2))
