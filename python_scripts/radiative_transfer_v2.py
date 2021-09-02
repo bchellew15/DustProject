@@ -10,6 +10,7 @@ from generate_plots import generate_binned_alphas
 from astropy.io import fits
 import pickle
 
+save = True  # save ERE figure
 boss = True  # whether to interpolate to BOSS wavelengths or SDSS
 wd01_model = False  # otherwise zda04 model
 b = 40 * np.pi / 180  # latitude (should be 40 degrees -> radians)
@@ -606,7 +607,7 @@ for p in paths[p_num:p_num+1]:
         plt.figure(figsize=(12, 5))
 
         ax1 = plt.subplot(1, 2, 1)
-        ax1.set_title('BOSS alphas with WD and ZD dust models')
+        ax1.set_title('BOSS alphas and BC03 models (WD dust model)')
         # plt.plot(alphas_norad_bin_wav, alphas_boss_bin / boss_fluxfactor, 'orange', label='BOSS alphas (observed)', drawstyle='steps-mid')
         ax1.plot(alphas_norad_bin_wav, alphas_north_bin / boss_fluxfactor, 'purple', label='BOSS north',
                  drawstyle='steps-mid')
@@ -723,6 +724,11 @@ for p in paths[p_num:p_num+1]:
         ax2.hlines(0, 3650, 10200)
         ax2.set_ylim(-0.05, 0.1)
         ax2.set_xlim(4000, 9000)
+
+        plt.tight_layout()
+        if save:
+            plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/ere_2plot_090121.pdf')
+
         plt.show()
 
         # some ERE calculations:
