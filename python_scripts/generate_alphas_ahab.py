@@ -59,8 +59,8 @@ thr1.start()
 
 #command line args
 #see above for explanation
-if len(sys.argv) != 7:
-    print("Usage: generate_alphas_ahab.py [mode: 1d, 2d, iris_1d, iris_2d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [location=0, 1, 2] [bootstrap=0]")
+if len(sys.argv) != 8:
+    print("Usage: generate_alphas_ahab.py [mode: 1d, 2d, iris_1d, iris_2d] [boss: 0, 1] [save: 0, savekey] [threshold=10] [location=0, 1, 2] [bootstrap=0] [get_correction=0]")
     exit(0)
 mode = sys.argv[1]
 boss = int(sys.argv[2])
@@ -68,9 +68,10 @@ save = sys.argv[3]
 threshold = float(sys.argv[4])
 location = int(sys.argv[5])
 bootstrap = int(sys.argv[6])
+get_correction = int(sys.argv[7])
     
 #calculate x, y, alpha
-def calc_alphas(i100, plate, flambda, ivar, boot=False):
+def calc_alphas(i100, plate, flambda, ivar, boot=False, i100_old=None):
 
     print("calculating x and y")
     
@@ -115,6 +116,17 @@ def calc_alphas(i100, plate, flambda, ivar, boot=False):
     sums1 = np.sum(yxsig, axis=0)
     sums2 = np.sum(xxsig, axis=0)
 
+    avg_correction = None
+    if get_correction:
+        correction_factor = i100 / i100_old
+        print("correction factor")
+        print(correction_factor)
+        # weighted_avg = (yxsig * correction_factor) / sums1
+        weighted_avg = correction_factor / correction_factor.shape[0]
+        print(weighted_avg)
+        avg_correction = np.sum(weighted_avg, axis=0)
+        print(avg_correction)
+
     if boot:
         return np.sum(yxsig, axis=0), np.sum(xxsig, axis=0)
 
@@ -129,7 +141,7 @@ def calc_alphas(i100, plate, flambda, ivar, boot=False):
     alpha_std = np.sqrt(1/sums2)
 
     print("finished calculating alphas")
-    return alphas, alpha_std, wavelength
+    return alphas, alpha_std, wavelength, avg_correction
 
 
 # load data for BOSS
@@ -200,6 +212,7 @@ else:
 alphas_10 = np.zeros(0)
 alpha_std_10 = np.zeros(0)
 wavelength_10 = np.zeros(0)
+correction_10 = np.zeros(0)
 
 if bootstrap:
     unique_plates = np.unique(plate)
@@ -271,9 +284,20 @@ for j in range(num_files):
     if boss and (mode == '2d' or mode == 'iris_2d'):
         start_idx =  num_columns[j][0]
         num_elements = num_columns[j][1]
-        i100_sub = i100[:, start_idx:start_idx+num_elements]        
+        i100_sub = i100[:, start_idx:start_idx+num_elements]
+        i100_old_sub = None
+        if get_correction:
+            if mode == 'iris_2d':
+                i100_old_sub = np.load("../data/iris_i100_at_boss.npy")[start_idx:start_idx+num_elements]
+            else:
+                i100_old_sub = i100_old[start_idx:start_idx+num_elements]
     else:
         i100_sub = i100
+        if get_correction and (mode == '2d' or mode == 'iris_2d'):  # must be SDSS if it gets here
+            if mode == 'iris_2d':
+                i100_old_sub = np.load("../data/iris_i100_at_sfd.npy")
+            else:
+                i100_old_sub = i100_old
 
     if bootstrap:
         yxsig_partial = np.zeros(0)
@@ -298,10 +322,11 @@ for j in range(num_files):
 
     else:
         #calculate alphas
-        alphas_i, alpha_std_i, wavelength_i = calc_alphas(i100_sub, plate, flambda, ivar)
+        alphas_i, alpha_std_i, wavelength_i, correction_i = calc_alphas(i100_sub, plate, flambda, ivar, i100_old=i100_old_sub)
         alphas_10 = np.append(alphas_10, alphas_i)
         alpha_std_10 = np.append(alpha_std_10, alpha_std_i)
         wavelength_10 = np.append(wavelength_10, wavelength_i)
+        correction_10 = np.append(correction_10, correction_i)
         
 print("saving alphas")
     
@@ -313,6 +338,8 @@ elif save != '0':
     np.save('../alphas_and_stds/alpha_stds_' + save + '.npy', alpha_std_10)
     #np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
     print("alphas saved")
+if get_correction:
+    np.save('../alphas_and_stds/correction_factor_' + save + '.npy', correction_10)
 
 
 
