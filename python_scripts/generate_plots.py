@@ -81,6 +81,7 @@ if __name__ == "__main__":
         alpha_stds = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
+        correction_factors = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy'))]
     else:
         alphas = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
                   np.load(alpha_direc + 'alphas_sdss_2d_' + loadkey + '.npy'), \

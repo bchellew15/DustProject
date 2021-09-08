@@ -177,7 +177,8 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     plt.show()
 
     # chi^2 as fn of smoothing
-    disps = [10, 20, 50, 70, 100, 120, 150, 200]
+    # disps = [10, 20, 50, 70, 100, 120, 150, 200]
+    disps = [70, 80, 90, 100, 110, 120, 130, 140]
     chis = []
     for d in disps:
         model_smooth = gaussian_smoothing(best_fit_model, d)
