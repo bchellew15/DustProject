@@ -746,20 +746,23 @@ for p in paths[p_num:p_num+1]:
         print("Integral of south - north:", integral_south_minus_north, "+/-", integral_south_minus_north_err)
 
         # integrate north - model and south - model (assuming no model errors)
-        integrand_north_minus_model = np.sum(north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0])
+        integrand_north_minus_model = north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0]
         integrand_north_minus_model /= wav_clipped  # to get a unitless integral
         integral_north_minus_model = 50 * np.sum(integrand_north_minus_model * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))  # multiply by bin width 50 A
+        integral_north_minus_model *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
         integrand_south_minus_combo = south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3]
         integrand_south_minus_combo /= wav_clipped
         integral_south_minus_combo = 50 * np.sum(integrand_south_minus_combo * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        integral_south_minus_combo *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
         integrand_south_minus_model = south_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_south[0]
         integrand_south_minus_model /= wav_clipped
         integral_south_minus_model = 50 * np.sum(integrand_south_minus_model * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        integral_south_minus_model *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
         # multiplying by (nu*I_nu)_100 should give and actual value
-        # units here are MJy / sr * A  (bc i100 is MJy / sr, and multiply by A in the integral)
+        # units here are MJy / sr (bc i100 is MJy / sr, and the dlambda units cancel with division by wav)
         # convert:
-        # 2.8 * 10^12 MJy / sr * A
-        # ->
+        # start: (MJy / sr) * Hz
+        # conversion factor: x10^-20 to get erg / s / cm^2 / sr
 
         integral_south_minus_model_err = np.sqrt(np.sum(south_errors_fn(wav_clipped) ** 2))
         integral_north_minus_model_err = np.sqrt(np.sum(north_errors_fn(wav_clipped) ** 2))
@@ -768,17 +771,24 @@ for p in paths[p_num:p_num+1]:
         print("Integral of south - combo:", integral_south_minus_combo)
 
         # total flux:
-        total_flux_south = np.sum(south_fn(wav_clipped) / boss_fluxfactor)
-        total_flux_north = np.sum(north_fn(wav_clipped) / boss_fluxfactor)
+        total_integrand_south = south_fn(wav_clipped) / boss_fluxfactor
+        total_integrand_south /= wav_clipped
+        total_flux_south = np.sum(50 * total_integrand_south * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        total_flux_south *= 10**-17  # unit conversion
+        total_integrand_north = north_fn(wav_clipped) / boss_fluxfactor
+        total_integrand_north /= wav_clipped
+        total_flux_north = np.sum(50 * total_integrand_north * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        total_flux_north *= 10 ** -17  # unit conversion
         print("Total flux south:", total_flux_south)
         print("Total flux north:", total_flux_north)
 
         # flux ratio:
         south_ERE_ratio = integral_south_minus_model / (total_flux_south - integral_south_minus_model)
         north_ERE_ratio = integral_north_minus_model / (total_flux_north - integral_north_minus_model)
-        south_ERE_ratio_combo = integral_south_minus_model / (total_flux_south - integral_south_minus_combo)
+        south_ERE_ratio_combo = integral_south_minus_combo / (total_flux_south - integral_south_minus_combo)
         print("ratio ERE to scattered, south:", south_ERE_ratio)
         print("ratio ERE to scattered, north:", north_ERE_ratio)
+        print("ratio ERE to scattered, south combo:", south_ERE_ratio_combo)
 
         # comparing spectra (z-values):
         avg_north = np.mean(north_fn(wav_clipped))
@@ -803,6 +813,34 @@ for p in paths[p_num:p_num+1]:
         print("sdss:", avg_sdss)
         print("boss:", avg_boss)
 
+        # find the peaks and quartiles (don't care about the scaling)
+        # first the edges
+        def find_quartiles(integrand):
+            wavs_subzero = wav_clipped[np.nonzero(integrand < 0)]
+            lower_edge = 6500 - np.min(np.abs(wavs_subzero[wavs_subzero < 6500] - 6500))
+            upper_edge = 6500 + np.min(np.abs(wavs_subzero[wavs_subzero > 6500] - 6500))
+            print("lower edge:", lower_edge)
+            print("upper edge:", upper_edge)
+            peak_integrand = integrand_south_minus_model[(wav_clipped > lower_edge) & (wav_clipped < upper_edge)]
+            peak_wavs = wav_clipped[(wav_clipped > lower_edge) & (wav_clipped < upper_edge)]
+            total_integrand = np.sum(peak_integrand)
+            partial_sum = 0
+            quartile_1 = None
+            quartile_2 = None
+            quartile_3 = None
+            for w, e in zip(peak_wavs, peak_integrand):
+                partial_sum += e
+                if quartile_1 is None and partial_sum > total_integrand / 4:
+                    quartile_1 = w
+                if quartile_2 is None and partial_sum > 2 * total_integrand / 4:
+                    quartile_2 = w
+                if quartile_3 is None and partial_sum > 3 * total_integrand / 4:
+                    quartile_3 = w
+                    break  # no point continuing
+            print("quartiles 1, 2, 3:", quartile_1, quartile_2, quartile_3)
+            print("width:", quartile_3 - quartile_1)
+        find_quartiles(integrand_south_minus_model)
+        find_quartiles(integrand_south_minus_combo)
 
 #############################
 
