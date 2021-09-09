@@ -205,17 +205,17 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     # panel 1
     ax1 = plt.subplot(2, 1, 1)
     single_model_corrected = continuum_norm(wavelength_trunc, 0, 0, 1)  # (0, 0, 1) is t5e9
-    ax1.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='BOSS')
-    ax1.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03')
-    ax1.set_title("Observed DGL vs. Model Stellar Spectrum (t5e9)")
+    ax1.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='Correlation spectrum')
+    ax1.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03 model spectrum')
+    ax1.set_title("Observed spectrum vs. BC03 starlight model (t5e9)")
     ax1.set_xlim(5025, 5450)  # small wiggles
     ax1.set_ylim(.7, 1.25)
     # ax1.set_ylim(- .5, .5)
     ax1.legend()
     # panel 2
     ax2 = plt.subplot(2, 1, 2)
-    ax2.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='BOSS')
-    ax2.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03')
+    ax2.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='Correlation spectrum')
+    ax2.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03 model spectrum')
     ax2.set_xlim(6000, 8000)  # big wiggles
     ax2.set_ylim(.55, 1.45)
     # ax2.set_ylim(-.5, .5)
