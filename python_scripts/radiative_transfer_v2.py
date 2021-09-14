@@ -736,7 +736,11 @@ for p in paths[p_num:p_num+1]:
         # some ERE calculations:
         # preliminary 100 micron avg:
         prelim_avg_100um = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/mean_i100.npy')[:4681]
-        prelim_avg_100um_f = interp1d(wavelength_boss, prelim_avg_100um)
+        # prelim_avg_100um_f = interp1d(wavelength_boss, prelim_avg_100um)
+        # weighted avg with no correction factor:
+        i100_weighted = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/avg_i100_0.npy')
+        correction_factor = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/correction_factor_xx.npy')
+        prelim_avg_100um_f = interp1d(wavelength_boss, i100_weighted * correction_factor)
 
         # integrate south - north:
         integrand_south_minus_north = north_south_diff_fn(wav_clipped) / boss_fluxfactor
