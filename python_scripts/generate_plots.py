@@ -11,6 +11,7 @@
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
+from matplotlib import gridspec
 import numpy as np
 from astropy.io import fits
 import sys #for command line args
@@ -73,6 +74,20 @@ if __name__ == "__main__":
     else:
         wavelength = wavelength_sdss
 
+    # load correction factor
+    if boss:
+        correction_factors_xx = [np.load('../alphas_and_stds/correction_factor_xx.npy'),
+                                 np.load('../alphas_and_stds/correction_factor_xx.npy'),
+                                 np.load('../alphas_and_stds/correction_factor_xx.npy')]
+        correction_factor_simple = np.load('../alphas_and_stds/correction_factor_simpleavg.npy')
+    else:
+        correction_factors_xx = [np.ones(len(wavelength_sdss)),
+                                 np.ones(len(wavelength_sdss)),
+                                 np.ones(len(wavelength_sdss)),
+                                 np.ones(len(wavelength_sdss)),
+                                 np.ones(len(wavelength_boss))]
+
+
     # load alphas
     if boss:
         alphas = [np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
@@ -81,7 +96,7 @@ if __name__ == "__main__":
         alpha_stds = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
-        correction_factors = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy'))]
+        # correction_factors = []
     else:
         alphas = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
                   np.load(alpha_direc + 'alphas_sdss_2d_' + loadkey + '.npy'), \
@@ -94,8 +109,9 @@ if __name__ == "__main__":
                       np.load(alpha_direc + 'alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
     # flux conversion factor:
-    alphas = [a / fluxfactor for a in alphas]
-    alpha_stds = [a / fluxfactor for a in alpha_stds]
+        # TEST: also divide by correction factor
+    alphas = [a / fluxfactor * corr for a, corr in zip(alphas, correction_factors_xx)]
+    alpha_stds = [a / fluxfactor * corr for a, corr in zip(alpha_stds, correction_factors_xx)]
 
     if bootstrap:
         if boss:
@@ -138,23 +154,27 @@ if __name__ == "__main__":
 
 # plot unbinned spectra (wavelength ranges: 4830-5040 and 6530-6770)
 def plot_emissions(alpha_indices, labels, colors, show_o3=False):
-    plt.figure(figsize=(12, 5))
+    fig = plt.figure(figsize=(12, 5))
 
     num_plots = 2
     if show_o3:
         num_plots = 3
 
+    spec = gridspec.GridSpec(ncols=num_plots+1, nrows=1, width_ratios=[1, 0.2, 3, 3], wspace=0.05, hspace=0, left=0.1, right=0.9)
+
     # plot 4830 - 5040
-    ax1 = plt.subplot(1, num_plots, num_plots-1)
+    # ax1 = plt.subplot(1, num_plots, num_plots-1)
+    ax1 = fig.add_subplot(spec[-2])
     for i, idx in enumerate(alpha_indices):
-        ax1.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        ax1.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i])
         if bootstrap:
             # ax1.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-            ax1.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            ax1.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
         else:
-            ax1.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            ax1.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
 
     ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+    # ax1.set_yticklabels([])
     if not show_o3:
         ax1.set_ylabel(r"$\alpha_\lambda$")
     ax1.legend(loc='upper center', frameon=False)
@@ -164,8 +184,8 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
     for xc in xcoords:
         ax1.axvline(x=xc, color='k', linewidth=1, linestyle='--')
     ax1.text(4853, 0.4, r"H$\beta$")
-    ax1.text(4943, 0.4, "O[III]")
-    ax1.text(4991, 0.4, "O[III]")
+    ax1.text(4943, 0.4, "[OIII]")
+    ax1.text(4991, 0.4, "[OIII]")
 
     ax1.xaxis.set_major_locator(MultipleLocator(50))
     ax1.xaxis.set_minor_locator(MultipleLocator(10))
@@ -178,29 +198,32 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
     #ax1.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
 
     #plot 6530 - 6770 (original vs tao)
-    ax2 = plt.subplot(1, num_plots, num_plots)
+    # ax2 = plt.subplot(1, num_plots, num_plots)
+    ax2 = fig.add_subplot(spec[-1])
     for i, idx in enumerate(alpha_indices):
-        ax2.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        ax2.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i])
         if bootstrap:
             #ax2.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-            ax2.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            ax2.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
         else:
-            ax2.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            ax2.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
 
-    ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-    if not show_o3:
+    if show_o3:
+        ax2.set_yticklabels([])
+    else:
+        ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         ax2.set_ylabel(r"$\alpha_\lambda$")
-    ax2.legend(loc='upper center', frameon=False)
+    # ax2.legend(loc='upper center', frameon=False)
     ax2.set_xlim(6530, 6770)
     ax2.set_ylim(0, 0.99)
     xcoords = [6550, 6565, 6585, 6718, 6733]
     for xc in xcoords:
         ax2.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-    ax2.text(6535, 0.4, "N[II]")
+    ax2.text(6535, 0.4, "[NII]")
     ax2.text(6568, 0.9, r"H$\alpha$")
-    ax2.text(6590, 0.6, "N[II]")
-    ax2.text(6700, 0.6, "S[II]")
-    ax2.text(6738, 0.5, "S[II]")
+    ax2.text(6590, 0.6, "[NII]")
+    ax2.text(6700, 0.6, "[SII]")
+    ax2.text(6738, 0.5, "[SII]")
 
     ax2.xaxis.set_major_locator(MultipleLocator(50))
     ax2.xaxis.set_minor_locator(MultipleLocator(10))
@@ -208,20 +231,30 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
     ax2.yaxis.set_minor_locator(MultipleLocator(0.04))
 
     if show_o3:
-        ax3 = plt.subplot(1, num_plots, 1)
+        # ax3 = plt.subplot(1, num_plots, 1)
+        ax3 = fig.add_subplot(spec[0])
         for i, idx in enumerate(alpha_indices):
-            ax3.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+            ax3.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i])
             if bootstrap:
                 # ax2.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-                ax3.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+                ax3.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
             else:
-                ax3.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+                ax3.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
 
-        ax3.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         ax3.set_ylabel(r"$\alpha_\lambda$")
-        ax3.legend(loc='upper center', frameon=False)
-        ax3.set_xlim(3717, 3737)
-        ax3.set_ylim(-0.15, 0.3)
+        # ax3.legend(loc='upper center', frameon=False)
+        ax3.set_xlim(3712, 3742)
+        ax3.set_ylim(-0.24, 0.99-0.24)
+        # ax3.set_ylim(-0.15, 0.3)
+        xcoords = [3727]
+        for xc in xcoords:
+            ax3.axvline(x=xc, color='k', linewidth=1, linestyle='--')
+        ax3.text(3727, 0.4, "[OII]")
+
+        ax3.xaxis.set_major_locator(MultipleLocator(20))
+        # ax3.xaxis.set_minor_locator(MultipleLocator(10))
+        ax3.yaxis.set_major_locator(MultipleLocator(0.2))
+        ax3.yaxis.set_minor_locator(MultipleLocator(0.04))
 
 
     #line from 03 continuum::
@@ -337,11 +370,12 @@ if __name__ == "__main__":
 
 
     #################################
-    # PLOT: BOSS NORTH VS SOUTH
+    # PLOT: BOSS NORTH VS SOUTH EMISSIONS
     #################################
     if boss:
         plot_emissions([0, 1, 2], ["North", "South", "Full Sky"], ['#004488', '#BB5566', '#DDAA33'], show_o3=True)
         if save != '0' and bootstrap:
+            print("saving as:", '../paper_figures/unbinned_' + loadkey + '.pdf')
             plt.savefig('../paper_figures/unbinned_' + loadkey + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
