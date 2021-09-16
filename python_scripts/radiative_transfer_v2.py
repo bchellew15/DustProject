@@ -486,6 +486,10 @@ for p in paths[p_num:p_num+1]:
     alphas_norad = [np.load('../alphas_and_stds/alphas_boss_iris_2d_012720.npy'),
                     np.load('../alphas_and_stds/alphas_north011720.npy'),
                     np.load('../alphas_and_stds/alphas_south011720.npy')]
+    # apply correction factor
+    correction_factor = np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')
+    alphas_norad = [a / boss_fluxfactor * correction_factor for a in alphas_norad]
+    # bin
     alphas_norad_bin_wav, alphas_norad_bin, _ = generate_binned_alphas(alphas_norad, [np.ones(alphas_norad[0].shape) for i in range(len(alphas_norad))],
                                                                        wavelength, bin_offset=0)
     alphas_boss_bin = alphas_norad_bin[0]
@@ -496,7 +500,7 @@ for p in paths[p_num:p_num+1]:
     sdss_bin_wav, sdss_bin, _ = generate_binned_alphas(alphas_sdss, [np.ones(alphas_sdss[0].shape)], wavelength_sdss, bin_offset=0)
     sdss_bin = sdss_bin[0]
     if boss:
-        plt.plot(alphas_norad_bin_wav, alphas_boss_bin / boss_fluxfactor, 'orange', label='boss alphas (observed)', drawstyle='steps-mid')
+        plt.plot(alphas_norad_bin_wav, alphas_boss_bin, 'orange', label='boss alphas (observed)', drawstyle='steps-mid')
 
     if not boss:
         _, brandt_alphas_bin, _ = generate_binned_alphas([brandt_alphas], [np.ones(alphas.shape)], wavelength, bin_offset=0)
@@ -576,16 +580,16 @@ for p in paths[p_num:p_num+1]:
             bootstrap_binned_lower = pickle.load(pf)
         with open('../alphas_and_stds/bootstrap_binned_stds_sdss'+ loadkey + '.p', 'rb') as pf:
             bootstrap_binned_stds_sdss = pickle.load(pf)
-        bootstrap_binned_stds_north = bootstrap_binned_stds[0]
-        bootstrap_binned_upper_north = bootstrap_binned_upper[0]
-        bootstrap_binned_lower_north = bootstrap_binned_lower[0]
-        bootstrap_binned_stds_south = bootstrap_binned_stds[1]
-        bootstrap_binned_upper_south = bootstrap_binned_upper[1]
-        bootstrap_binned_lower_south = bootstrap_binned_lower[1]
-        bootstrap_binned_stds_boss = bootstrap_binned_stds[2]
-        bootstrap_binned_upper_boss = bootstrap_binned_upper[2]
-        bootstrap_binned_lower_boss = bootstrap_binned_lower[2]
-        bootstrap_binned_stds_sdss = bootstrap_binned_stds_sdss[2]
+        bootstrap_binned_stds_north = bootstrap_binned_stds[0] / boss_fluxfactor * correction_factor
+        bootstrap_binned_upper_north = bootstrap_binned_upper[0] / boss_fluxfactor * correction_factor
+        bootstrap_binned_lower_north = bootstrap_binned_lower[0] / boss_fluxfactor * correction_factor
+        bootstrap_binned_stds_south = bootstrap_binned_stds[1] / boss_fluxfactor * correction_factor
+        bootstrap_binned_upper_south = bootstrap_binned_upper[1] / boss_fluxfactor * correction_factor
+        bootstrap_binned_lower_south = bootstrap_binned_lower[1] / boss_fluxfactor * correction_factor
+        bootstrap_binned_stds_boss = bootstrap_binned_stds[2] / boss_fluxfactor * correction_factor
+        bootstrap_binned_upper_boss = bootstrap_binned_upper[2] / boss_fluxfactor * correction_factor
+        bootstrap_binned_lower_boss = bootstrap_binned_lower[2] / boss_fluxfactor * correction_factor
+        bootstrap_binned_stds_sdss = bootstrap_binned_stds_sdss[2] / boss_fluxfactor * correction_factor
 
         # calculate scaling factor: (4200 to 5000 for now)
         # and just avg value for now
@@ -593,11 +597,11 @@ for p in paths[p_num:p_num+1]:
         mean_wds = [np.mean(wd01_bin[(lambdas_bin > 4200) & (lambdas_bin < 5000)]) for wd01_bin in wd01s_bin]
         mean_zds = [np.mean(zd01_bin[(lambdas_bin > 4200) & (lambdas_bin < 5000)]) for zd01_bin in zd01s_bin]
         mean_boss = np.mean(
-            alphas_boss_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)]) / boss_fluxfactor
+            alphas_boss_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
         mean_north = np.mean(
-            alphas_north_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)]) / boss_fluxfactor
+            alphas_north_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
         mean_south = np.mean(
-            alphas_south_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)]) / boss_fluxfactor
+            alphas_south_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
         scale_factors_wd_boss = [round(mean_boss / mean_wd, 2) for mean_wd in mean_wds]
         scale_factors_zd_boss = [round(mean_boss / mean_zd, 2) for mean_zd in mean_zds]
         scale_factors_wd_north = [round(mean_north / mean_wd, 2) for mean_wd in mean_wds]
@@ -610,13 +614,13 @@ for p in paths[p_num:p_num+1]:
 
         ax1 = plt.subplot(1, 2, 1)
         ax1.set_title('BOSS alphas and BC03 models (WD dust model)')
-        # plt.plot(alphas_norad_bin_wav, alphas_boss_bin / boss_fluxfactor, 'orange', label='BOSS alphas (observed)', drawstyle='steps-mid')
-        ax1.plot(alphas_norad_bin_wav, alphas_north_bin / boss_fluxfactor, 'purple', label='BOSS north',
+        # plt.plot(alphas_norad_bin_wav, alphas_boss_bin, 'orange', label='BOSS alphas (observed)', drawstyle='steps-mid')
+        ax1.plot(alphas_norad_bin_wav, alphas_north_bin, 'purple', label='BOSS north',
                  drawstyle='steps-mid')
-        ax1.plot(alphas_norad_bin_wav, alphas_south_bin / boss_fluxfactor, 'red', label='BOSS south',
+        ax1.plot(alphas_norad_bin_wav, alphas_south_bin, 'red', label='BOSS south',
                  drawstyle='steps-mid')
         if show_full:
-            ax1.plot(alphas_norad_bin_wav, alphas_boss_bin / boss_fluxfactor, 'k', label='BOSS overall',
+            ax1.plot(alphas_norad_bin_wav, alphas_boss_bin, 'k', label='BOSS overall',
                      drawstyle='steps-mid')
 
         """
@@ -648,15 +652,15 @@ for p in paths[p_num:p_num+1]:
         ax1.plot(lambdas_bin, wd01s_bin[3] * scale_factors_wd_south[3], 'grey',
                  label='WD01 combo (x ' + str(scale_factors_wd_south[3]) + ')', drawstyle='steps-mid')
 
-        ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_north / boss_fluxfactor,
-                         bootstrap_binned_upper_north / boss_fluxfactor, linewidth=0.0, color='purple', alpha=0.2,
+        ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_north,
+                         bootstrap_binned_upper_north, linewidth=0.0, color='purple', alpha=0.2,
                          step='mid')
-        ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_south / boss_fluxfactor,
-                         bootstrap_binned_upper_south / boss_fluxfactor, linewidth=0.0, color='red', alpha=0.2,
+        ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_south,
+                         bootstrap_binned_upper_south, linewidth=0.0, color='red', alpha=0.2,
                          step='mid')
         if show_full:
-            ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_boss / boss_fluxfactor,
-                             bootstrap_binned_upper_boss / boss_fluxfactor, linewidth=0.0, color='k', alpha=0.2,
+            ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_boss,
+                             bootstrap_binned_upper_boss, linewidth=0.0, color='k', alpha=0.2,
                              step='mid')
 
         ax1.set_ylim(0, 0.35)
@@ -702,24 +706,24 @@ for p in paths[p_num:p_num+1]:
 
         # TEST: was using ZD dust model for the last one
 
-        ax2.plot(wav_clipped, north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0], 'green',
+        ax2.plot(wav_clipped, north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0], 'green',
                  label='north - wd (t5e9)', drawstyle='steps-mid')
-        ax2.plot(wav_clipped, south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3], 'k', label='south - wd (combo)',
+        ax2.plot(wav_clipped, south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3], 'k', label='south - wd (combo)',
                  drawstyle='steps-mid')
-        ax2.plot(wav_clipped, south_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_south[0], 'blue',
+        ax2.plot(wav_clipped, south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0], 'blue',
                  label='south - wd (t5e9)', drawstyle='steps-mid')
 
         ax2.fill_between(wav_clipped,
-                         bootstrap_binned_lower_north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0],
-                         bootstrap_binned_upper_north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0],
+                         bootstrap_binned_lower_north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0],
+                         bootstrap_binned_upper_north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0],
                          linewidth=0.0, color='green', alpha=0.2, step='mid')
         ax2.fill_between(wav_clipped,
-                         bootstrap_binned_lower_south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3],
-                         bootstrap_binned_upper_south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3],
+                         bootstrap_binned_lower_south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3],
+                         bootstrap_binned_upper_south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3],
                          linewidth=0.0, color='k', alpha=0.2, step='mid')
         ax2.fill_between(wav_clipped,
-                         bootstrap_binned_lower_south_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_south[0],
-                         bootstrap_binned_upper_south_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_south[0],
+                         bootstrap_binned_lower_south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0],
+                         bootstrap_binned_upper_south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0],
                          linewidth=0.0, color='blue', alpha=0.2, step='mid')
 
         ax2.legend()
@@ -743,22 +747,22 @@ for p in paths[p_num:p_num+1]:
         prelim_avg_100um_f = interp1d(wavelength_boss, i100_weighted * correction_factor)
 
         # integrate south - north:
-        integrand_south_minus_north = north_south_diff_fn(wav_clipped) / boss_fluxfactor
+        integrand_south_minus_north = north_south_diff_fn(wav_clipped)
         integrand_south_minus_north /= wav_clipped
         integral_south_minus_north = 50 * np.sum(integrand_south_minus_north)
-        integral_south_minus_north_err = np.sqrt(np.sum(north_south_errors_fn(wav_clipped) ** 2)) / boss_fluxfactor
+        integral_south_minus_north_err = np.sqrt(np.sum(north_south_errors_fn(wav_clipped) ** 2))
         print("Integral of south - north:", integral_south_minus_north, "+/-", integral_south_minus_north_err)
 
         # integrate north - model and south - model (assuming no model errors)
-        integrand_north_minus_model = north_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_north[0]
+        integrand_north_minus_model = north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0]
         integrand_north_minus_model /= wav_clipped  # to get a unitless integral
         integral_north_minus_model = 50 * np.sum(integrand_north_minus_model * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))  # multiply by bin width 50 A
         integral_north_minus_model *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
-        integrand_south_minus_combo = south_fn(wav_clipped) / boss_fluxfactor - wd_fns[3](wav_clipped) * scale_factors_wd_south[3]
+        integrand_south_minus_combo = south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3]
         integrand_south_minus_combo /= wav_clipped
         integral_south_minus_combo = 50 * np.sum(integrand_south_minus_combo * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
         integral_south_minus_combo *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
-        integrand_south_minus_model = south_fn(wav_clipped) / boss_fluxfactor - wd_fns[0](wav_clipped) * scale_factors_wd_south[0]
+        integrand_south_minus_model = south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0]
         integrand_south_minus_model /= wav_clipped
         integral_south_minus_model = 50 * np.sum(integrand_south_minus_model * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
         integral_south_minus_model *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
@@ -775,11 +779,11 @@ for p in paths[p_num:p_num+1]:
         print("Integral of south - combo:", integral_south_minus_combo)
 
         # total flux:
-        total_integrand_south = south_fn(wav_clipped) / boss_fluxfactor
+        total_integrand_south = south_fn(wav_clipped)
         total_integrand_south /= wav_clipped
         total_flux_south = np.sum(50 * total_integrand_south * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
         total_flux_south *= 10**-17  # unit conversion
-        total_integrand_north = north_fn(wav_clipped) / boss_fluxfactor
+        total_integrand_north = north_fn(wav_clipped)
         total_integrand_north /= wav_clipped
         total_flux_north = np.sum(50 * total_integrand_north * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
         total_flux_north *= 10 ** -17  # unit conversion
