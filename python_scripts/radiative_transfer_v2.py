@@ -533,7 +533,7 @@ for p in paths[p_num:p_num+1]:
         plt.title("WD01 Model")
     else:
         plt.title("ZD04 Model")
-    plt.legend()
+    plt.legend(frameon=False)
     plt.show()
 
     # save the result
@@ -554,7 +554,7 @@ for p in paths[p_num:p_num+1]:
     if boss:
 
         show_full = False
-        cst_coeff = 0.4
+        cst_coeff = 0.45
 
         load_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
         wd_t5e9_filename = 't5e9_12gyr_z02wd_070921.npy'
@@ -620,13 +620,14 @@ for p in paths[p_num:p_num+1]:
 
         # 2-panel plot
         plt.figure(figsize=(12, 5))
+        colors = ['#4477AA', '#CCBB44', '#66CCEE', '#EE6677', '#228833']
 
         ax1 = plt.subplot(1, 2, 1)
         ax1.set_title('BOSS alphas and BC03 models (WD dust model)')
         # plt.plot(alphas_norad_bin_wav, alphas_boss_bin, 'orange', label='BOSS alphas (observed)', drawstyle='steps-mid')
-        ax1.plot(alphas_norad_bin_wav, alphas_north_bin, 'purple', label='BOSS north',
+        ax1.plot(alphas_norad_bin_wav, alphas_north_bin, colors[0], label='BOSS north',
                  drawstyle='steps-mid')
-        ax1.plot(alphas_norad_bin_wav, alphas_south_bin, 'red', label='BOSS south',
+        ax1.plot(alphas_norad_bin_wav, alphas_south_bin, colors[3], label='BOSS south',
                  drawstyle='steps-mid')
         if show_full:
             ax1.plot(alphas_norad_bin_wav, alphas_boss_bin, 'k', label='BOSS overall',
@@ -654,18 +655,18 @@ for p in paths[p_num:p_num+1]:
         """
 
         # plot some models, scaled to north and south:
-        ax1.plot(lambdas_bin, wd01s_bin[0] * scale_factors_wd_north[0], 'green',
+        ax1.plot(lambdas_bin, wd01s_bin[0] * scale_factors_wd_north[0], colors[2],
                  label='WD01 t5e9 (x ' + str(scale_factors_wd_north[0]) + ')', drawstyle='steps-mid')
-        ax1.plot(lambdas_bin, wd01s_bin[0] * scale_factors_wd_south[0], 'blue',
+        ax1.plot(lambdas_bin, wd01s_bin[0] * scale_factors_wd_south[0], colors[1],
                  label='WD01 t5e9 (x ' + str(scale_factors_wd_south[0]) + ')', drawstyle='steps-mid')
-        ax1.plot(lambdas_bin, wd01s_bin[3] * scale_factors_wd_south[3], 'grey',
+        ax1.plot(lambdas_bin, wd01s_bin[3] * scale_factors_wd_south[3], colors[4],
                  label='WD01 combo (x ' + str(scale_factors_wd_south[3]) + ')', drawstyle='steps-mid')
 
         ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_north,
-                         bootstrap_binned_upper_north, linewidth=0.0, color='purple', alpha=0.2,
+                         bootstrap_binned_upper_north, linewidth=0.0, color=colors[0], alpha=0.2,
                          step='mid')
         ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_south,
-                         bootstrap_binned_upper_south, linewidth=0.0, color='red', alpha=0.2,
+                         bootstrap_binned_upper_south, linewidth=0.0, color=colors[3], alpha=0.2,
                          step='mid')
         if show_full:
             ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_boss,
@@ -674,7 +675,9 @@ for p in paths[p_num:p_num+1]:
 
         ax1.set_ylim(0, 0.3)
         ax1.set_xlim(3650, 10200)
-        ax1.legend()
+        ax1.legend(frameon=False)
+        ax1.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
 
         ax2 = plt.subplot(1, 2, 2)
         ax2.set_title('ERE Peak')
@@ -715,34 +718,35 @@ for p in paths[p_num:p_num+1]:
 
         # TEST: was using ZD dust model for the last one
 
-        ax2.plot(wav_clipped, north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0], 'green',
+        ax2.plot(wav_clipped, north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0], colors[2],
                  label='north - wd (t5e9)', drawstyle='steps-mid')
-        ax2.plot(wav_clipped, south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3], 'k', label='south - wd (combo)',
+        ax2.plot(wav_clipped, south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3], colors[4], label='south - wd (combo)',
                  drawstyle='steps-mid')
-        ax2.plot(wav_clipped, south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0], 'blue',
+        ax2.plot(wav_clipped, south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0], colors[1],
                  label='south - wd (t5e9)', drawstyle='steps-mid')
 
         ax2.fill_between(wav_clipped,
                          bootstrap_binned_lower_north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0],
                          bootstrap_binned_upper_north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0],
-                         linewidth=0.0, color='green', alpha=0.2, step='mid')
+                         linewidth=0.0, color=colors[2], alpha=0.2, step='mid')
         ax2.fill_between(wav_clipped,
                          bootstrap_binned_lower_south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3],
                          bootstrap_binned_upper_south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3],
-                         linewidth=0.0, color='k', alpha=0.2, step='mid')
+                         linewidth=0.0, color=colors[4], alpha=0.2, step='mid')
         ax2.fill_between(wav_clipped,
                          bootstrap_binned_lower_south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0],
                          bootstrap_binned_upper_south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0],
-                         linewidth=0.0, color='blue', alpha=0.2, step='mid')
+                         linewidth=0.0, color=colors[1], alpha=0.2, step='mid')
 
-        ax2.legend()
-        ax2.hlines(0, 3650, 10200)
+        ax2.legend(frameon=False)
+        ax2.hlines(0, 3650, 10200, color='grey')
         ax2.set_ylim(-0.05, 0.1)
         ax2.set_xlim(4000, 9000)
+        ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
 
         plt.tight_layout()
         if save:
-            plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/ere_2plot_090121.pdf')
+            plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/ere_2plot_091621.pdf')
 
         plt.show()
 
