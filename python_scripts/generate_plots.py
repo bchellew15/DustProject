@@ -26,6 +26,70 @@ bootstrap: 1 to plot with bootstrap errors (and sometimes envelopes)
 loadkey: alphas will be loaded based on this key
 '''
 
+def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, boss=False, bin_offset=0):
+    # plot binned alpha vs wavelength (original)
+    # "wavelength_all" is the one that determines the binned lambdas.
+    # "wavelength" determines the emission line masking.
+
+    if wavelength is None:
+        wavelength = wavelength_all
+
+    # find the bottom edge for the bins
+    min_wav = wavelength_all[0]
+    # add 50 to get inside the range, and another 50 bc these are right edges
+    bin_start = min_wav - min_wav % 50 + 100 + bin_offset
+    binned_lambdas = np.arange(bin_start, wavelength_all[-1], 50)
+    binned_alphas = []
+    binned_stds = []
+
+    # mask emission lines
+    emission_line_mask = np.zeros(len(wavelength), dtype=int)
+    emission_lines = [4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
+    if boss:
+        emission_lines.insert(0, 3727)
+    for line in emission_lines:
+        peak_idx = np.argmin(np.abs(wavelength - line))
+        emission_line_mask[peak_idx - 3:peak_idx + 4] = 1
+
+    for i in range(len(alphas)):
+
+        binned_alpha_arr = np.zeros(binned_lambdas.shape)
+        binned_std_arr = np.zeros(binned_lambdas.shape)
+        if alphas[i].ndim > 1:
+            binned_alpha_arr = np.zeros((alphas[i].shape[0], binned_lambdas.shape[0]))
+            binned_std_arr = np.zeros((alphas[i].shape[0], binned_lambdas.shape[0]))
+        for j, lmda in enumerate(binned_lambdas):
+            indices = np.where((wavelength > lmda - 50) & (wavelength < lmda) & np.logical_not(emission_line_mask))[
+                0]  # test
+            if alphas[i].ndim > 1:
+                relevant_alphas = alphas[i][:, indices]
+                relevant_stds = alpha_stds[i][:, indices]
+            else:
+                relevant_alphas = alphas[i][indices]
+                relevant_stds = alpha_stds[i][indices]
+
+            # weighted average:
+            variance = np.power(relevant_stds, 2)
+            if alphas[i].ndim > 1:
+                numerator = np.sum(np.divide(relevant_alphas, variance), axis=1)
+                denominator = np.sum(np.divide(1, variance), axis=1)
+            else:
+                numerator = np.sum(np.divide(relevant_alphas, variance))
+                denominator = np.sum(np.divide(1, variance))
+            avg1 = numerator / denominator
+            avg2 = 1 / denominator
+            if alphas[i].ndim > 1:
+                binned_alpha_arr[:, j] = avg1
+                binned_std_arr[:, j] = np.sqrt(avg2)
+            else:
+                binned_alpha_arr[j] = avg1
+                binned_std_arr[j] = np.sqrt(avg2)
+
+        binned_alphas.append(binned_alpha_arr)
+        binned_stds.append(binned_std_arr)
+
+    return binned_lambdas, binned_alphas, binned_stds
+
 if __name__ == "__main__":
 
     #command line options
@@ -74,20 +138,6 @@ if __name__ == "__main__":
     else:
         wavelength = wavelength_sdss
 
-    # load correction factor
-    if boss:
-        correction_factors_xx = [np.load('../alphas_and_stds/correction_factor_xx.npy'),
-                                 np.load('../alphas_and_stds/correction_factor_xx.npy'),
-                                 np.load('../alphas_and_stds/correction_factor_xx.npy')]
-        correction_factor_simple = np.load('../alphas_and_stds/correction_factor_simpleavg.npy')
-    else:
-        correction_factors_xx = [np.ones(len(wavelength_sdss)),
-                                 np.ones(len(wavelength_sdss)),
-                                 np.ones(len(wavelength_sdss)),
-                                 np.ones(len(wavelength_sdss)),
-                                 np.ones(len(wavelength_boss))]
-
-
     # load alphas
     if boss:
         alphas = [np.load(alpha_direc + 'alphas_boss_iris_2d_north_' + loadkey + '.npy'), \
@@ -96,7 +146,9 @@ if __name__ == "__main__":
         alpha_stds = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
-        # correction_factors = []
+        correction_factors = [np.load('../alphas_and_stds/correction_factor_boss_iris_north_smooth.npy'),
+                              np.load('../alphas_and_stds/correction_factor_boss_iris_south_smooth.npy'),
+                              np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')]
     else:
         alphas = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
                   np.load(alpha_direc + 'alphas_sdss_2d_' + loadkey + '.npy'), \
@@ -108,10 +160,19 @@ if __name__ == "__main__":
                       np.load(alpha_direc + 'alpha_stds_sdss_iris_2d_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_sdss_iris_1d_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
+        correction_factors = [np.ones(len(wavelength_sdss)),
+                              np.load('../alphas_and_stds/correction_factor_sdss_sfd_smooth.npy'),
+                              np.load('../alphas_and_stds/correction_factor_sdss_iris_smooth.npy'),
+                              np.ones(len(wavelength_sdss)),
+                              np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')]
     # flux conversion factor:
         # TEST: also divide by correction factor
-    alphas = [a / fluxfactor * corr for a, corr in zip(alphas, correction_factors_xx)]
-    alpha_stds = [a / fluxfactor * corr for a, corr in zip(alpha_stds, correction_factors_xx)]
+    alphas = [a / fluxfactor * corr for a, corr in zip(alphas, correction_factors)]
+    alpha_stds = [a / fluxfactor * corr for a, corr in zip(alpha_stds, correction_factors)]
+
+    # bin the correction factors
+    _, binned_corrections, _ = generate_binned_alphas(correction_factors, 4*[np.ones(len(correction_factors[0]))] + [np.ones(len(correction_factors[-1]))],
+                                                      wavelength, boss=boss)
 
     if bootstrap:
         if boss:
@@ -141,16 +202,16 @@ if __name__ == "__main__":
             with open(alpha_direc_boot + 'bootstrap_binned_stds_sdss' + loadkey + '.p', 'rb') as pf:
                 bootstrap_binned_stds = pickle.load(pf)
             # load the relevant boss alphas
-            bootstrap_binned_lower_boss = np.load(alpha_direc_boot + 'bootstrap_binned_lower_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor
-            bootstrap_binned_upper_boss = np.load(alpha_direc_boot + 'bootstrap_binned_upper_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor
-            bootstrap_binned_stds_boss = np.load(alpha_direc_boot + 'bootstrap_binned_stds_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor
+            bootstrap_binned_lower_boss = np.load(alpha_direc_boot + 'bootstrap_binned_lower_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor * binned_corrections[-1]
+            bootstrap_binned_upper_boss = np.load(alpha_direc_boot + 'bootstrap_binned_upper_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor * binned_corrections[-1]
+            bootstrap_binned_stds_boss = np.load(alpha_direc_boot + 'bootstrap_binned_stds_boss_to_sdss' + loadkey + '.npy') / boss_fluxfactor * binned_corrections[-1]
         # flux conversion factor
-        bootstrap_lower = [b / fluxfactor for b in bootstrap_lower]
-        bootstrap_upper = [b / fluxfactor for b in bootstrap_upper]
-        bootstrap_stds = [b / fluxfactor for b in bootstrap_stds]
-        bootstrap_binned_lower = [b / fluxfactor for b in bootstrap_binned_lower]
-        bootstrap_binned_upper = [b / fluxfactor for b in bootstrap_binned_upper]
-        bootstrap_binned_stds = [b / fluxfactor for b in bootstrap_binned_stds]
+        bootstrap_lower = [b / fluxfactor * corr for b, corr in zip(bootstrap_lower, correction_factors)]
+        bootstrap_upper = [b / fluxfactor * corr for b, corr in zip(bootstrap_upper, correction_factors)]
+        bootstrap_stds = [b / fluxfactor * corr for b, corr in zip(bootstrap_stds, correction_factors)]
+        bootstrap_binned_lower = [b / fluxfactor * corr for b, corr in zip(bootstrap_binned_lower, binned_corrections)]
+        bootstrap_binned_upper = [b / fluxfactor * corr for b, corr in zip(bootstrap_binned_upper, binned_corrections)]
+        bootstrap_binned_stds = [b / fluxfactor * corr for b, corr in zip(bootstrap_binned_stds, binned_corrections)]
 
 # plot unbinned spectra (wavelength ranges: 4830-5040 and 6530-6770)
 def plot_emissions(alpha_indices, labels, colors, show_o3=False):
@@ -261,69 +322,6 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
     #ax2.axhline(y=0.14898818311840933, color='r', linewidth=1, linestyle='--')
     #actual continuum for NII:
     #ax2.axhline(y=0.17930096676470586, color='r', linewidth=1, linestyle='--')
-       
-def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, boss=False, bin_offset=0):
-    #plot binned alpha vs wavelength (original)
-    # "wavelength_all" is the one that determines the binned lambdas.
-    # "wavelength" determines the emission line masking.
-    
-    if wavelength is None:
-        wavelength = wavelength_all
-
-    # find the bottom edge for the bins
-    min_wav = wavelength_all[0]
-    # add 50 to get inside the range, and another 50 bc these are right edges
-    bin_start = min_wav - min_wav % 50 + 100 + bin_offset
-    binned_lambdas = np.arange(bin_start, wavelength_all[-1], 50)
-    binned_alphas = []
-    binned_stds = []
-
-    #mask emission lines
-    emission_line_mask = np.zeros(len(wavelength), dtype=int)
-    emission_lines = [4863, 4960, 5008, 5877, 6550, 6565, 6585, 6718, 6733]
-    if boss:
-        emission_lines.insert(0, 3727)
-    for line in emission_lines:
-        peak_idx = np.argmin(np.abs(wavelength-line))
-        emission_line_mask[peak_idx-3:peak_idx+4] = 1
-    
-    for i in range(len(alphas)):
-
-        binned_alpha_arr = np.zeros(binned_lambdas.shape)
-        binned_std_arr = np.zeros(binned_lambdas.shape)
-        if alphas[i].ndim > 1:
-            binned_alpha_arr = np.zeros((alphas[i].shape[0], binned_lambdas.shape[0]))
-            binned_std_arr = np.zeros((alphas[i].shape[0], binned_lambdas.shape[0]))
-        for j, lmda in enumerate(binned_lambdas):
-            indices = np.where((wavelength > lmda-50) & (wavelength < lmda) & np.logical_not(emission_line_mask))[0] #test
-            if alphas[i].ndim > 1:
-                relevant_alphas = alphas[i][:,indices]
-                relevant_stds = alpha_stds[i][:,indices]
-            else:
-                relevant_alphas = alphas[i][indices]
-                relevant_stds = alpha_stds[i][indices]
-                
-            #weighted average:
-            variance = np.power(relevant_stds, 2)
-            if alphas[i].ndim > 1:
-                numerator = np.sum(np.divide(relevant_alphas, variance), axis=1)
-                denominator = np.sum(np.divide(1, variance), axis=1)
-            else:
-                numerator = np.sum(np.divide(relevant_alphas, variance))
-                denominator = np.sum(np.divide(1, variance))
-            avg1 = numerator / denominator
-            avg2 = 1 / denominator
-            if alphas[i].ndim > 1:
-                binned_alpha_arr[:,j] = avg1
-                binned_std_arr[:,j] = np.sqrt(avg2)
-            else:
-                binned_alpha_arr[j] = avg1
-                binned_std_arr[j] = np.sqrt(avg2)
-                
-        binned_alphas.append(binned_alpha_arr)
-        binned_stds.append(binned_std_arr)
-
-    return binned_lambdas, binned_alphas, binned_stds
 
 
 if __name__ == "__main__":
@@ -483,6 +481,22 @@ if __name__ == "__main__":
                                 np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_20.npy'), \
                                 np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_25.npy'), \
                                 np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_30.npy')]
+        correction_factors_thresh = [np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy'),
+                                     np.load('../alphas_and_stds/correction_factor_boss_iris_15_smooth.npy'),
+                                     np.load('../alphas_and_stds/correction_factor_boss_iris_20_smooth.npy'),
+                                     np.load('../alphas_and_stds/correction_factor_boss_iris_25_smooth.npy'),
+                                     np.load('../alphas_and_stds/correction_factor_boss_iris_30_smooth.npy')]
+        # test
+        plt.plot(wavelength, correction_factors_thresh[0], label='10')
+        plt.plot(wavelength, correction_factors_thresh[1], label='15')
+        plt.plot(wavelength, correction_factors_thresh[2], label='20')
+        plt.plot(wavelength, correction_factors_thresh[3], label='25')
+        plt.plot(wavelength, correction_factors_thresh[4], label='30')
+        plt.legend()
+        plt.show()
+
+        # bin the correction factors
+        _, binned_corrections_thresh, _ = generate_binned_alphas(correction_factors_thresh, 5*[np.ones(len(correction_factors_thresh[0]))], wavelength, boss=boss)
 
         if bootstrap:
             with open(alpha_direc_boot + 'bootstrap_binned_lower_thresh_1d' + loadkey + '.p', 'rb') as pf:
@@ -501,14 +515,15 @@ if __name__ == "__main__":
         # flux factor corrections:
         alphas_thresh_1d = [a / boss_fluxfactor for a in alphas_thresh_1d]
         alphas_stds_thresh_1d = [a / boss_fluxfactor for a in alpha_stds_thresh_1d]
-        alphas_thresh_2d = [a / boss_fluxfactor for a in alphas_thresh_2d]
-        alphas_stds_thresh_2d = [a / boss_fluxfactor for a in alpha_stds_thresh_2d]
-        bootstrap_binned_lower_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_lower_thresh_1d]
-        bootstrap_binned_upper_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_upper_thresh_1d]
-        bootstrap_binned_stds_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_stds_thresh_1d]
-        bootstrap_binned_lower_thresh_2d = [b / boss_fluxfactor for b in bootstrap_binned_lower_thresh_2d]
-        bootstrap_binned_upper_thresh_2d = [b / boss_fluxfactor for b in bootstrap_binned_upper_thresh_2d]
-        bootstrap_binned_stds_thresh_2d = [b / boss_fluxfactor for b in bootstrap_binned_stds_thresh_2d]
+        alphas_thresh_2d = [a / boss_fluxfactor * corr for a, corr in zip(alphas_thresh_2d, correction_factors_thresh)]
+        alphas_stds_thresh_2d = [a / boss_fluxfactor * corr for a, corr in zip(alpha_stds_thresh_2d, correction_factors_thresh)]
+        if bootstrap:
+            bootstrap_binned_lower_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_lower_thresh_1d]
+            bootstrap_binned_upper_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_upper_thresh_1d]
+            bootstrap_binned_stds_thresh_1d = [b / boss_fluxfactor for b in bootstrap_binned_stds_thresh_1d]
+            bootstrap_binned_lower_thresh_2d = [b / boss_fluxfactor * corr for b, corr in zip(bootstrap_binned_lower_thresh_2d, binned_corrections_thresh)]
+            bootstrap_binned_upper_thresh_2d = [b / boss_fluxfactor * corr for b, corr in zip(bootstrap_binned_upper_thresh_2d, binned_corrections_thresh)]
+            bootstrap_binned_stds_thresh_2d = [b / boss_fluxfactor * corr for b, corr in zip(bootstrap_binned_stds_thresh_2d, binned_corrections_thresh)]
 
         #binning
         binned_lambdas, binned_alphas_1d, binned_stds_1d = generate_binned_alphas(alphas_thresh_1d, alpha_stds_thresh_1d, wavelength, boss=boss)
