@@ -41,6 +41,13 @@ alphas_boss = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720_10.npy')
 alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_boss_iris_2d_012720_10.npy')
 wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
 
+# apply model corrections
+correction_factor = np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')
+alphas_boss = alphas_boss * correction_factor
+alpha_stds_boss = alpha_stds_boss * correction_factor
+if bootstrap:
+    alphas_bootstrap = alphas_bootstrap * correction_factor
+
 # vars for smoothing:
 boss_wavelength_7000 = wavelength[2955]
 boss_diff_7000 = np.diff(wavelength)[2955]

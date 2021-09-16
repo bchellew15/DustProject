@@ -44,9 +44,9 @@ if bootstrap:
 alphas_boss = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720_10.npy')
 alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_boss_iris_2d_012720_10.npy')
 
-# TEST: look at south only
-alphas_boss = np.load('../alphas_and_stds/alphas_south011720.npy')
-alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_south011720.npy')
+# look at south only
+# alphas_boss = np.load('../alphas_and_stds/alphas_south011720.npy')
+# alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_south011720.npy')
 
 wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
 
@@ -55,6 +55,16 @@ if bootstrap:
     bootstrap_lower = np.nanpercentile(alphas_bootstrap, 16, axis=0)
     bootstrap_upper = np.nanpercentile(alphas_bootstrap, 84, axis=0)
     bootstrap_stds = (bootstrap_upper - bootstrap_lower) / 2
+
+# apply correction factors
+correction_factor = np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')
+alphas_boss = alphas_boss * correction_factor
+alpha_stds_boss = alpha_stds_boss * correction_factor
+if bootstrap:
+    bootstrap_lower = bootstrap_lower * correction_factor
+    bootstrap_upper = bootstrap_upper * correction_factor
+    bootstrap_stds = bootstrap_stds * correction_factor
+
 
 # TEST set everything = 1
 # alphas_boss[:] = 1
