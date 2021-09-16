@@ -50,7 +50,7 @@ def check_memory():
         mem_usage = process.memory_info().rss / 1e9
         print("memory: ", mem_usage)  # in bytes
         if mem_usage > 28:
-            print("exiting due to excessive RAM usage")
+            print("exiting due to excessive RAM usage (" + str(mem_usage) + " GB")
             _thread.interrupt_main()   #threading.currentThread()
         sleep(4)
         
@@ -111,23 +111,33 @@ def calc_alphas(i100, plate, flambda, ivar, boot=False, i100_old=None):
     #calculate alpha
     xx = np.multiply(x, x)
     yx = np.multiply(y, x)
+    del x, y
     yxsig = np.multiply(yx, ivar)
+    del yx
     xxsig = np.multiply(xx, ivar)
+    del xx
     sums1 = np.sum(yxsig, axis=0)
     sums2 = np.sum(xxsig, axis=0)
 
     avg_correction = None
     avg_i100 = None
     if get_correction:
-        # correction_factor = i100 / i100_old
-        # weighted_avg = (xxsig * correction_factor) / sums2
-        # avg_correction = np.sum(weighted_avg, axis=0)
-        print(xxsig.shape)
-        print(i100_old.shape)
-        print(sums2.shape)
-        weighted_i100 = xxsig * i100_old / sums2
-        avg_i100 = np.sum(weighted_i100, axis=0)
-        print("avg i100 weighted:", avg_i100)
+        correction_factor = i100 / i100_old
+        weighted_avg = (xxsig * correction_factor) / sums2
+        avg_correction = np.sum(weighted_avg, axis=0)
+        # weighted_i100 = (xxsig * i100_old) / sums2
+        # avg_i100 = np.sum(weighted_i100, axis=0)
+
+        """
+        print("SHAPES")
+        print(weights_1col.shape)
+        print(sums2_1col.shape)
+        print(correction_factor.shape)
+        print(weighted_avg.shape)
+        print(avg_correction.shape)
+        print(weighted_i100.shape)
+        print(avg_i100.shape)
+        """
 
     if boot:
         return np.sum(yxsig, axis=0), np.sum(xxsig, axis=0)
@@ -342,9 +352,9 @@ elif save != '0':
     np.save('../alphas_and_stds/alpha_stds_' + save + '.npy', alpha_std_10)
     #np.save('../alphas_and_stds/wavelength_boss.npy', wavelength_10)
     print("alphas saved")
-if get_correction:
+if save != 0 and get_correction:
     np.save('../alphas_and_stds/correction_factor_' + save + '.npy', correction_10)
-    np.save('../alphas_and_stds/avg_i100_' + save + '.npy', i100_10)
+    # np.save('../alphas_and_stds/avg_i100_' + save + '.npy', i100_10)
 
 
 
