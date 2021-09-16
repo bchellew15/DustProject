@@ -459,6 +459,7 @@ for p in paths[p_num:p_num+1]:
     # scaling factors
     bd12_factor = 0.49 if wd01_model else 0.52
     boss_fluxfactor = 1.38
+    sdss_fluxfactor = 1.38
 
     avg_bc03 = np.mean(bc03_f(wavelength_partial))
     avg_bc03_wav = np.mean(bc03_f(wavelength_partial) * wavelength_partial)
@@ -487,16 +488,23 @@ for p in paths[p_num:p_num+1]:
                     np.load('../alphas_and_stds/alphas_north011720.npy'),
                     np.load('../alphas_and_stds/alphas_south011720.npy')]
     # apply correction factor
-    correction_factor = np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')
-    alphas_norad = [a / boss_fluxfactor * correction_factor for a in alphas_norad]
+    correction_factors = [np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy'),
+                          np.load('../alphas_and_stds/correction_factor_boss_iris_north_smooth.npy'),
+                          np.load('../alphas_and_stds/correction_factor_boss_iris_south_smooth.npy')]
+    correction_factor_sdss = np.load('../alphas_and_stds/correction_factor_sdss_iris_smooth.npy')
+    _, binned_corrections, _ = generate_binned_alphas(correction_factors, 3 * [np.ones(len(correction_factors[0]))], wavelength, boss=boss)
+    _, binned_sdss_correction, _ = generate_binned_alphas([correction_factor_sdss], [np.ones(len(correction_factor_sdss))], wavelength_sdss, boss=False)
+    binned_sdss_correction = binned_sdss_correction[0]
+
+    alphas_norad = [a / boss_fluxfactor * corr for a, corr in zip(alphas_norad, correction_factors)]
     # bin
     alphas_norad_bin_wav, alphas_norad_bin, _ = generate_binned_alphas(alphas_norad, [np.ones(alphas_norad[0].shape) for i in range(len(alphas_norad))],
                                                                        wavelength, bin_offset=0)
     alphas_boss_bin = alphas_norad_bin[0]
     alphas_north_bin = alphas_norad_bin[1]
     alphas_south_bin = alphas_norad_bin[2]
-    # bin sdss also, just for the wavelengths
-    alphas_sdss = [np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy')]  # just for the shape
+    # bin sdss also
+    alphas_sdss = [np.load('../alphas_and_stds/alphas_sdss_iris_2d_102019.npy') * correction_factor_sdss / sdss_fluxfactor]  # just for the shape
     sdss_bin_wav, sdss_bin, _ = generate_binned_alphas(alphas_sdss, [np.ones(alphas_sdss[0].shape)], wavelength_sdss, bin_offset=0)
     sdss_bin = sdss_bin[0]
     if boss:
@@ -546,6 +554,7 @@ for p in paths[p_num:p_num+1]:
     if boss:
 
         show_full = False
+        cst_coeff = 0.4
 
         load_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/'
         wd_t5e9_filename = 't5e9_12gyr_z02wd_070921.npy'
@@ -560,8 +569,8 @@ for p in paths[p_num:p_num+1]:
         zd01_t9e9_alphas = np.load(load_path + zd_t9e9_filename)
         wd01_cst_alphas = np.load(load_path + wd_cst_filename)
         zd01_cst_alphas = np.load(load_path + zd_cst_filename)
-        wd01_combo = np.load(load_path + wd_t5e9_filename) + .8 * np.load(load_path + wd_cst_filename)
-        zd01_combo = np.load(load_path + zd_t5e9_filename) + .8 * np.load(load_path + zd_cst_filename)
+        wd01_combo = np.load(load_path + wd_t5e9_filename) + cst_coeff * np.load(load_path + wd_cst_filename)
+        zd01_combo = np.load(load_path + zd_t5e9_filename) + cst_coeff * np.load(load_path + zd_cst_filename)
         # bin the alphas
         _, wd01s_bin, _ = generate_binned_alphas([wd01_t5e9_alphas, wd01_t9e9_alphas, wd01_cst_alphas, wd01_combo],
                                                  [np.ones(wd01_t5e9_alphas.shape) for i in range(4)], wavelength,
@@ -580,16 +589,16 @@ for p in paths[p_num:p_num+1]:
             bootstrap_binned_lower = pickle.load(pf)
         with open('../alphas_and_stds/bootstrap_binned_stds_sdss'+ loadkey + '.p', 'rb') as pf:
             bootstrap_binned_stds_sdss = pickle.load(pf)
-        bootstrap_binned_stds_north = bootstrap_binned_stds[0] / boss_fluxfactor * correction_factor
-        bootstrap_binned_upper_north = bootstrap_binned_upper[0] / boss_fluxfactor * correction_factor
-        bootstrap_binned_lower_north = bootstrap_binned_lower[0] / boss_fluxfactor * correction_factor
-        bootstrap_binned_stds_south = bootstrap_binned_stds[1] / boss_fluxfactor * correction_factor
-        bootstrap_binned_upper_south = bootstrap_binned_upper[1] / boss_fluxfactor * correction_factor
-        bootstrap_binned_lower_south = bootstrap_binned_lower[1] / boss_fluxfactor * correction_factor
-        bootstrap_binned_stds_boss = bootstrap_binned_stds[2] / boss_fluxfactor * correction_factor
-        bootstrap_binned_upper_boss = bootstrap_binned_upper[2] / boss_fluxfactor * correction_factor
-        bootstrap_binned_lower_boss = bootstrap_binned_lower[2] / boss_fluxfactor * correction_factor
-        bootstrap_binned_stds_sdss = bootstrap_binned_stds_sdss[2] / boss_fluxfactor * correction_factor
+        bootstrap_binned_stds_north = bootstrap_binned_stds[0] / boss_fluxfactor * binned_corrections[1]
+        bootstrap_binned_upper_north = bootstrap_binned_upper[0] / boss_fluxfactor * binned_corrections[1]
+        bootstrap_binned_lower_north = bootstrap_binned_lower[0] / boss_fluxfactor * binned_corrections[1]
+        bootstrap_binned_stds_south = bootstrap_binned_stds[1] / boss_fluxfactor * binned_corrections[2]
+        bootstrap_binned_upper_south = bootstrap_binned_upper[1] / boss_fluxfactor * binned_corrections[2]
+        bootstrap_binned_lower_south = bootstrap_binned_lower[1] / boss_fluxfactor * binned_corrections[2]
+        bootstrap_binned_stds_boss = bootstrap_binned_stds[2] / boss_fluxfactor * binned_corrections[0]
+        bootstrap_binned_upper_boss = bootstrap_binned_upper[2] / boss_fluxfactor * binned_corrections[0]
+        bootstrap_binned_lower_boss = bootstrap_binned_lower[2] / boss_fluxfactor * binned_corrections[0]
+        bootstrap_binned_stds_sdss = bootstrap_binned_stds_sdss[2] / boss_fluxfactor * binned_sdss_correction
 
         # calculate scaling factor: (4200 to 5000 for now)
         # and just avg value for now
@@ -663,7 +672,7 @@ for p in paths[p_num:p_num+1]:
                              bootstrap_binned_upper_boss, linewidth=0.0, color='k', alpha=0.2,
                              step='mid')
 
-        ax1.set_ylim(0, 0.35)
+        ax1.set_ylim(0, 0.3)
         ax1.set_xlim(3650, 10200)
         ax1.legend()
 
@@ -738,13 +747,11 @@ for p in paths[p_num:p_num+1]:
         plt.show()
 
         # some ERE calculations:
-        # preliminary 100 micron avg:
-        prelim_avg_100um = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/mean_i100.npy')[:4681]
-        # prelim_avg_100um_f = interp1d(wavelength_boss, prelim_avg_100um)
-        # weighted avg with no correction factor:
-        i100_weighted = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/avg_i100_0.npy')
-        correction_factor = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/correction_factor_xx.npy')
-        prelim_avg_100um_f = interp1d(wavelength_boss, i100_weighted * correction_factor)
+
+        # weighted i100 should be an average:
+        i100_weighted = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/avg_i100_boss_iris_smooth.npy')[0]
+        i100_weighted_north = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/avg_i100_boss_iris_north_smooth.npy')[0]
+        i100_weighted_south = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/avg_i100_boss_iris_south_smooth.npy')[0]
 
         # integrate south - north:
         integrand_south_minus_north = north_south_diff_fn(wav_clipped)
@@ -756,15 +763,15 @@ for p in paths[p_num:p_num+1]:
         # integrate north - model and south - model (assuming no model errors)
         integrand_north_minus_model = north_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_north[0]
         integrand_north_minus_model /= wav_clipped  # to get a unitless integral
-        integral_north_minus_model = 50 * np.sum(integrand_north_minus_model * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))  # multiply by bin width 50 A
+        integral_north_minus_model = 50 * np.sum(integrand_north_minus_model * i100_weighted_north * (3 * 10**12))  # multiply by bin width 50 A
         integral_north_minus_model *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
         integrand_south_minus_combo = south_fn(wav_clipped) - wd_fns[3](wav_clipped) * scale_factors_wd_south[3]
         integrand_south_minus_combo /= wav_clipped
-        integral_south_minus_combo = 50 * np.sum(integrand_south_minus_combo * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        integral_south_minus_combo = 50 * np.sum(integrand_south_minus_combo * i100_weighted_south * (3 * 10**12))
         integral_south_minus_combo *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
         integrand_south_minus_model = south_fn(wav_clipped) - wd_fns[0](wav_clipped) * scale_factors_wd_south[0]
         integrand_south_minus_model /= wav_clipped
-        integral_south_minus_model = 50 * np.sum(integrand_south_minus_model * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        integral_south_minus_model = 50 * np.sum(integrand_south_minus_model * i100_weighted_south * (3 * 10**12))
         integral_south_minus_model *= 10**-17  # unit conversion (to erg / s / cm^2 / sr)
         # multiplying by (nu*I_nu)_100 should give and actual value
         # units here are MJy / sr (bc i100 is MJy / sr, and the dlambda units cancel with division by wav)
@@ -781,11 +788,11 @@ for p in paths[p_num:p_num+1]:
         # total flux:
         total_integrand_south = south_fn(wav_clipped)
         total_integrand_south /= wav_clipped
-        total_flux_south = np.sum(50 * total_integrand_south * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        total_flux_south = np.sum(50 * total_integrand_south * i100_weighted_south * (3 * 10**12))
         total_flux_south *= 10**-17  # unit conversion
         total_integrand_north = north_fn(wav_clipped)
         total_integrand_north /= wav_clipped
-        total_flux_north = np.sum(50 * total_integrand_north * prelim_avg_100um_f(wav_clipped) * (3 * 10**12))
+        total_flux_north = np.sum(50 * total_integrand_north * i100_weighted_north * (3 * 10**12))
         total_flux_north *= 10 ** -17  # unit conversion
         print("Total flux south:", total_flux_south)
         print("Total flux north:", total_flux_north)
