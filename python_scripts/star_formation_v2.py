@@ -21,7 +21,7 @@ save = True
 poly_degree = -1  # 1 is linear, etc.
 poly_order = poly_degree + 1
 continuum_deg = 10
-alpha_continuum_deg = 10
+alpha_continuum_deg = continuum_deg
 continuum_order = continuum_deg + 1
 bootstrap = False
 num_bootstrap_samples = 200
@@ -212,22 +212,22 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     # panel 1
     ax1 = plt.subplot(2, 1, 1)
     single_model_corrected = continuum_norm(wavelength_trunc, 0, 0, 1)  # (0, 0, 1) is t5e9
-    ax1.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='Correlation spectrum')
-    ax1.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03 model spectrum')
-    ax1.set_title("Observed spectrum vs. BC03 starlight model (t5e9)")
-    ax1.set_xlim(5025, 5450)  # small wiggles
-    ax1.set_ylim(.7, 1.25)
-    # ax1.set_ylim(- .5, .5)
-    ax1.legend()
+    ax1.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum')
+    ax1.plot(wavelength_trunc, best_fit_model - 1, 'r', drawstyle='steps', label='BC03 Model')
+    ax1.set_title("Correlation Spectrum vs. BC03 Starlight Model")
+    ax1.set_ylabel(r'$(\alpha / \alpha_{\mathrm{smooth}}) - 1$')
+    ax1.set_xlim(5050, 5450)  # small wiggles
+    ax1.set_ylim(-0.35, 0.35)
+    ax1.legend(frameon=False)
     # panel 2
     ax2 = plt.subplot(2, 1, 2)
-    ax2.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps', label='Correlation spectrum')
-    ax2.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps', label='BC03 model spectrum')
+    ax2.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum')
+    ax2.plot(wavelength_trunc, best_fit_model - 1, 'r', drawstyle='steps', label='BC03 Model')
+    ax2.set_ylabel(r'$(\alpha / \alpha_{\mathrm{smooth}}) - 1$')
     ax2.set_xlim(6000, 8000)  # big wiggles
-    ax2.set_ylim(.55, 1.45)
-    # ax2.set_ylim(-.5, .5)
-    ax2.legend()
-    ax2.set_xlabel('Wavelength ($\AA$)')
+    ax2.set_ylim(-.35, 0.35)
+    ax2.legend(frameon=False)
+    ax2.set_xlabel('Wavelength ($\mathrm{\AA}$)')
     plt.tight_layout()
     if save:
         plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/unbinned_model_compare_090121.pdf')
