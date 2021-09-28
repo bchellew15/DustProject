@@ -26,7 +26,7 @@ bootstrap: 1 to plot with bootstrap errors (and sometimes envelopes)
 loadkey: alphas will be loaded based on this key
 '''
 
-def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, boss=False, bin_offset=0):
+def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, boss=False, bin_offset=0, bin_width=50):
     # plot binned alpha vs wavelength (original)
     # "wavelength_all" is the one that determines the binned lambdas.
     # "wavelength" determines the emission line masking.
@@ -37,8 +37,8 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, 
     # find the bottom edge for the bins
     min_wav = wavelength_all[0]
     # add 50 to get inside the range, and another 50 bc these are right edges
-    bin_start = min_wav - min_wav % 50 + 100 + bin_offset
-    binned_lambdas = np.arange(bin_start, wavelength_all[-1], 50)
+    bin_start = min_wav - min_wav % bin_width + 2*bin_width + bin_offset
+    binned_lambdas = np.arange(bin_start, wavelength_all[-1], bin_width)
     binned_alphas = []
     binned_stds = []
 
@@ -59,7 +59,7 @@ def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, 
             binned_alpha_arr = np.zeros((alphas[i].shape[0], binned_lambdas.shape[0]))
             binned_std_arr = np.zeros((alphas[i].shape[0], binned_lambdas.shape[0]))
         for j, lmda in enumerate(binned_lambdas):
-            indices = np.where((wavelength > lmda - 50) & (wavelength < lmda) & np.logical_not(emission_line_mask))[
+            indices = np.where((wavelength > lmda - bin_width) & (wavelength < lmda) & np.logical_not(emission_line_mask))[
                 0]  # test
             if alphas[i].ndim > 1:
                 relevant_alphas = alphas[i][:, indices]
@@ -165,8 +165,7 @@ if __name__ == "__main__":
                               np.load('../alphas_and_stds/correction_factor_sdss_iris_smooth.npy'),
                               np.ones(len(wavelength_sdss)),
                               np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')]
-    # flux conversion factor:
-        # TEST: also divide by correction factor
+    # flux conversion factor and correction factor:
     alphas = [a / fluxfactor * corr for a, corr in zip(alphas, correction_factors)]
     alpha_stds = [a / fluxfactor * corr for a, corr in zip(alpha_stds, correction_factors)]
 
@@ -332,6 +331,12 @@ if __name__ == "__main__":
     if not boss: #calculate binned spectrum for boss, but using bins based on sdss
         binned_lambdas_boss, binned_alphas_boss, binned_stds_boss = generate_binned_alphas([alphas[-1]], [alpha_stds[-1]], wavelength, wavelength_boss, boss=boss)
 
+    print("TEST north")
+    print(alphas[0][200:-200])  # after correction factor
+    print(wavelength)
+    print(binned_alphas[0][5:])
+    exit(0)
+
 
 # plot binned alphas
 # takes alphas already binned. use generate_binned_alphas
@@ -385,7 +390,6 @@ if __name__ == "__main__":
     # 2-PANEL BOSS VS SDSS (both 1d, etc.)
     #################################
     if not boss and bootstrap:
-        y_max = 0.3
         x_min = 3850
         x_max = 9200
 
@@ -402,7 +406,7 @@ if __name__ == "__main__":
         ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         ax1.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
         ax1.set_xlim(x_min, x_max)
-        ax1.set_ylim(0, y_max)
+        ax1.set_ylim(0, 0.29)
 
         ax1.xaxis.set_major_locator(MultipleLocator(1000))
         ax1.xaxis.set_minor_locator(MultipleLocator(200))
