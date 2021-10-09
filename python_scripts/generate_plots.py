@@ -29,7 +29,7 @@ loadkey: alphas will be loaded based on this key
 def generate_binned_alphas(alphas, alpha_stds, wavelength_all, wavelength=None, boss=False, bin_offset=0, bin_width=50):
     # plot binned alpha vs wavelength (original)
     # "wavelength_all" is the one that determines the binned lambdas.
-    # "wavelength" determines the emission line masking.
+    # "wavelength" should match the alphas.
 
     if wavelength is None:
         wavelength = wavelength_all
@@ -128,6 +128,8 @@ if __name__ == "__main__":
     matplotlib.rcParams['ytick.minor.size'] = 3.0
     matplotlib.rcParams['xtick.minor.size'] = 3.0
     matplotlib.rcParams['xtick.major.size'] = 6.0
+    font_size = 12
+    matplotlib.rcParams['axes.unicode_minus'] = False
 
     # load wavelengths
     wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
@@ -214,13 +216,13 @@ if __name__ == "__main__":
 
 # plot unbinned spectra (wavelength ranges: 4830-5040 and 6530-6770)
 def plot_emissions(alpha_indices, labels, colors, show_o3=False):
-    fig = plt.figure(figsize=(12, 5))
+    fig = plt.figure(figsize=(12, 4.8)) # TEST (changed all from 5 to 4)
 
     num_plots = 2
     if show_o3:
         num_plots = 3
 
-    spec = gridspec.GridSpec(ncols=num_plots+1, nrows=1, width_ratios=[1, 0.2, 3, 3], wspace=0.05, hspace=0, left=0.1, right=0.9)
+    spec = gridspec.GridSpec(ncols=num_plots, nrows=1, width_ratios=[1, 3, 3], wspace=0.05, hspace=0, left=0.1, right=0.9)
 
     # plot 4830 - 5040
     # ax1 = plt.subplot(1, num_plots, num_plots-1)
@@ -235,19 +237,20 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
 
     if show_o3:
         # ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        # ax1.set_yticklabels([])
+        ax1.set_yticklabels([])
         fig.supxlabel(r"Wavelength ($\mathrm{\AA}$)")
     else:
-        ax1.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
-    ax1.legend(loc='upper center', frameon=False)
+        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+    ax1.legend(loc='upper center', bbox_to_anchor=(0.4, 0.95), frameon=False)
     ax1.set_xlim(4830, 5040)
-    ax1.set_ylim(0, 0.99)
+    ax1.set_ylim(-0.16, 0.96)
     xcoords = [4863, 4960, 5008]
     for xc in xcoords:
         ax1.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-    ax1.text(4853, 0.4, r"H$\beta$")
-    ax1.text(4943, 0.4, "[OIII]")
-    ax1.text(4991, 0.4, "[OIII]")
+    ax1.hlines(0, 4000, 6000, color='gray')
+    ax1.text(4858, 0.4, r"H$\beta$", fontsize=font_size, backgroundcolor='white')
+    ax1.text(4948, 0.4, "[O III]", fontsize=font_size, backgroundcolor='white')
+    ax1.text(4996, 0.4, "[O III]", fontsize=font_size, backgroundcolor='white')
 
     ax1.xaxis.set_major_locator(MultipleLocator(50))
     ax1.xaxis.set_minor_locator(MultipleLocator(10))
@@ -274,18 +277,19 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
         ax2.set_yticklabels([])
     else:
         ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax2.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
     # ax2.legend(loc='upper center', frameon=False)
     ax2.set_xlim(6530, 6770)
-    ax2.set_ylim(0, 0.99)
+    ax2.set_ylim(-0.16, 0.96)
     xcoords = [6550, 6565, 6585, 6718, 6733]
     for xc in xcoords:
         ax2.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-    ax2.text(6535, 0.4, "[NII]")
-    ax2.text(6568, 0.9, r"H$\alpha$")
-    ax2.text(6590, 0.6, "[NII]")
-    ax2.text(6700, 0.6, "[SII]")
-    ax2.text(6738, 0.5, "[SII]")
+    ax2.hlines(0, 6000, 7000, color='gray')
+    ax2.text(6535, 0.4, "[N II]", fontsize=font_size, backgroundcolor='white', bbox=dict(facecolor='none', edgecolor='none', pad=0, fc='white'))
+    ax2.text(6567, 0.89, r"H$\alpha$", fontsize=font_size)
+    ax2.text(6575, 0.72, "[N II]", fontsize=font_size, backgroundcolor='white')
+    ax2.text(6705, 0.68, "[S II]", fontsize=font_size, backgroundcolor='white')
+    ax2.text(6728, 0.55, "[S II]", fontsize=font_size, backgroundcolor='white')
 
     ax2.xaxis.set_major_locator(MultipleLocator(50))
     ax2.xaxis.set_minor_locator(MultipleLocator(10))
@@ -303,15 +307,17 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
             else:
                 ax3.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
 
-        ax3.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax3.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
         # ax3.legend(loc='upper center', frameon=False)
         ax3.set_xlim(3712, 3742)
-        ax3.set_ylim(-0.24, 0.99-0.24)
+        ax3.set_ylim(-0.16, 0.96)
+        # ax3.set_ylim(-0.24, 0.99-0.24)
         # ax3.set_ylim(-0.15, 0.3)
-        xcoords = [3727]
+        xcoords = [3727, 3730]
         for xc in xcoords:
             ax3.axvline(x=xc, color='k', linewidth=1, linestyle='--')
-        ax3.text(3727, 0.4, "[OII]")
+        ax3.hlines(0, 3700, 3800, color='gray')
+        ax3.text(3724, 0.54, "[O II]", fontsize=font_size, backgroundcolor='white')
 
         ax3.xaxis.set_major_locator(MultipleLocator(20))
         # ax3.xaxis.set_minor_locator(MultipleLocator(10))
@@ -331,17 +337,10 @@ if __name__ == "__main__":
     if not boss: #calculate binned spectrum for boss, but using bins based on sdss
         binned_lambdas_boss, binned_alphas_boss, binned_stds_boss = generate_binned_alphas([alphas[-1]], [alpha_stds[-1]], wavelength, wavelength_boss, boss=boss)
 
-    print("TEST north")
-    print(alphas[0][200:-200])  # after correction factor
-    print(wavelength)
-    print(binned_alphas[0][5:])
-    exit(0)
-
-
 # plot binned alphas
 # takes alphas already binned. use generate_binned_alphas
 def plot_binned(alpha_indices, colors, labels, envelope=False):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(6, 4.8))
 
     for i, idx in enumerate(alpha_indices):
         ax.plot(binned_lambdas, binned_alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
@@ -359,12 +358,12 @@ def plot_binned(alpha_indices, colors, labels, envelope=False):
     ax.yaxis.set_minor_locator(MultipleLocator(0.02))
     # ax.figure(figsize=(6, 5))
     ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-    ax.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
     if boss:
         ax.set_xlim(3700, 10000)
     else:
         ax.set_xlim(3850, 9200)
-    ax.set_ylim(0, .35)
+    ax.set_ylim(0, .29)
     ax.legend(frameon=False)
 
 if __name__ == "__main__":
@@ -380,8 +379,8 @@ if __name__ == "__main__":
     if boss:
         plot_emissions([0, 1, 2], ["North", "South", "Full Sky"], ['#004488', '#BB5566', '#DDAA33'], show_o3=True)
         if save != '0' and bootstrap:
-            print("saving as:", '../paper_figures/unbinned_' + loadkey + '.pdf')
-            plt.savefig('../paper_figures/unbinned_' + loadkey + '.pdf', bbox_inches='tight')
+            print("saving as:", '../paper_figures/unbinned_' + save + '.pdf')
+            plt.savefig('../paper_figures/unbinned_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
             plt.show()
@@ -390,10 +389,10 @@ if __name__ == "__main__":
     # 2-PANEL BOSS VS SDSS (both 1d, etc.)
     #################################
     if not boss and bootstrap:
-        x_min = 3850
-        x_max = 9200
+        x_min = 3850 # 3700
+        x_max = 9200  # 10000
 
-        plt.figure(figsize=(12, 5))
+        plt.figure(figsize=(12, 4.8))
 
         ax1 = plt.subplot(1, 2, 1)
 
@@ -404,14 +403,14 @@ if __name__ == "__main__":
 
         ax1.legend(frameon=False)
         ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax1.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
         ax1.set_xlim(x_min, x_max)
         ax1.set_ylim(0, 0.29)
 
         ax1.xaxis.set_major_locator(MultipleLocator(1000))
         ax1.xaxis.set_minor_locator(MultipleLocator(200))
-        ax1.yaxis.set_major_locator(MultipleLocator(0.05))
-        ax1.yaxis.set_minor_locator(MultipleLocator(0.01))
+        ax1.yaxis.set_major_locator(MultipleLocator(0.1))
+        ax1.yaxis.set_minor_locator(MultipleLocator(0.02))
 
         ax2 = plt.subplot(1, 2, 2)
 
@@ -422,17 +421,17 @@ if __name__ == "__main__":
 
         ax2.legend(frameon=False)
         ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax2.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
         ax2.set_xlim(x_min, x_max)
         ax2.set_ylim(0, 0.29)
 
         ax2.xaxis.set_major_locator(MultipleLocator(1000))
         ax2.xaxis.set_minor_locator(MultipleLocator(200))
-        ax2.yaxis.set_major_locator(MultipleLocator(0.05))
-        ax2.yaxis.set_minor_locator(MultipleLocator(0.01))
+        ax2.yaxis.set_major_locator(MultipleLocator(0.1))
+        ax2.yaxis.set_minor_locator(MultipleLocator(0.02))
 
         if save != '0':
-            plt.savefig('../paper_figures/compare_boss_sdss_' + loadkey + '.pdf', bbox_inches='tight')
+            plt.savefig('../paper_figures/compare_boss_sdss_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
             plt.show()
@@ -444,7 +443,7 @@ if __name__ == "__main__":
     if not boss:
         plot_binned([0, 1, 3], ['#004488', '#BB5566', '#DDAA33'], ['SFD', 'Nonlinear Model', 'IRIS'])
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/all_3_mods_' + loadkey + '.pdf', bbox_inches='tight')
+            plt.savefig('../paper_figures/all_3_mods_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
             plt.show()
@@ -456,7 +455,7 @@ if __name__ == "__main__":
         envelope = bootstrap
         plot_binned([0, 1], ['#004488', '#BB5566'], ['North', 'South'], envelope=envelope)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + loadkey + '.pdf', bbox_inches='tight')
+            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
             plt.show()
@@ -535,13 +534,14 @@ if __name__ == "__main__":
         binned_lambdas, binned_alphas_1d, binned_stds_1d = generate_binned_alphas(alphas_thresh_1d, alpha_stds_thresh_1d, wavelength, boss=boss)
         binned_lambdas, binned_alphas_2d, binned_stds_2d = generate_binned_alphas(alphas_thresh_2d, alpha_stds_thresh_2d, wavelength, boss=boss)
 
-        fig = plt.figure(figsize=(12, 5), dpi=200)
+        fig = plt.figure(figsize=(12, 4.8))
         x_min = 3700
         x_max = 10100
-        y_max = .3
+        y_max = 0.29
 
         ax1 = fig.add_subplot(121)
-        ax1.text(0.98, 0.98, 'Linear\nModel', horizontalalignment='right', verticalalignment='top', transform=ax1.transAxes, fontsize='large')
+        ax1.set_title('Linear Model')
+        # ax1.text(0.98, 0.98, 'Linear\nModel', horizontalalignment='right', verticalalignment='top', transform=ax1.transAxes, fontsize='large')
 
         #"bright" color scheme from https://personal.sron.nl/~pault/
         # (order: blue, red, green, yellow, cyan)
@@ -555,7 +555,7 @@ if __name__ == "__main__":
             else:
                 ax1.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps', linestyle='--')
             ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-            ax1.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+            ax1.set_ylabel(r"$\alpha_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
             ax1.set_xlim(x_min, x_max)
             ax1.set_ylim(0, y_max)
 
@@ -563,11 +563,12 @@ if __name__ == "__main__":
 
         ax1.xaxis.set_major_locator(MultipleLocator(1000))
         ax1.xaxis.set_minor_locator(MultipleLocator(200))
-        ax1.yaxis.set_major_locator(MultipleLocator(0.05))
-        ax1.yaxis.set_minor_locator(MultipleLocator(0.01))
+        ax1.yaxis.set_major_locator(MultipleLocator(0.1))
+        ax1.yaxis.set_minor_locator(MultipleLocator(0.02))
 
         ax2 = fig.add_subplot(122)
-        ax2.text(0.98, 0.98, 'Nonlinear\nModel', horizontalalignment='right', verticalalignment='top', transform=ax2.transAxes, fontsize='large')
+        ax2.set_title('Nonlinear Model')
+        # ax2.text(0.98, 0.98, 'Nonlinear\nModel', horizontalalignment='right', verticalalignment='top', transform=ax2.transAxes, fontsize='large')
 
         for i in range(len(labels)):
             ax2.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
@@ -577,19 +578,19 @@ if __name__ == "__main__":
             else:
                 ax2.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps', linestyle='--')
             ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-            ax2.set_ylabel(r"$\alpha_\lambda \beta_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+            ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
             ax2.set_xlim(x_min, x_max)
             ax2.set_ylim(0, y_max)
 
-        leg = ax2.legend(frameon=False, loc='lower center', ncol=2)
+        leg = ax2.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1), ncol=2)
 
         ax2.xaxis.set_major_locator(MultipleLocator(1000))
         ax2.xaxis.set_minor_locator(MultipleLocator(200))
-        ax2.yaxis.set_major_locator(MultipleLocator(0.05))
-        ax2.yaxis.set_minor_locator(MultipleLocator(0.01))
+        ax2.yaxis.set_major_locator(MultipleLocator(0.1))
+        ax2.yaxis.set_minor_locator(MultipleLocator(0.02))
 
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_thresholds_2panel_' + loadkey + '.pdf', bbox_inches='tight')
+            plt.savefig('../paper_figures/boss_thresholds_2panel_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
             plt.show()
