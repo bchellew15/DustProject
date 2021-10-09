@@ -6,7 +6,9 @@
 # TODO: if fitting works, reconstruct the best-fit spectrum
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 import glob
 from scipy.interpolate import interp1d
 from scipy import stats
@@ -29,6 +31,25 @@ num_spectra = 3
 min_wav = 4000
 max_wav = 9000  # bc03 switches to lower resolution around 9300
 dust_model_wd = False
+y_max = 0.38
+
+# matplotlib options
+# matplotlib options
+matplotlib.rcParams['axes.labelsize'] = 'large'
+matplotlib.rcParams['xtick.labelsize'] = 'large'
+matplotlib.rcParams['ytick.labelsize'] = 'large'
+matplotlib.rcParams['legend.fontsize'] = 'large'
+matplotlib.rcParams['xtick.direction'] = 'in'
+matplotlib.rcParams['ytick.direction'] = 'in'
+matplotlib.rcParams['xtick.top'] = True
+matplotlib.rcParams['xtick.bottom'] = True
+matplotlib.rcParams['ytick.left'] = True
+matplotlib.rcParams['ytick.right'] = True
+matplotlib.rcParams['ytick.major.size'] = 6.0
+matplotlib.rcParams['ytick.minor.size'] = 3.0
+matplotlib.rcParams['xtick.minor.size'] = 3.0
+matplotlib.rcParams['xtick.major.size'] = 6.0
+matplotlib.rcParams['axes.unicode_minus'] = False
 
 # paths for bc03 spectra
 paths_bc03 = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
@@ -214,23 +235,36 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     single_model_corrected = continuum_norm(wavelength_trunc, 0, 0, 1)  # (0, 0, 1) is t5e9
     ax1.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum')
     ax1.plot(wavelength_trunc, best_fit_model - 1, 'r', drawstyle='steps', label='BC03 Model')
-    ax1.set_title("Correlation Spectrum vs. BC03 Starlight Model")
-    ax1.set_ylabel(r'$(\alpha / \alpha_{\mathrm{smooth}}) - 1$')
+    # ax1.set_title("Correlation Spectrum vs. BC03 Starlight Model")
+    ax1.set_ylabel(r'$(\alpha^{\prime} / \alpha_{\mathrm{smooth}}^{\prime}) - 1$')
     ax1.set_xlim(5050, 5450)  # small wiggles
-    ax1.set_ylim(-0.35, 0.35)
-    ax1.legend(frameon=False)
+    ax1.set_ylim(-y_max, y_max)
+    # ax1.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.68, 0))
+    ax1.legend(frameon=False, loc='upper center', bbox_to_anchor=(0.55, 1), ncol=2)
+
+    ax1.xaxis.set_major_locator(MultipleLocator(50))
+    ax1.xaxis.set_minor_locator(MultipleLocator(10))
+    ax1.yaxis.set_major_locator(MultipleLocator(0.2))
+    ax1.yaxis.set_minor_locator(MultipleLocator(0.04))
+
     # panel 2
     ax2 = plt.subplot(2, 1, 2)
     ax2.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum')
     ax2.plot(wavelength_trunc, best_fit_model - 1, 'r', drawstyle='steps', label='BC03 Model')
-    ax2.set_ylabel(r'$(\alpha / \alpha_{\mathrm{smooth}}) - 1$')
+    ax2.set_ylabel(r'$(\alpha^{\prime} / \alpha_{\mathrm{smooth}}^{\prime}) - 1$')
     ax2.set_xlim(6000, 8000)  # big wiggles
-    ax2.set_ylim(-.35, 0.35)
-    ax2.legend(frameon=False)
+    ax2.set_ylim(-y_max, y_max)
+    ax2.legend(frameon=False, loc='upper center', bbox_to_anchor=(0.45, 1), ncol=2)
     ax2.set_xlabel('Wavelength ($\mathrm{\AA}$)')
+
+    ax2.xaxis.set_major_locator(MultipleLocator(250))
+    ax2.xaxis.set_minor_locator(MultipleLocator(50))
+    ax2.yaxis.set_major_locator(MultipleLocator(0.2))
+    ax2.yaxis.set_minor_locator(MultipleLocator(0.04))
+
     plt.tight_layout()
     if save:
-        plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/unbinned_model_compare_090121.pdf')
+        plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/unbinned_model_compare_100621.pdf')
     plt.show()
 
     best_fit_uncorrected = best_fit_model  # TEMP
