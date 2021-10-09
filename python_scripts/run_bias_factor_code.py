@@ -5,14 +5,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-if len(sys.argv) != 2:
-    print("Usage: run_bias_factor_code.py [recalculate: 0, 1]")
+if len(sys.argv) != 4:
+    print("Usage: run_bias_factor_code.py [recalculate: 0, 1] [loc: 0, 1, 2] [savekey]")
     exit(0)
 recalculate = int(sys.argv[1])
+location = int(sys.argv[2])
+save_key = sys.argv[3]  # originally "biasfactor"
 
-save_key = 'biasfactor'
-min_thresholds = [0, 1]
-# min_thresholds = np.linspace(0, 5, 25)
+# min_thresholds = [0, 1]
+min_thresholds = np.linspace(0, 5, 25)
 save_path = '../alphas_and_stds/alphas_' + save_key + '.npy'
 save_num_fibers = '../alphas_and_stds/num_fibers_' + save_key + '.npy'
 # if that works try more:
@@ -28,7 +29,7 @@ if recalculate:
 
         # run the code
         print("running:", min_thresh)
-        os.system('python generate_alphas_biasfactor.py iris_2d 1 ' + save_key + ' ' + str(min_thresh) + ' 10 0 0')
+        os.system('python generate_alphas_biasfactor.py iris_2d 1 ' + save_key + ' ' + str(min_thresh) + ' 10 ' + str(location) + ' 0')
 
 # make some plots:
 
