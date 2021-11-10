@@ -9,12 +9,13 @@
 # flux conversion factor is handled here, not in reproduce_figs
 
 import matplotlib
+from matplotlib import pyplot
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from matplotlib import gridspec
 import numpy as np
 from astropy.io import fits
-import sys #for command line args
+import sys  # for command line args
 import pickle
 
 '''
@@ -313,7 +314,7 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
         ax3.set_ylim(-0.16, 0.96)
         # ax3.set_ylim(-0.24, 0.99-0.24)
         # ax3.set_ylim(-0.15, 0.3)
-        xcoords = [3727, 3730]
+        xcoords = [3726, 3729]
         for xc in xcoords:
             ax3.axvline(x=xc, color='k', linewidth=1, linestyle='--')
         ax3.hlines(0, 3700, 3800, color='gray')
@@ -365,6 +366,7 @@ def plot_binned(alpha_indices, colors, labels, envelope=False):
         ax.set_xlim(3850, 9200)
     ax.set_ylim(0, .29)
     ax.legend(frameon=False)
+    return ax
 
 if __name__ == "__main__":
 
@@ -396,16 +398,19 @@ if __name__ == "__main__":
 
         ax1 = plt.subplot(1, 2, 1)
 
-        ax1.plot(binned_lambdas, binned_alphas[2], c='k', drawstyle='steps', label='SDSS')
-        ax1.plot(binned_lambdas, binned_stds[2], c='k', drawstyle='steps', linestyle='--')
-        ax1.plot(binned_lambdas, bootstrap_binned_stds[2], c='m', drawstyle='steps', linestyle='--')
+        a1, = ax1.plot(binned_lambdas, binned_alphas[2], c='k', drawstyle='steps', label='SDSS-II')
         ax1.fill_between(binned_lambdas, bootstrap_binned_lower[2], bootstrap_binned_upper[2], linewidth=0.0, color='k', alpha=0.2, step='pre')
+        a2, = ax1.plot(binned_lambdas, bootstrap_binned_stds[2], c='k', drawstyle='steps', linestyle='--', label='Pipeline Uncertainties')
+        a3, = ax1.plot(binned_lambdas, binned_stds[2], c='m', drawstyle='steps', linestyle='dotted', label='Bootstrap Uncertainties')
 
-        ax1.legend(frameon=False)
+        legend1 = ax1.legend([a1], ['SDSS-II'], frameon=False, loc='upper left')
+        legend2 = ax1.legend([a2, a3], ['Bootstrap Uncertainties', 'Pipeline Uncertainties'], frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1))
+        pyplot.gca().add_artist(legend1)
         ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
         ax1.set_xlim(x_min, x_max)
-        ax1.set_ylim(0, 0.29)
+        ax1_ymin, ax1_ymax = 0, 0.29
+        ax1.set_ylim(ax1_ymin, ax1_ymax)
 
         ax1.xaxis.set_major_locator(MultipleLocator(1000))
         ax1.xaxis.set_minor_locator(MultipleLocator(200))
@@ -414,16 +419,19 @@ if __name__ == "__main__":
 
         ax2 = plt.subplot(1, 2, 2)
 
-        ax2.plot(binned_lambdas_boss, binned_alphas_boss[0], c='k', drawstyle='steps', label='BOSS')
-        ax2.plot(binned_lambdas_boss, binned_stds_boss[0], c='k', drawstyle='steps', linestyle='--')
-        ax2.plot(binned_lambdas_boss, bootstrap_binned_stds_boss, c='m', drawstyle='steps', linestyle='--')
+        a4, = ax2.plot(binned_lambdas_boss, binned_alphas_boss[0], c='k', drawstyle='steps', label='BOSS')
         ax2.fill_between(binned_lambdas_boss, bootstrap_binned_lower_boss, bootstrap_binned_upper_boss, linewidth=0.0, color='k', alpha=0.2, step='pre')
+        a5, = ax2.plot(binned_lambdas_boss, bootstrap_binned_stds_boss, c='k', drawstyle='steps', linestyle='--', label='Pipeline Uncertainties')
+        a6, = ax2.plot(binned_lambdas_boss, binned_stds_boss[0], c='m', drawstyle='steps', linestyle='dotted', label='Bootstrap Uncertainties')
 
-        ax2.legend(frameon=False)
+        legend3 = ax2.legend([a4], ['BOSS'], frameon=False, loc='upper left')
+        legend4 = ax2.legend([a5, a6], ['Bootstrap Uncertainties', 'Pipeline Uncertainties'], frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1))
+        pyplot.gca().add_artist(legend3)
         ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
         ax2.set_xlim(x_min, x_max)
-        ax2.set_ylim(0, 0.29)
+        ax2_ymin, ax2_ymax = 0, 0.29
+        ax2.set_ylim(ax2_ymin, ax2_ymax)
 
         ax2.xaxis.set_major_locator(MultipleLocator(1000))
         ax2.xaxis.set_minor_locator(MultipleLocator(200))
@@ -453,7 +461,9 @@ if __name__ == "__main__":
     ##############################
     if boss:
         envelope = bootstrap
-        plot_binned([0, 1], ['#004488', '#BB5566'], ['North', 'South'], envelope=envelope)
+        ax = plot_binned([1, 0], ['#BB5566', '#004488'], ['South', 'North'], envelope=envelope)
+        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size, horizontalalignment='center')
+        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
             plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
@@ -536,7 +546,7 @@ if __name__ == "__main__":
 
         fig = plt.figure(figsize=(12, 4.8))
         x_min = 3700
-        x_max = 10100
+        x_max = 10000
         y_max = 0.29
 
         ax1 = fig.add_subplot(121)
@@ -582,7 +592,7 @@ if __name__ == "__main__":
             ax2.set_xlim(x_min, x_max)
             ax2.set_ylim(0, y_max)
 
-        leg = ax2.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1), ncol=2)
+        leg = ax2.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.15), ncol=2)
 
         ax2.xaxis.set_major_locator(MultipleLocator(1000))
         ax2.xaxis.set_minor_locator(MultipleLocator(200))
