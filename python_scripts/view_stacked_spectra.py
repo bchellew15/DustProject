@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 import sys
+from generate_plots import generate_binned_alphas
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -24,6 +25,85 @@ south = np.load("../alphas_and_stds/jacknife_alphas_south_111719.npy")
 north = np.load("../alphas_and_stds/jacknife_alphas_north_111719.npy")
 boss_wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
 
+"""
+# some plots
+plt.plot(boss_wavelength, north[1000, :], 'k', label='regular')
+plt.plot(boss_wavelength, north[1271, :], 'r', label='bad')
+plt.legend()
+plt.show()
+exit(0)
+"""
+
+
+# view binned spectra:
+
+bad_idx = 2381
+
+wav_binned, alphas_binned_1, _ = generate_binned_alphas([north[bad_idx]], [np.ones(len(boss_wavelength))], boss_wavelength)
+wav_binned, alphas_binned_2, _ = generate_binned_alphas([north[1000]], [np.ones(len(boss_wavelength))], boss_wavelength)
+alphas_binned_1 = alphas_binned_1[0]
+alphas_binned_2 = alphas_binned_2[0]
+plt.plot(wav_binned, alphas_binned_1, 'r', label='bad?')
+plt.plot(wav_binned, alphas_binned_2, 'k', label='good?')
+plt.legend()
+plt.ylim(0, 1)
+plt.title("North")
+plt.show()
+
+wav_binned, alphas_binned_3, _ = generate_binned_alphas([south[bad_idx]], [np.ones(len(boss_wavelength))], boss_wavelength)
+wav_binned, alphas_binned_4, _ = generate_binned_alphas([south[1000]], [np.ones(len(boss_wavelength))], boss_wavelength)
+alphas_binned_3 = alphas_binned_3[0]
+alphas_binned_4 = alphas_binned_4[0]
+plt.plot(wav_binned, alphas_binned_3, 'r', label='bad?')
+plt.plot(wav_binned, alphas_binned_4, 'k', label='good?')
+plt.legend()
+plt.ylim(0, 1)
+plt.title("South")
+plt.show()
+
+# and unbinned:
+# plt.plot(boss_wavelength, north[1509], 'r', label='bad?')
+# plt.plot(boss_wavelength, north[1000], 'k', label='good?')
+# plt.legend()
+# plt.show()
+
+exit(0)
+
+
+# get average values in various wavelength ranges
+start_wavs = [4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500]
+end_wavs = [4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500, 10000]
+north_avgs = np.zeros((south.shape[0], len(start_wavs)))
+south_avgs = np.zeros((south.shape[0], len(start_wavs)))
+for i in range(south.shape[0]):
+    for j in range(len(start_wavs)):
+        indices = np.where((boss_wavelength > start_wavs[j]) & (boss_wavelength < end_wavs[j]))[0]
+        north_avgs[i, j] = np.nanmean(north[i][indices])
+        south_avgs[i, j] = np.nanmean(south[i][indices])
+# check if any are out of the ordinary
+avg_north_avgs = np.mean(north_avgs, axis=0)
+avg_south_avgs = np.mean(south_avgs, axis=0)
+north_avgs_std = np.std(north_avgs, axis=0)
+south_avgs_std = np.std(south_avgs, axis=0)
+
+# north:
+print("north too big:")
+print(np.argwhere(north_avgs > avg_north_avgs + 10*north_avgs_std))
+print("north too small:")
+print(np.argwhere(north_avgs < avg_north_avgs - 10*north_avgs_std))
+
+# south:
+print("south too big:")
+print(np.argwhere(south_avgs > avg_south_avgs + 10*south_avgs_std))
+print("south too small:")
+print(np.argwhere(south_avgs < avg_south_avgs - 10*south_avgs_std))
+
+print(avg_north_avgs)
+print(north_avgs_std)
+
+exit(0)
+
+# old stuff
 '''
 south_means = np.nanmean(south, axis=1)
 north_means = np.nanmean(north, axis=1)
