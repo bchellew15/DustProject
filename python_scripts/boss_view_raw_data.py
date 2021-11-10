@@ -15,8 +15,11 @@ num_files = len(filenames)
 #get list of plates and fiber ids
 hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + filenames[0])
 plate = hdulist[6].data
+mjd = hdulist[5].data
 fiber_id = hdulist[7].data
 flambda = hdulist[0].data
+
+plate = 10000 * plate + mjd % 10000 #plate is now a unique identifier
 
 i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
 i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
@@ -25,6 +28,100 @@ wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
 
 # coords = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations_galactic.txt")
 # see "sky_locations.py" for sdss locations
+
+# check i100 variance on certain plates:
+"""
+print("check 1")
+
+i100_1d = np.copy(i100[:, 2000])
+
+print("check 2")
+
+# masking:
+i100_1d[i100_old > 10] = np.nan
+for p in np.unique(plate):
+    if np.mean(i100_old[plate == p]) > 10:
+        i100_1d[plate == p] = np.nan
+i100_1d[3178] = np.nan  # data at this location is bad
+i100_1d[fiber_id == 840] = np.nan
+i100_1d[plate == np.unique(plate)[1509]] = np.nan
+i100_1d[plate == np.unique(plate)[1265]] = np.nan
+i100_1d[plate == np.unique(plate)[1786]] = np.nan
+i100_1d[(plate == np.unique(plate)[938]) * (fiber_id == 252)] = np.nan
+
+print("check 3")
+
+variances = np.zeros((len(np.unique(plate))))
+print(variances.shape)
+for i in range(len(np.unique(plate))):
+    if i % 50 == 0:
+        print("PROGRESS:", i)
+    i100_plate = i100_1d[plate == np.unique(plate)[i]]
+    variance = np.nanvar(i100_plate)
+    variances[i] = variance
+print("mean:", np.nanmean(variances))
+print("median:", np.nanmedian(variances))
+print("std:", np.nanstd(variances))
+plt.hist(variances)
+plt.show()
+
+exit(0)
+"""
+
+# view spectra for certain fibers:
+"""
+print("plate id for idx 3178:")
+plate_3178 = plate[3178]
+idx_3178 = np.argwhere(np.unique(plate) == plate_3178)
+print(idx_3178)
+exit(0)
+"""
+
+def view_fiber(idx):
+    flambda_fiber = np.array([])
+    ivar_fiber = np.array([])
+    for i in range(len(filenames)):
+        hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + filenames[i])
+        flambda_fiber = np.append(flambda_fiber, hdulist[0].data[idx])
+        ivar_fiber = np.append(ivar_fiber, hdulist[1].data[idx])
+    print(np.mean(ivar_fiber[(wavelength_boss > 5000) & (wavelength_boss < 9000)]))
+    plt.plot(wavelength_boss, flambda_fiber, 'k')
+    plt.plot(wavelength_boss, 1 / np.sqrt(ivar_fiber), 'r')
+    plt.ylim(-7, 7)
+    # plt.xlim(6200, 6600)  # TEMP just to check one plate
+    plt.show()
+
+# look at masked plates and fibers
+indices = np.argwhere(plate == np.unique(plate)[2381])
+for i in indices:
+    view_fiber(i[0])
+"""
+indices = np.argwhere(plate == np.unique(plate)[1265])
+for i in indices:
+    view_fiber(i[0])
+indices = np.argwhere(plate == np.unique(plate)[1786])
+for i in indices:
+    view_fiber(i[0])
+indices = np.argwhere(plate == np.unique(plate)[938])
+print("fiber ids:")
+for i in indices:
+    view_fiber(i[0])
+"""
+
+"""
+# a random plate that should be fine:
+indices = np.argwhere(plate == np.unique(plate)[1000])
+for i in indices:
+    view_fiber(i[0])
+"""
+exit(0)
+
+view_fiber(3000)  # a typical spectrum
+view_fiber(3178)  # bad data
+idx = np.argwhere((plate == np.unique(plate)[938]) * (fiber_id == 136))[0][0]  # was fiber 252
+view_fiber(idx)  # this one was also masked
+
+exit(0)
 
 i100 = i100[:, -1]
 p1 = plate[2384]
