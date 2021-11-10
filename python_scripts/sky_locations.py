@@ -1,6 +1,11 @@
 #plot sky locations
 #color coded according to density and weighted density (see Brandt paper)
 
+# logic: cycle through all the sky fibers.
+# for each fiber, count how many fibers are within 1 square degree.
+# then mask
+# (oops. should mask first.)
+
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
@@ -66,15 +71,18 @@ if boss:
 longs = coords[:,0]
 lats = coords[:,1]
 
+#mask coordinates:
+longs = np.delete(longs, mask)
+lats = np.delete(lats, mask)
+plate = np.delete(plate, mask)
+i100 = np.delete(i100, mask)
+
 if save and not weighted:
     densities = np.zeros(len(longs))
     for i in range(len(longs)):
         densities[i] = np.sum((longs > longs[i] - 1) * (longs < longs[i] + 1) * (lats > lats[i] - 1) * (lats < lats[i] + 1))
         if i % 1000 == 0:
             print("progress:", i)
-
-    #apply mask:
-    densities = np.delete(densities, mask)
     
     if boss:
         np.save('../alphas_and_stds/boss_skyfiber_densities.npy', densities)
@@ -116,9 +124,6 @@ elif save and weighted:
         #print("weight:", var_p[i] / avg_var)
         if i % 1000 == 0:
             print("progress:", i)
-
-    #apply mask:
-    densities = np.delete(densities, mask)
     
     if boss:
         np.save('../alphas_and_stds/boss_skyfiber_densities_weighted.npy', densities)
@@ -144,10 +149,6 @@ for i in range(len(longs)):
     if longs[i] > np.pi:
         longs[i] -= 2*np.pi
 '''
-
-#mask coordinates:
-longs = np.delete(longs, mask)
-lats = np.delete(lats, mask)
 
 #move darker points to the top:
 longs_lats = [(long, lat) for _,long,lat in sorted(zip(densities,longs,lats))]
