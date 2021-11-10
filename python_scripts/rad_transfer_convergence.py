@@ -11,18 +11,17 @@ import pickle
 from scipy.interpolate import interp1d
 
 # paramters
-save = False
+save = True
 load = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/convergence_test/'
 # set bin width = 10 for finding the peak and width. else 50.
 bin_width = 50
 bootstrap = True
-cst_coeff = .3  # .3
-cst_coeff_wd = .8
-north_scale = 1.15  # TEST
+cst_coeff = .5  # .4 is 18.4% CST. .3 is 14.5%. .5 is 22%.
+cst_coeff_wd = 0.8 # 0.8
 # set wav_clipped range = 5000 to 8000 for ratios, bc that's the red band.
-# for integrating the ERE use 4500 to 8500.
-wav_clipped_min = 4500  # 5500
-wav_clipped_max = 7666  # 8500
+# for integrating the ERE use 4500 to 8500. (or 8000 for north)
+wav_clipped_min = 5000  # 5500
+wav_clipped_max = 8000  # 8500
 
 # matplotlib options
 matplotlib.rcParams['axes.labelsize'] = 'large'
@@ -143,8 +142,12 @@ mean_zd_tau005 = np.mean(zd_tau005[(wavelength > 4200) & (wavelength < 5000)])
 mean_zd_tau010 = np.mean(zd_tau010[(wavelength > 4200) & (wavelength < 5000)])
 mean_test = np.mean(test_converge[(wavelength > 4200) & (wavelength < 5000)])
 mean_alt = np.mean(alt_transform[(wavelength > 4200) & (wavelength < 5000)])# this is with bigger wavelength range
-mean_north = np.mean(alphas_north_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
-mean_south = np.mean(alphas_south_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
+if bootstrap:
+    mean_north = np.average(alphas_north_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)], weights=1/bootstrap_binned_stds_north[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)]**2)
+    mean_south = np.average(alphas_south_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)], weights=1/bootstrap_binned_stds_south[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)]**2)
+else:
+    mean_north = np.average(alphas_north_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
+    mean_south = np.average(alphas_south_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
 
 mean_choice = mean_south
 
@@ -178,8 +181,8 @@ plt.plot(wavelength, metal_008 * mean_choice / mean_metal008, label='metal .008'
 # plt.plot(wavelength, grid_100s * mean_choice / mean_default, label='all 100s, from ahab')
 # plt.plot(wavelength, grid_150s * mean_choice / mean_default, label='some 150s, from ahab')
 
-plt.plot(alphas_norad_bin_wav, alphas_north_bin, color='red', label='BOSS north', drawstyle='steps-mid')
-plt.plot(alphas_norad_bin_wav, alphas_south_bin, color='blue', label='BOSS south', drawstyle='steps-mid')
+plt.plot(alphas_norad_bin_wav, alphas_north_bin, color='red', label='BOSS North', drawstyle='steps-mid')
+plt.plot(alphas_norad_bin_wav, alphas_south_bin, color='blue', label='BOSS South', drawstyle='steps-mid')
 if bootstrap:
     plt.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_north,
                      bootstrap_binned_upper_north, linewidth=0.0, color='red', alpha=0.2, step='mid')
@@ -238,15 +241,20 @@ _, zd01s_bin, _ = generate_binned_alphas([zd01_t5e9_alphas, zd01_t9e9_alphas, zd
 # and use the north spectrum
 mean_wds = [np.mean(wd01_bin[(lambdas_bin > 4200) & (lambdas_bin < 5000)]) for wd01_bin in wd01s_bin]
 mean_zds = [np.mean(zd01_bin[(lambdas_bin > 4200) & (lambdas_bin < 5000)]) for zd01_bin in zd01s_bin]
-mean_boss = np.mean(
-    alphas_boss_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
+if bootstrap:
+    mean_boss = np.average(
+        alphas_boss_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)],
+        weights=1/bootstrap_binned_stds_boss[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)]**2)
+else:
+    mean_boss = np.average(alphas_boss_bin[(alphas_norad_bin_wav > 4200) & (alphas_norad_bin_wav < 5000)])
 scale_factors_wd_boss = [round(mean_boss / mean_wd, 2) for mean_wd in mean_wds]
 scale_factors_zd_boss = [round(mean_boss / mean_zd, 2) for mean_zd in mean_zds]
 scale_factors_wd_north = [round(mean_north / mean_wd, 2) for mean_wd in mean_wds]
 scale_factors_zd_north = [round(mean_north / mean_zd, 2) for mean_zd in mean_zds]
 scale_factors_wd_south = [round(mean_south / mean_wd, 2) for mean_wd in mean_wds]
 scale_factors_zd_south = [round(mean_south / mean_zd, 2) for mean_zd in mean_zds]
-
+south_scale = round(mean_north / mean_south, 2)  # TEST
+print("south scale:", south_scale)  # I initially chose 1.15 by eye
 
 # 2-panel plot
 plt.figure(figsize=(10, 4))
@@ -255,22 +263,22 @@ colors = ['#4477AA', '#CCBB44', '#66CCEE', '#EE6677', '#228833']
 ax1 = plt.subplot(1, 2, 1)
 ax1.set_title('Correlation Spectrum vs. BC03 Models')
 # plt.plot(alphas_norad_bin_wav, alphas_boss_bin, 'orange', label='BOSS alphas (observed)', drawstyle='steps-mid')
-ax1.plot(alphas_norad_bin_wav, north_scale * alphas_north_bin, colors[0], label='BOSS north',
+ax1.plot(alphas_norad_bin_wav, alphas_north_bin, colors[0], label='BOSS north',
          drawstyle='steps-mid')
-ax1.plot(alphas_norad_bin_wav, alphas_south_bin, colors[3], label='BOSS south',
+ax1.plot(alphas_norad_bin_wav, south_scale * alphas_south_bin, colors[3], label='BOSS south (x ' + str(south_scale) + ')',
          drawstyle='steps-mid')
 if show_full:
     ax1.plot(alphas_norad_bin_wav, alphas_boss_bin, 'k', label='BOSS overall',
              drawstyle='steps-mid')
 
 
-scale_factors_wd = scale_factors_wd_south
-scale_factors_zd = scale_factors_zd_south
+scale_factors_wd = scale_factors_wd_north
+scale_factors_zd = scale_factors_zd_north
+"""
 ax1.plot(lambdas_bin, wd01s_bin[0] * scale_factors_wd[0], 'k',
          label='WD01 t5e9 (x ' + str(scale_factors_wd[0]) + ')', drawstyle='steps-mid')
 ax1.plot(lambdas_bin, zd01s_bin[0] * scale_factors_zd[0], 'blue',
          label='ZDA04 t5e9 (x ' + str(scale_factors_zd[0]) + ')', drawstyle='steps-mid')
-"""
 ax1.plot(lambdas_bin, wd01s_bin[1] * scale_factors_wd[1], 'orange',
          label='WD01 t9e9 (x ' + str(scale_factors_wd[1]) + ')', drawstyle='steps-mid')
 ax1.plot(lambdas_bin, zd01s_bin[1] * scale_factors_zd[1], 'yellow',
@@ -285,29 +293,28 @@ ax1.plot(lambdas_bin, zd01s_bin[3] * scale_factors_zd[3], 'brown',
          label='ZDA04 combo (x ' + str(scale_factors_zd[3]) + ')', drawstyle='steps-mid')
 """
 
-"""
 # plot some models, scaled to north and south:
 ax1.plot(lambdas_bin, zd01s_bin[0] * scale_factors_zd_north[0], colors[2],
-         label=r'ZDA04 t5e9 ($\times$ ' + str(scale_factors_zd_north[0]) + ')', drawstyle='steps-mid')
-ax1.plot(lambdas_bin, zd01s_bin[0] * scale_factors_zd_south[0], colors[1],
-         label=r'ZDA04 t5e9 ($\times$ ' + str(scale_factors_zd_south[0]) + ')', drawstyle='steps-mid')
-ax1.plot(lambdas_bin, zd01s_bin[3] * scale_factors_zd_south[3], colors[4],
-         label=r'ZDA04 t5e9 + cst ($\times$ ' + str(scale_factors_zd_south[3]) + ')', drawstyle='steps-mid')
-"""
+         label=r't5e9 (ZDA04) ($\times$ ' + str(scale_factors_zd_north[0]) + ')', drawstyle='steps-mid')
+# ax1.plot(lambdas_bin, zd01s_bin[0] * scale_factors_zd_south[0], colors[1],
+#          label=r'ZDA04 t5e9 ($\times$ ' + str(scale_factors_zd_south[0]) + ')', drawstyle='steps-mid')
+ax1.plot(lambdas_bin, zd01s_bin[3] * scale_factors_zd_north[3], colors[4],
+         label=r't5e9 + cst (ZDA04) ($\times$ ' + str(scale_factors_zd_north[3]) + ')', drawstyle='steps-mid')
+
 
 if bootstrap:
-    ax1.fill_between(alphas_norad_bin_wav, north_scale * bootstrap_binned_lower_north,
-                     north_scale * bootstrap_binned_upper_north, linewidth=0.0, color=colors[0], alpha=0.2,
+    ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_north,
+                     bootstrap_binned_upper_north, linewidth=0.0, color=colors[0], alpha=0.2,
                      step='mid')
-    ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_south,
-                     bootstrap_binned_upper_south, linewidth=0.0, color=colors[3], alpha=0.2,
+    ax1.fill_between(alphas_norad_bin_wav, south_scale * bootstrap_binned_lower_south,
+                     south_scale * bootstrap_binned_upper_south, linewidth=0.0, color=colors[3], alpha=0.2,
                      step='mid')
     if show_full:
         ax1.fill_between(alphas_norad_bin_wav, bootstrap_binned_lower_boss,
                          bootstrap_binned_upper_boss, linewidth=0.0, color='k', alpha=0.2,
                          step='mid')
 
-ax1.set_ylim(0, 0.29)
+ax1.set_ylim(0, 0.26)
 ax1.set_xlim(3800, 10000)
 ax1.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.55, 0))
 ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
@@ -366,12 +373,15 @@ if bootstrap:
 # TEST: was using ZD dust model for the last one
 
 ax2.plot(alphas_norad_bin_wav, north_fn(alphas_norad_bin_wav) - zd_fns[0](alphas_norad_bin_wav) * scale_factors_zd_north[0], colors[2],
-         label='north - zd (t5e9)', drawstyle='steps-mid')
-ax2.plot(alphas_norad_bin_wav, south_fn(alphas_norad_bin_wav) - zd_fns[3](alphas_norad_bin_wav) * scale_factors_zd_south[3], colors[4],
-         label='south - zd (t5e9 + cst)',
+         label=r'North $-$ t5e9', drawstyle='steps-mid')
+ax2.plot(alphas_norad_bin_wav, south_scale * (south_fn(alphas_norad_bin_wav) - zd_fns[3](alphas_norad_bin_wav) * scale_factors_zd_south[3]), colors[4],
+         label=r'South $-$ (t5e9 + cst) (x ' + str(south_scale) + ')',
          drawstyle='steps-mid')
-ax2.plot(alphas_norad_bin_wav, south_fn(alphas_norad_bin_wav) - zd_fns[0](alphas_norad_bin_wav) * scale_factors_zd_south[0], colors[1],
-         label='south - zd (t5e9)', drawstyle='steps-mid')
+ax2.plot(alphas_norad_bin_wav, south_scale * (south_fn(alphas_norad_bin_wav) - zd_fns[0](alphas_norad_bin_wav) * scale_factors_zd_south[0]), colors[1],
+         label=r'South $-$ t5e9 (x ' + str(south_scale) + ')', drawstyle='steps-mid')
+# TEST:
+# ax2.plot(alphas_norad_bin_wav, south_scale * (south_fn(alphas_norad_bin_wav) - wd_fns[3](alphas_norad_bin_wav) * scale_factors_wd_south[3]), colors[3],
+#          label='south - wd (combo) (x ' + str(south_scale) + ')', drawstyle='steps-mid')
 
 if bootstrap:
     ax2.fill_between(alphas_norad_bin_wav,
@@ -379,19 +389,19 @@ if bootstrap:
                      bootstrap_binned_upper_north_fn(alphas_norad_bin_wav) - zd_fns[0](alphas_norad_bin_wav) * scale_factors_zd_north[0],
                      linewidth=0.0, color=colors[2], alpha=0.2, step='mid')
     ax2.fill_between(alphas_norad_bin_wav,
-                     bootstrap_binned_lower_south_fn(alphas_norad_bin_wav) - zd_fns[3](alphas_norad_bin_wav) * scale_factors_zd_south[3],
-                     bootstrap_binned_upper_south_fn(alphas_norad_bin_wav) - zd_fns[3](alphas_norad_bin_wav) * scale_factors_zd_south[3],
+                     south_scale * (bootstrap_binned_lower_south_fn(alphas_norad_bin_wav) - zd_fns[3](alphas_norad_bin_wav) * scale_factors_zd_south[3]),
+                     south_scale * (bootstrap_binned_upper_south_fn(alphas_norad_bin_wav) - zd_fns[3](alphas_norad_bin_wav) * scale_factors_zd_south[3]),
                      linewidth=0.0, color=colors[4], alpha=0.2, step='mid')
     ax2.fill_between(alphas_norad_bin_wav,
-                     bootstrap_binned_lower_south_fn(alphas_norad_bin_wav) - zd_fns[0](alphas_norad_bin_wav) * scale_factors_zd_south[0],
-                     bootstrap_binned_upper_south_fn(alphas_norad_bin_wav) - zd_fns[0](alphas_norad_bin_wav) * scale_factors_zd_south[0],
+                     south_scale * (bootstrap_binned_lower_south_fn(alphas_norad_bin_wav) - zd_fns[0](alphas_norad_bin_wav) * scale_factors_zd_south[0]),
+                     south_scale * (bootstrap_binned_upper_south_fn(alphas_norad_bin_wav) - zd_fns[0](alphas_norad_bin_wav) * scale_factors_zd_south[0]),
                      linewidth=0.0, color=colors[1], alpha=0.2, step='mid')
 
 ax2.set_ylabel(r"$\alpha^{\prime} - \alpha_{\mathrm{model}}^{\prime}$")
-ax2.set_title('ERE Peak (Excess Compared to Model)')
-ax2.legend(frameon=False, loc='lower center')
+ax2.set_title(r"Observations $-$ Model (ERE Peak)")
+ax2.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.47, 0))
 ax2.hlines(0, 3650, 10200, color='grey')
-ax2.set_ylim(-0.06, 0.09)
+ax2.set_ylim(-0.07, 0.073) # TEST: scale to avoid overlapping the legend
 # ax2.set_xlim(4000, 9000)
 ax2.set_xlim(3800, 10000)
 ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
@@ -403,7 +413,7 @@ ax2.yaxis.set_minor_locator(MultipleLocator(0.01))
 
 plt.tight_layout()
 if save:
-    plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/ere_2plot_092721.pdf')
+    plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/ere_2plot_102821.pdf', bbox_inches='tight')
 
 plt.show()
 
@@ -413,6 +423,9 @@ plt.show()
 i100_weighted = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/avg_i100_boss_iris_smooth.npy')[0]
 i100_weighted_north = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/avg_i100_boss_iris_north_smooth.npy')[0]
 i100_weighted_south = np.load('/Users/blakechellew/Documents/DustProject/alphas_and_stds/avg_i100_boss_iris_south_smooth.npy')[0]
+print("weighted i100:")
+print("north:", i100_weighted_north)
+print("south:", i100_weighted_south)
 
 # integrate south - north:
 integrand_south_minus_north = north_south_diff_fn(wav_clipped)
@@ -486,6 +499,14 @@ print("ratio ERE to scattered, south combo:", south_ERE_ratio_combo)
 print("ratio ERE to scattered, south wd:", south_ERE_ratio_wd)
 print("ratio ERE to scattered, south wd:", south_ERE_ratio_wd_combo)
 
+# compare flux for CST vs t5e9
+# NOTE: I'm adding them AFTER applying rad transfer
+# also this is the whole range from 3600 to 10400
+total_flux_t5e9 = np.nansum(50 * zd01s_bin[0] / alphas_norad_bin_wav)  # 50 not needed bc ratio
+total_flux_cst = cst_coeff * np.nansum(50 * zd01s_bin[2] / alphas_norad_bin_wav)
+t5e9_cst_ratio = total_flux_t5e9 / total_flux_cst
+print("t5e9 cst ratio:", t5e9_cst_ratio)
+
 
 if bootstrap:
     # comparing spectra (z-values):
@@ -522,7 +543,7 @@ def find_quartiles(integrand, lower_edge=5000, upper_edge=8000):
     peak_integrand = integrand[(wav_clipped > lower_edge) & (wav_clipped < upper_edge)]
     peak_wavs = wav_clipped[(wav_clipped > lower_edge) & (wav_clipped < upper_edge)]
     total_integrand = np.nansum(peak_integrand)
-    print("total ERE integrand:", total_integrand)
+    print("total ERE integrand:", total_integrand)  # intermediate step, units not adjusted
     partial_sum = 0
     quartile_1 = None
     quartile_2 = None
