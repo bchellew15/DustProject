@@ -107,7 +107,7 @@ plt.text(x[4], y[4], '-120', fontsize=10)
 plt.text(x[5], y[5], '30', fontsize=10)
 plt.text(x[6], y[6], '-30', fontsize=10)
 plt.text(x[7], y[7], '-60', fontsize=10)
-plt.text(0, 1, 'BOSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=18)
+plt.text(0, 1, 'BOSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=16)
 
 #transform data coordinates
 x, y = m(longs,lats)
@@ -173,7 +173,7 @@ plt.text(x[4], y[4], '-120', fontsize=10)
 plt.text(x[5], y[5], '30', fontsize=10)
 plt.text(x[6], y[6], '-30', fontsize=10)
 plt.text(x[7], y[7], '-60', fontsize=10)
-plt.text(0, 1, 'BOSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=18)
+plt.text(0, 1, 'BOSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=16)
 
 #transform data coordinates
 x, y = m(longs,lats)
@@ -254,7 +254,7 @@ plt.text(x[4], y[4], '-120', fontsize=10)
 plt.text(x[5], y[5], '30', fontsize=10)
 plt.text(x[6], y[6], '-30', fontsize=10)
 plt.text(x[7], y[7], '-60', fontsize=10)
-plt.text(0, 1, 'SDSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=18)
+plt.text(0, 1, 'SDSS-II', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=16)
 
 #transform data coordinates
 x, y = m(longs,lats)
@@ -312,7 +312,7 @@ plt.text(x[4], y[4], '-120', fontsize=10)
 plt.text(x[5], y[5], '30', fontsize=10)
 plt.text(x[6], y[6], '-30', fontsize=10)
 plt.text(x[7], y[7], '-60', fontsize=10)
-plt.text(0, 1, 'SDSS', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=18)
+plt.text(0, 1, 'SDSS-II', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes, fontsize=16)
 
 #transform data coordinates
 x, y = m(longs,lats)
@@ -332,7 +332,7 @@ cb.set_ticklabels(tick_labels)
 #plt.title("Sky Fiber Density")
 
 if save:
-    plt.savefig('../paper_figures/skyfibers_4plot_082221.png', bbox_inches='tight')
+    plt.savefig('../paper_figures/skyfibers_4plot_102621.png', bbox_inches='tight')
 else:
     plt.show()
 
