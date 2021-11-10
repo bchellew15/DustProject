@@ -254,12 +254,13 @@ for j in range(num_files):
             print("masking whole plate")
             
     if boss:
-        ivar[3178] = 0 #data at this location is bad
         ivar[fiber_id == 840] = 0
+        # plate 36: the fiber at idx 3178 is bad. it was causing a discrepancy with SFD vs. IRIS results
+        ivar[plate == np.unique(plate)[36]] = 0
+        ivar[plate == np.unique(plate)[938]] = 0  # was masking fiber 252 which was wrong. now mask whole plate.
         ivar[plate == np.unique(plate)[1509]] = 0
         ivar[plate == np.unique(plate)[1265]] = 0
         ivar[plate == np.unique(plate)[1786]] = 0
-        ivar[(plate == np.unique(plate)[938]) * (fiber_id == 252)] = 0
 
     if location != 0:
         if boss:
