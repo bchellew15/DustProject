@@ -254,13 +254,23 @@ for j in range(num_files):
             print("masking whole plate")
             
     if boss:
+        # possible bad CCD columns: 40, 59, 60, 833, 839, and 840.
+        ivar[fiber_id == 40] = 0
+        ivar[fiber_id == 59] = 0
+        ivar[fiber_id == 60] = 0
+        ivar[fiber_id == 833] = 0
+        ivar[fiber_id == 839] = 0
         ivar[fiber_id == 840] = 0
         # plate 36: the fiber at idx 3178 is bad. it was causing a discrepancy with SFD vs. IRIS results
-        ivar[plate == np.unique(plate)[36]] = 0
+        ivar[plate == np.unique(plate)[36]] = 0  # doesn't show up in jacknife bc already masked
         ivar[plate == np.unique(plate)[938]] = 0  # was masking fiber 252 which was wrong. now mask whole plate.
         ivar[plate == np.unique(plate)[1509]] = 0
         ivar[plate == np.unique(plate)[1265]] = 0
         ivar[plate == np.unique(plate)[1786]] = 0
+        ivar[plate == np.unique(plate)[2141]] = 0
+        ivar[plate == np.unique(plate)[2380]] = 0
+        ivar[plate == np.unique(plate)[2383]] = 0
+        ivar[plate == np.unique(plate)[2388]] = 0
 
     if location != 0:
         if boss:
@@ -306,7 +316,8 @@ for j in range(num_files):
             else:
                 i100_old_sub = i100_old[:, None]
     else:
-        i100_sub = i100
+        i100_sub = i100[:, None]
+        i100_old_sub = i100_old[:, None]
         if get_correction and (mode == '2d' or mode == 'iris_2d'):  # must be SDSS if it gets here
             if mode == 'iris_2d':
                 i100_old_sub = np.load("../data/iris_i100_at_sfd.npy")[:, None]
@@ -346,8 +357,8 @@ for j in range(num_files):
 print("saving alphas")
     
 if bootstrap:
-    np.save('yx_bootstrap_' + save, yxsigs_bootstrap)
-    np.save('xx_bootstrap_' + save, xxsigs_bootstrap)
+    np.save('../data/yx_bootstrap_' + save, yxsigs_bootstrap)
+    np.save('../data/xx_bootstrap_' + save, xxsigs_bootstrap)
 elif save != '0':
     np.save('../alphas_and_stds/alphas_' + save + '.npy', alphas_10)
     np.save('../alphas_and_stds/alpha_stds_' + save + '.npy', alpha_std_10)
