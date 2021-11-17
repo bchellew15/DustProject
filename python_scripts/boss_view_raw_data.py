@@ -92,7 +92,7 @@ def view_fiber(idx):
     plt.show()
 
 # look at masked plates and fibers
-indices = np.argwhere(plate == np.unique(plate)[2381])
+indices = np.argwhere(plate == np.unique(plate)[1265])
 for i in indices:
     view_fiber(i[0])
 """
