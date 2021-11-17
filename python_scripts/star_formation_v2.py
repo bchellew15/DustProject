@@ -252,8 +252,8 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     ax2.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum', zorder=1)
     ax2.plot(wavelength_trunc, best_fit_model - 1, 'r', drawstyle='steps', label='BC03 Model', zorder=1)
     # add grey patches:
-    ax2.add_patch(matplotlib.patches.Rectangle((6540, -1), 55, 2, facecolor='black', alpha=0.2, zorder=2))
-    ax2.add_patch(matplotlib.patches.Rectangle((6708, -1), 35, 2, facecolor='black', alpha=0.2, zorder=3))
+    ax2.add_patch(matplotlib.patches.Rectangle((6540, -1), 55, 2, facecolor='black', alpha=0.13, zorder=2))
+    ax2.add_patch(matplotlib.patches.Rectangle((6708, -1), 35, 2, facecolor='black', alpha=0.13, zorder=3))
     ax2.set_ylabel(r'$(\alpha^{\prime} / \alpha_{\mathrm{smooth}}^{\prime}) - 1$')
     ax2.set_xlim(6000, 8000)  # big wiggles
     ax2.set_ylim(-y_max, y_max)
@@ -267,7 +267,7 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
 
     plt.tight_layout()
     if save:
-        plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/unbinned_model_compare_100621.pdf')
+        plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/unbinned_model_compare_110921.pdf')
     plt.show()
 
     best_fit_uncorrected = best_fit_model  # TEMP
