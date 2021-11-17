@@ -37,29 +37,44 @@ exit(0)
 
 # view binned spectra:
 
-bad_idx = 2381
+# 1509 included even though not as significant
+idx_array_north = [1509, 378, 1271, 211, 938, 1265, 2141]
+idx_array_south = [22, 1081, 1786, 2380, 2381, 2383, 1393, 2011, 2388, 2416]
 
-wav_binned, alphas_binned_1, _ = generate_binned_alphas([north[bad_idx]], [np.ones(len(boss_wavelength))], boss_wavelength)
-wav_binned, alphas_binned_2, _ = generate_binned_alphas([north[1000]], [np.ones(len(boss_wavelength))], boss_wavelength)
-alphas_binned_1 = alphas_binned_1[0]
-alphas_binned_2 = alphas_binned_2[0]
-plt.plot(wav_binned, alphas_binned_1, 'r', label='bad?')
-plt.plot(wav_binned, alphas_binned_2, 'k', label='good?')
-plt.legend()
-plt.ylim(0, 1)
-plt.title("North")
-plt.show()
+# for 6 sigma:
+idx_array_north = [378, 1271, 2498, 211, 212, 905, 938, 1265, 1509, 2141, 2495, 2500, 2502]
+idx_array_south = [22, 23, 389, 419, 440, 536, 667, 1065, 1081, 1106, 1684, 1690, 1739, 1786,
+                   2229, 2380, 2381, 2383, 2388, 74, 1078, 1104, 1110, 1393, 1696, 1990, 1997,
+                   2009, 2011, 2382, 2416]
 
-wav_binned, alphas_binned_3, _ = generate_binned_alphas([south[bad_idx]], [np.ones(len(boss_wavelength))], boss_wavelength)
-wav_binned, alphas_binned_4, _ = generate_binned_alphas([south[1000]], [np.ones(len(boss_wavelength))], boss_wavelength)
-alphas_binned_3 = alphas_binned_3[0]
-alphas_binned_4 = alphas_binned_4[0]
-plt.plot(wav_binned, alphas_binned_3, 'r', label='bad?')
-plt.plot(wav_binned, alphas_binned_4, 'k', label='good?')
-plt.legend()
-plt.ylim(0, 1)
-plt.title("South")
-plt.show()
+# override to check just one
+# idx_array_north = [2141]
+# idx_array_south = []
+
+for bad_idx in idx_array_north:
+
+    wav_binned, alphas_binned_1, _ = generate_binned_alphas([north[bad_idx]], [np.ones(len(boss_wavelength))], boss_wavelength)
+    wav_binned, alphas_binned_2, _ = generate_binned_alphas([north[1000]], [np.ones(len(boss_wavelength))], boss_wavelength)
+    alphas_binned_1 = alphas_binned_1[0]
+    alphas_binned_2 = alphas_binned_2[0]
+    plt.plot(wav_binned, alphas_binned_1, 'k', label='good')
+    plt.plot(wav_binned, alphas_binned_2, 'r', label='bad')
+    plt.legend()
+    plt.ylim(0, 1)
+    plt.title("North idx " + str(bad_idx))
+    plt.show()
+
+for bad_idx in idx_array_south:
+    wav_binned, alphas_binned_3, _ = generate_binned_alphas([south[bad_idx]], [np.ones(len(boss_wavelength))], boss_wavelength)
+    wav_binned, alphas_binned_4, _ = generate_binned_alphas([south[1000]], [np.ones(len(boss_wavelength))], boss_wavelength)
+    alphas_binned_3 = alphas_binned_3[0]
+    alphas_binned_4 = alphas_binned_4[0]
+    plt.plot(wav_binned, alphas_binned_3, 'k', label='good')
+    plt.plot(wav_binned, alphas_binned_4, 'r', label='bad')
+    plt.legend()
+    plt.ylim(0, 1)
+    plt.title("South idx " + str(bad_idx))
+    plt.show()
 
 # and unbinned:
 # plt.plot(boss_wavelength, north[1509], 'r', label='bad?')
@@ -88,15 +103,15 @@ south_avgs_std = np.std(south_avgs, axis=0)
 
 # north:
 print("north too big:")
-print(np.argwhere(north_avgs > avg_north_avgs + 10*north_avgs_std))
+print(np.argwhere(north_avgs > avg_north_avgs + 6*north_avgs_std))
 print("north too small:")
-print(np.argwhere(north_avgs < avg_north_avgs - 10*north_avgs_std))
+print(np.argwhere(north_avgs < avg_north_avgs - 6*north_avgs_std))
 
 # south:
 print("south too big:")
-print(np.argwhere(south_avgs > avg_south_avgs + 10*south_avgs_std))
+print(np.argwhere(south_avgs > avg_south_avgs + 6*south_avgs_std))
 print("south too small:")
-print(np.argwhere(south_avgs < avg_south_avgs - 10*south_avgs_std))
+print(np.argwhere(south_avgs < avg_south_avgs - 6*south_avgs_std))
 
 print(avg_north_avgs)
 print(north_avgs_std)
