@@ -207,34 +207,37 @@ def get_ratios(width, err, halpha, a_err, hbeta, b_err):
     return a_ratio, a_ratio_err, b_ratio, b_ratio_err
 
 # calculate 4000 A break
-def break_4000(alphas, stds):
+def break_4000(alphas, stds, wav):
 
-    idx_4000 = np.argmin(np.abs(wavelength-4000))
-    idx_3850 = np.argmin(np.abs(wavelength-3850))
-    idx_4150 = np.argmin(np.abs(wavelength-4150))
-    delta_lambda = wavelength[idx_4000+1] - wavelength[idx_4000]
-    left_break = delta_lambda*np.sum(alphas[idx_3850:idx_4000])
-    right_break = delta_lambda*np.sum(alphas[idx_4000:idx_4150])
+    idx_4000 = np.argmin(np.abs(wav-4000))
+    idx_3850 = np.argmin(np.abs(wav-3850))
+    idx_4150 = np.argmin(np.abs(wav-4150))
+    delta_lambda = wav[idx_4000+1] - wav[idx_4000]
+    left_break = delta_lambda * np.sum(alphas[idx_3850:idx_4000] / wav[idx_3850:idx_4000])
+    right_break = delta_lambda * np.sum(alphas[idx_4000:idx_4150] / wav[idx_4000:idx_4150])
     delta = left_break / right_break
-    beta_width = -2.2*delta + .17
-    alpha_width = -1.5*delta - .19
+    beta_width = -2.2 * delta + .17
+    alpha_width = -1.5 * delta - .19
 
     left_break_err = np.sqrt(np.sum(np.power(stds[idx_3850:idx_4000], 2)))
     right_break_err = np.sqrt(np.sum(np.power(stds[idx_4000:idx_4150], 2)))
     frac_delta_err = np.sqrt((left_break_err/left_break)**2 + (right_break_err/right_break)**2)
     delta_err = frac_delta_err*delta
-    beta_err = 2.2*delta_err
-    alpha_err = 1.5*delta_err
+    beta_err = 2.2 * delta_err
+    alpha_err = 1.5 * delta_err
     
-    return alpha_width, beta_width, alpha_err, beta_err
+    return delta, alpha_width, beta_width, alpha_err, beta_err
 
 # calculate 4000 A break:
+deltas = np.zeros(len(alphas))
 bws = np.zeros(len(alphas))
 aws = np.zeros(len(alphas))
 bw_errs = np.zeros(len(alphas))
 aw_errs = np.zeros(len(alphas))
 for i in range(len(alphas)):
-    aws[i], bws[i], aw_errs[i], bw_errs[i] = break_4000(alphas[i], alpha_stds[i])
+    deltas[i], aws[i], bws[i], aw_errs[i], bw_errs[i] = break_4000(alphas[i], alpha_stds[i], wavelength)
+    print("4000 A break:")
+    print(deltas[i])
 
 # calculate equivalent widths:
 #width and error for each wavelength
@@ -311,5 +314,36 @@ if bootstrap:
     upper_bounds = np.percentile(bootstrap_widths, 84, axis=1)
     errors = (upper_bounds - lower_bounds) / 2
     print(errors)
+
+    # and for 4000 A break:
+    lower_delta = np.percentile(deltas, 16)
+    upper_delta = np.percentile(deltas, 84)
+    error_delta = (upper_delta - lower_delta) / 2
+    print("delta error:", error_delta)
+
+# find 4000 A break for models:
+cst_coeff = .5
+cst_coeff_wd = 0.8
+load_path = '/Users/blakechellew/Documents/DustProject/BrandtFiles/radiative/convergence_test/'
+wd_t5e9_filename = 't5e9_grid_150_wd.npy'
+zd_t5e9_filename = 't5e9_grid_150_zd.npy'
+wd_t9e9_filename = 't9e9_grid_150_wd.npy'
+zd_t9e9_filename = 't9e9_grid_150_zd.npy'
+wd_cst_filename = 'cst_grid_150_wd.npy'
+zd_cst_filename = 'cst_grid_150_zd.npy'
+wd01_t5e9_alphas = np.load(load_path + wd_t5e9_filename)
+zd01_t5e9_alphas = np.load(load_path + zd_t5e9_filename)
+wd01_t9e9_alphas = np.load(load_path + wd_t9e9_filename)
+zd01_t9e9_alphas = np.load(load_path + zd_t9e9_filename)
+wd01_cst_alphas = np.load(load_path + wd_cst_filename)
+zd01_cst_alphas = np.load(load_path + zd_cst_filename)
+wd01_combo = np.load(load_path + wd_t5e9_filename) + cst_coeff_wd * np.load(load_path + wd_cst_filename)
+zd01_combo = np.load(load_path + zd_t5e9_filename) + cst_coeff * np.load(load_path + zd_cst_filename)
+break_zd_t5e9, _, _, _, _ = break_4000(zd01_t5e9_alphas, np.ones(len(zd01_t5e9_alphas)), wavelength)
+break_zd_combo, _, _, _, _ = break_4000(zd01_combo, np.ones(len(zd01_t5e9_alphas)), wavelength)
+print("4000 A break:")
+print("t5e9 ZD:", break_zd_t5e9)
+print("combo ZD:", break_zd_combo)
+
 
 
