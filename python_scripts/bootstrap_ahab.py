@@ -13,8 +13,8 @@ save_key = sys.argv[1] #should be same as input file
 num_iter = int(sys.argv[2]) #number of bootstrap samples
 
 #load 
-yxsig_bootstrap = np.load('yx_bootstrap_' + save_key + '.npy')
-xxsig_bootstrap = np.load('xx_bootstrap_' + save_key + '.npy')
+yxsig_bootstrap = np.load('../data/yx_bootstrap_' + save_key + '.npy')
+xxsig_bootstrap = np.load('../data/xx_bootstrap_' + save_key + '.npy')
 
 print(yxsig_bootstrap)
 print(xxsig_bootstrap)
