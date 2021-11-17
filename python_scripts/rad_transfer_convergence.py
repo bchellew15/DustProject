@@ -507,7 +507,6 @@ total_flux_cst = cst_coeff * np.nansum(50 * zd01s_bin[2] / alphas_norad_bin_wav)
 t5e9_cst_ratio = total_flux_t5e9 / total_flux_cst
 print("t5e9 cst ratio:", t5e9_cst_ratio)
 
-
 if bootstrap:
     # comparing spectra (z-values):
     avg_north = np.mean(north_fn(wav_clipped))
@@ -531,6 +530,20 @@ if bootstrap:
     print("south:", avg_south)
     print("sdss:", avg_sdss)
     print("boss:", avg_boss)
+
+# get ratio of ERE to total IR intensity
+# Draine and Li 2007 dust model: (nu I_nu)_100 = (0.52 +/- .05) I_TIR
+# from above: use i100_weighted_north and south
+nu = 2.998 * 10**12
+I_TIR_north = (nu * i100_weighted_north) / 0.52  # units of MJy / sr * Hz
+I_TIR_south = (nu * i100_weighted_south) / 0.52
+print("I_tir north:", I_TIR_north)
+print("I_tir south:", I_TIR_south)
+# the factor of 10 ** -17 converts the intensity back to units of (integral alpha/lambda) * (MJy/sr) * (Hz)
+ratio_ERE_TIR_north = (integral_north_minus_model / (10 ** -17)) / I_TIR_north
+ratio_ERE_TIR_south = (integral_south_minus_combo / (10 ** -17)) / I_TIR_south
+print("ratio ERE to TIR north:", ratio_ERE_TIR_north)
+print("ratio ERE to TIR south:", ratio_ERE_TIR_south)
 
 # find the peaks and quartiles (don't care about the scaling)
 # first the edges
