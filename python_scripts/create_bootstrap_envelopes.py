@@ -7,7 +7,7 @@ from generate_plots import generate_binned_alphas
 from astropy.io import fits
 import pickle
 
-loadkey = '012720'
+loadkey = '111521'
 alpha_direc_boot = '../data/'
 hdulist_direc = '../data/'
 
