@@ -5,6 +5,9 @@ from time import time
 from time import sleep
 import sys
 from math import floor #for calculating bin ranges
+# for masking ecliptic
+import astropy.units as u
+from astropy.coordinates import SkyCoord
 
 #previously named reproduce_figs_ahab.py
 #generate correlation spectra
@@ -69,6 +72,7 @@ threshold = float(sys.argv[4])
 location = int(sys.argv[5])
 bootstrap = int(sys.argv[6])
 get_correction = int(sys.argv[7])
+mask_ecliptic = False
     
 #calculate x, y, alpha
 def calc_alphas(i100, plate, flambda, ivar, boot=False, i100_old=None):
@@ -123,10 +127,11 @@ def calc_alphas(i100, plate, flambda, ivar, boot=False, i100_old=None):
     avg_i100 = None
     if get_correction:
         correction_factor = i100 / i100_old
-        weighted_avg = (xxsig * correction_factor) / sums2
-        avg_correction = np.sum(weighted_avg, axis=0)
-        # weighted_i100 = (xxsig * i100_old) / sums2
-        # avg_i100 = np.sum(weighted_i100, axis=0)
+        # weighted_avg = (xxsig * correction_factor) / sums2
+        # avg_correction = np.sum(weighted_avg, axis=0)
+        avg_correction = np.mean(correction_factor, axis=0)
+        weighted_i100 = (xxsig * i100_old) / sums2
+        avg_i100 = np.sum(weighted_i100, axis=0)
 
         """
         print("SHAPES")
@@ -219,7 +224,7 @@ else:
     wavelength = np.array(hdulist[1].data)  # Angstroms
     flambda = hdulist[2].data
     ivar = hdulist[3].data
-    
+
 #compute alphas separately for each file, then combine
 alphas_10 = np.zeros(0)
 alpha_std_10 = np.zeros(0)
@@ -252,6 +257,11 @@ for j in range(num_files):
         if np.mean(i100_old[plate==p]) > threshold:
             ivar[plate==p] = 0
             print("masking whole plate")
+            i100_old[plate==p] = np.nan  # TEST avg i100
+
+    # TEST: calculate avg i100
+    i100_old[i100_old > threshold] = np.nan
+    # i100_old[ivar < 0] = np.nan
             
     if boss:
         # possible bad CCD columns: 40, 59, 60, 833, 839, and 840.
@@ -272,6 +282,24 @@ for j in range(num_files):
         ivar[plate == np.unique(plate)[2383]] = 0
         ivar[plate == np.unique(plate)[2388]] = 0
 
+        # TEST:
+        i100_old[fiber_id == 40] = np.nan
+        i100_old[fiber_id == 59] = np.nan
+        i100_old[fiber_id == 60] = np.nan
+        i100_old[fiber_id == 833] = np.nan
+        i100_old[fiber_id == 839] = np.nan
+        i100_old[fiber_id == 840] = np.nan
+        # plate 36: the fiber at idx 3178 is bad. it was causing a discrepancy with SFD vs. IRIS results
+        i100_old[plate == np.unique(plate)[36]] = np.nan  # doesn't show up in jacknife bc already masked
+        i100_old[plate == np.unique(plate)[938]] = np.nan  # was masking fiber 252 which was wrong. now mask whole plate.
+        i100_old[plate == np.unique(plate)[1509]] = np.nan
+        i100_old[plate == np.unique(plate)[1265]] = np.nan
+        i100_old[plate == np.unique(plate)[1786]] = np.nan
+        i100_old[plate == np.unique(plate)[2141]] = np.nan
+        i100_old[plate == np.unique(plate)[2380]] = np.nan
+        i100_old[plate == np.unique(plate)[2383]] = np.nan
+        i100_old[plate == np.unique(plate)[2388]] = np.nan
+
     if location != 0:
         if boss:
             coords = np.loadtxt('BOSS_locations_galactic.txt')
@@ -287,10 +315,116 @@ for j in range(num_files):
             
             l = coords[:,0]
             b = coords[:,1]
+            l_abs = np.copy(l)
+            l_abs[l_abs > 180] -= 360  # make it range -180 to 180, for easier comparison
+            l_abs = np.abs(l_abs)  # now only positive
+            b_abs = np.abs(b)
+
+            # diagnostics / histograms
+            # plt.hist(l_abs, bins=100)
+            # plt.title("Galactic Longitudes")
+            # plt.show()
+            # plt.hist(b, bins=100)
+            # plt.title("Galactic Latitudes")
+            # plt.show()
+            # print("percentiles:")
+            # print("longitude:")
+            # print(np.percentile(np.abs(l_abs), [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]))
+            # print("latitude:")
+            # print(np.percentile(np.abs(b), [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]))
+            # exit(0)
+
+            if mask_ecliptic:
+                c = SkyCoord(l=l * u.degree, b=b * u.degree, frame='galactic')
+                ecliptic_coords = c.geocentricmeanecliptic
+                ecliptic_longs = ecliptic_coords.lon.deg
+                ecliptic_lats = ecliptic_coords.lat.deg
+
+                for p in np.unique(plate):
+                    if abs(np.mean(ecliptic_lats[plate == p])) < 10:
+                        ivar[plate == p] = 0
+                # skipping i100 masking
+                # ivar[abs(ecliptic_lats) < 10] = 0  # to mask fibers instead of plates
+
+                # # diagnostics:
+                # # plt.hist(ecliptic_lats)
+                # # plt.show()
+                # num_within_10 = len(ecliptic_lats[abs(ecliptic_lats) < 10])
+                # total_num = len(ecliptic_lats)
+                # # north:
+                # north_num_within_10 = len(ecliptic_lats[(abs(ecliptic_lats) < 10) & (b > 0)])
+                # total_north = len(ecliptic_lats[b > 0])
+                # south_num_within_10 = len(ecliptic_lats[(abs(ecliptic_lats) < 10) & (b < 0)])
+                # total_south = len(ecliptic_lats[b < 0])
+                # print("num within 10:", num_within_10)
+                # print("fraction within 10:", num_within_10 / total_num)
+                # print("north")
+                # print("north within 10:", north_num_within_10)
+                # print("fraction north within 10:", north_num_within_10 / total_north)
+                # print("south within 10:", south_num_within_10)
+                # print("fraction south within 10:", south_num_within_10 / total_south)
+
             if location == 1:
                 ivar[b < 0] = 0 #north
+                i100_old[b < 0] = np.nan
             elif location == 2:
                 ivar[b > 0] = 0 #south
+                i100_old[b > 0] = np.nan
+            elif location == 3:
+                # this is towards galactic center (l = 0)
+                ivar[(l > 80) & (l < 280)] = 0
+            elif location == 4:
+                # this is away from galactic center (l = 180)
+                ivar[l < 100] = 0
+                ivar[l > 260] = 0
+            elif location == 5:
+                # latitude 30 to 51
+                ivar[b_abs < 30] = 0
+                ivar[b_abs > 51] = 0
+            elif location == 6:
+                # latitude 51 to 71
+                ivar[b_abs < 51] = 0
+                ivar[b_abs > 71] = 0
+            elif location == 7:
+                # latitude 30 to 41
+                ivar[b_abs < 30] = 0
+                ivar[b_abs > 41] = 0
+            elif location == 8:
+                # latitude 41 to 51
+                ivar[b_abs < 41] = 0
+                ivar[b_abs > 51] = 0
+            elif location == 9:
+                # latitude 51 to 59
+                ivar[b_abs < 51] = 0
+                ivar[b_abs > 59] = 0
+            elif location == 10:
+                # latitude 59 to 71
+                ivar[b_abs < 59] = 0
+                ivar[b_abs > 71] = 0
+            elif location == 11:
+                # longitude 36 to 116
+                ivar[l_abs < 36] = 0
+                ivar[l_abs > 116] = 0
+            elif location == 12:
+                # longitude 116 to 171
+                ivar[l_abs < 116] = 0
+                ivar[l_abs > 171] = 0
+            elif location == 13:
+                # longitude 36 to 84
+                ivar[l_abs < 36] = 0
+                ivar[l_abs > 84] = 0
+            elif location == 14:
+                # longitude 84 to 116
+                ivar[l_abs < 84] = 0
+                ivar[l_abs > 116] = 0
+            elif location == 15:
+                # longitude 116 to 145
+                ivar[l_abs < 116] = 0
+                ivar[l_abs > 145] = 0
+            elif location == 16:
+                # longitude 145 to 171
+                ivar[l_abs < 145] = 0
+                ivar[l_abs > 171] = 0
         else:
             coords = np.loadtxt('infile.txt')
             l = coords[:,0]
