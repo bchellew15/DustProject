@@ -72,7 +72,7 @@ threshold = float(sys.argv[4])
 location = int(sys.argv[5])
 bootstrap = int(sys.argv[6])
 get_correction = int(sys.argv[7])
-mask_ecliptic = False
+mask_ecliptic = True
     
 #calculate x, y, alpha
 def calc_alphas(i100, plate, flambda, ivar, boot=False, i100_old=None):
@@ -257,11 +257,11 @@ for j in range(num_files):
         if np.mean(i100_old[plate==p]) > threshold:
             ivar[plate==p] = 0
             print("masking whole plate")
-            i100_old[plate==p] = np.nan  # TEST avg i100
+            # i100_old[plate==p] = np.nan  # TEST avg i100
 
-    # TEST: calculate avg i100
-    i100_old[i100_old > threshold] = np.nan
-    # i100_old[ivar < 0] = np.nan
+    # # TEST: calculate avg i100
+    # i100_old[i100_old > threshold] = np.nan
+    # # i100_old[ivar < 0] = np.nan
             
     if boss:
         # possible bad CCD columns: 40, 59, 60, 833, 839, and 840.
@@ -282,23 +282,23 @@ for j in range(num_files):
         ivar[plate == np.unique(plate)[2383]] = 0
         ivar[plate == np.unique(plate)[2388]] = 0
 
-        # TEST:
-        i100_old[fiber_id == 40] = np.nan
-        i100_old[fiber_id == 59] = np.nan
-        i100_old[fiber_id == 60] = np.nan
-        i100_old[fiber_id == 833] = np.nan
-        i100_old[fiber_id == 839] = np.nan
-        i100_old[fiber_id == 840] = np.nan
-        # plate 36: the fiber at idx 3178 is bad. it was causing a discrepancy with SFD vs. IRIS results
-        i100_old[plate == np.unique(plate)[36]] = np.nan  # doesn't show up in jacknife bc already masked
-        i100_old[plate == np.unique(plate)[938]] = np.nan  # was masking fiber 252 which was wrong. now mask whole plate.
-        i100_old[plate == np.unique(plate)[1509]] = np.nan
-        i100_old[plate == np.unique(plate)[1265]] = np.nan
-        i100_old[plate == np.unique(plate)[1786]] = np.nan
-        i100_old[plate == np.unique(plate)[2141]] = np.nan
-        i100_old[plate == np.unique(plate)[2380]] = np.nan
-        i100_old[plate == np.unique(plate)[2383]] = np.nan
-        i100_old[plate == np.unique(plate)[2388]] = np.nan
+        # # TEST:
+        # i100_old[fiber_id == 40] = np.nan
+        # i100_old[fiber_id == 59] = np.nan
+        # i100_old[fiber_id == 60] = np.nan
+        # i100_old[fiber_id == 833] = np.nan
+        # i100_old[fiber_id == 839] = np.nan
+        # i100_old[fiber_id == 840] = np.nan
+        # # plate 36: the fiber at idx 3178 is bad. it was causing a discrepancy with SFD vs. IRIS results
+        # i100_old[plate == np.unique(plate)[36]] = np.nan  # doesn't show up in jacknife bc already masked
+        # i100_old[plate == np.unique(plate)[938]] = np.nan  # was masking fiber 252 which was wrong. now mask whole plate.
+        # i100_old[plate == np.unique(plate)[1509]] = np.nan
+        # i100_old[plate == np.unique(plate)[1265]] = np.nan
+        # i100_old[plate == np.unique(plate)[1786]] = np.nan
+        # i100_old[plate == np.unique(plate)[2141]] = np.nan
+        # i100_old[plate == np.unique(plate)[2380]] = np.nan
+        # i100_old[plate == np.unique(plate)[2383]] = np.nan
+        # i100_old[plate == np.unique(plate)[2388]] = np.nan
 
     if location != 0:
         if boss:
@@ -366,10 +366,10 @@ for j in range(num_files):
 
             if location == 1:
                 ivar[b < 0] = 0 #north
-                i100_old[b < 0] = np.nan
+                # i100_old[b < 0] = np.nan
             elif location == 2:
                 ivar[b > 0] = 0 #south
-                i100_old[b > 0] = np.nan
+                # i100_old[b > 0] = np.nan
             elif location == 3:
                 # this is towards galactic center (l = 0)
                 ivar[(l > 80) & (l < 280)] = 0
@@ -379,52 +379,88 @@ for j in range(num_files):
                 ivar[l > 260] = 0
             elif location == 5:
                 # latitude 30 to 51
-                ivar[b_abs < 30] = 0
-                ivar[b_abs > 51] = 0
+                for p in np.unique(plate):
+                    if np.mean(b_abs[plate == p]) < 30:
+                        ivar[plate == p] = 0
+                    if np.mean(b_abs[plate == p]) > 51:
+                        ivar[plate == p] = 0
             elif location == 6:
                 # latitude 51 to 71
-                ivar[b_abs < 51] = 0
-                ivar[b_abs > 71] = 0
+                for p in np.unique(plate):
+                    if np.mean(b_abs[plate == p]) < 51:
+                        ivar[plate == p] = 0
+                    if np.mean(b_abs[plate == p]) > 71:
+                        ivar[plate == p] = 0
             elif location == 7:
                 # latitude 30 to 41
-                ivar[b_abs < 30] = 0
-                ivar[b_abs > 41] = 0
+                for p in np.unique(plate):
+                    if np.mean(b_abs[plate == p]) < 30:
+                        ivar[plate == p] = 0
+                    if np.mean(b_abs[plate == p]) > 41:
+                        ivar[plate == p] = 0
             elif location == 8:
                 # latitude 41 to 51
-                ivar[b_abs < 41] = 0
-                ivar[b_abs > 51] = 0
+                for p in np.unique(plate):
+                    if np.mean(b_abs[plate == p]) < 41:
+                        ivar[plate == p] = 0
+                    if np.mean(b_abs[plate == p]) > 51:
+                        ivar[plate == p] = 0
             elif location == 9:
                 # latitude 51 to 59
-                ivar[b_abs < 51] = 0
-                ivar[b_abs > 59] = 0
+                for p in np.unique(plate):
+                    if np.mean(b_abs[plate == p]) < 51:
+                        ivar[plate == p] = 0
+                    if np.mean(b_abs[plate == p]) > 59:
+                        ivar[plate == p] = 0
             elif location == 10:
                 # latitude 59 to 71
-                ivar[b_abs < 59] = 0
-                ivar[b_abs > 71] = 0
+                for p in np.unique(plate):
+                    if np.mean(b_abs[plate == p]) < 59:
+                        ivar[plate == p] = 0
+                    if np.mean(b_abs[plate == p]) > 71:
+                        ivar[plate == p] = 0
             elif location == 11:
                 # longitude 36 to 116
-                ivar[l_abs < 36] = 0
-                ivar[l_abs > 116] = 0
+                for p in np.unique(plate):
+                    if np.mean(l_abs[plate == p]) < 36:
+                        ivar[plate == p] = 0
+                    if np.mean(l_abs[plate == p]) > 116:
+                        ivar[plate == p] = 0
             elif location == 12:
                 # longitude 116 to 171
-                ivar[l_abs < 116] = 0
-                ivar[l_abs > 171] = 0
+                for p in np.unique(plate):
+                    if np.mean(l_abs[plate == p]) < 116:
+                        ivar[plate == p] = 0
+                    if np.mean(l_abs[plate == p]) > 171:
+                        ivar[plate == p] = 0
             elif location == 13:
                 # longitude 36 to 84
-                ivar[l_abs < 36] = 0
-                ivar[l_abs > 84] = 0
+                for p in np.unique(plate):
+                    if np.mean(l_abs[plate == p]) < 36:
+                        ivar[plate == p] = 0
+                    if np.mean(l_abs[plate == p]) > 84:
+                        ivar[plate == p] = 0
             elif location == 14:
                 # longitude 84 to 116
-                ivar[l_abs < 84] = 0
-                ivar[l_abs > 116] = 0
+                for p in np.unique(plate):
+                    if np.mean(l_abs[plate == p]) < 84:
+                        ivar[plate == p] = 0
+                    if np.mean(l_abs[plate == p]) > 116:
+                        ivar[plate == p] = 0
             elif location == 15:
                 # longitude 116 to 145
-                ivar[l_abs < 116] = 0
-                ivar[l_abs > 145] = 0
+                for p in np.unique(plate):
+                    if np.mean(l_abs[plate == p]) < 116:
+                        ivar[plate == p] = 0
+                    if np.mean(l_abs[plate == p]) > 145:
+                        ivar[plate == p] = 0
             elif location == 16:
                 # longitude 145 to 171
-                ivar[l_abs < 145] = 0
-                ivar[l_abs > 171] = 0
+                for p in np.unique(plate):
+                    if np.mean(l_abs[plate == p]) < 145:
+                        ivar[plate == p] = 0
+                    if np.mean(l_abs[plate == p]) > 171:
+                        ivar[plate == p] = 0
         else:
             coords = np.loadtxt('infile.txt')
             l = coords[:,0]
