@@ -247,7 +247,7 @@ def plot_binned(alpha_indices, colors, labels, envelope=False, thicks=None):
 
 if __name__ == "__main__":
 
-    envelope = False
+    envelope = True
 
     ##############################
     # PLOT NORTH AND SOUTH BOSS
