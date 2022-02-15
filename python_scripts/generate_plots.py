@@ -149,9 +149,9 @@ if __name__ == "__main__":
         alpha_stds = [np.load(alpha_direc + 'alpha_stds_boss_iris_2d_north_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_south_' + loadkey + '.npy'), \
                       np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')]
-        correction_factors = [np.load('../alphas_and_stds/correction_factor_boss_iris_north_smooth.npy'),
-                              np.load('../alphas_and_stds/correction_factor_boss_iris_south_smooth.npy'),
-                              np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')]
+        correction_factors = [np.load('../alphas_and_stds/correction_factor_boss_iris_north_' + loadkey + '_smooth.npy'),
+                              np.load('../alphas_and_stds/correction_factor_boss_iris_south_' + loadkey + '_smooth.npy'),
+                              np.load('../alphas_and_stds/correction_factor_boss_iris_2d_' + loadkey + '_10_smooth.npy')]
     else:
         alphas = [np.load(alpha_direc + 'alphas_sdss_1d_' + loadkey + '.npy'), \
                   np.load(alpha_direc + 'alphas_sdss_2d_' + loadkey + '.npy'), \
@@ -167,7 +167,7 @@ if __name__ == "__main__":
                               np.load('../alphas_and_stds/correction_factor_sdss_sfd_smooth.npy'),
                               np.load('../alphas_and_stds/correction_factor_sdss_iris_smooth.npy'),
                               np.ones(len(wavelength_sdss)),
-                              np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')]
+                              np.load('../alphas_and_stds/correction_factor_boss_iris_2d_' + loadkey + '_10_smooth.npy')]
     # flux conversion factor and correction factor:
     alphas = [a / fluxfactor * corr for a, corr in zip(alphas, correction_factors)]
     alpha_stds = [a / fluxfactor * corr for a, corr in zip(alpha_stds, correction_factors)]
@@ -216,8 +216,13 @@ if __name__ == "__main__":
         bootstrap_binned_stds = [b / fluxfactor * corr for b, corr in zip(bootstrap_binned_stds, binned_corrections)]
 
 # plot unbinned spectra (wavelength ranges: 4830-5040 and 6530-6770)
-def plot_emissions(alpha_indices, labels, colors, show_o3=False):
+def plot_emissions(alpha_indices, labels, colors, show_o3=False, thicks=None, zorders=None):
     fig = plt.figure(figsize=(12, 4.8)) # TEST (changed all from 5 to 4)
+
+    if thicks is None:
+        thicks = [1.5 for _ in labels]
+    if zorders is None:
+        zorders = [1 for _ in labels]
 
     num_plots = 2
     if show_o3:
@@ -229,10 +234,10 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
     # ax1 = plt.subplot(1, num_plots, num_plots-1)
     ax1 = fig.add_subplot(spec[-2])
     for i, idx in enumerate(alpha_indices):
-        ax1.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i])
+        ax1.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i], linewidth=thicks[i], zorder=zorders[i])
         if bootstrap:
             # ax1.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-            ax1.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
+            ax1.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--', linewidth=thicks[i], zorder=zorders[i])
         else:
             ax1.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
 
@@ -241,17 +246,17 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
         ax1.set_yticklabels([])
         fig.supxlabel(r"Wavelength ($\mathrm{\AA}$)")
     else:
-        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
-    ax1.legend(loc='upper center', bbox_to_anchor=(0.4, 0.95), frameon=False)
-    ax1.set_xlim(4830, 5040)
+        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+    ax1.legend(loc='upper center', bbox_to_anchor=(0.45, 0.95), frameon=False)
+    ax1.set_xlim(4805, 5045)
     ax1.set_ylim(-0.16, 0.96)
     xcoords = [4863, 4960, 5008]
     for xc in xcoords:
         ax1.axvline(x=xc, color='k', linewidth=1, linestyle='--')
     ax1.hlines(0, 4000, 6000, color='gray')
-    ax1.text(4858, 0.4, r"H$\beta$", fontsize=font_size, backgroundcolor='white')
-    ax1.text(4948, 0.4, "[O III]", fontsize=font_size, backgroundcolor='white')
-    ax1.text(4996, 0.4, "[O III]", fontsize=font_size, backgroundcolor='white')
+    ax1.text(4856, 0.4, r"H$\beta$", fontsize=font_size, backgroundcolor='white')
+    ax1.text(4946, 0.4, "[O III]", fontsize=font_size, backgroundcolor='white')
+    ax1.text(4994, 0.4, "[O III]", fontsize=font_size, backgroundcolor='white')
 
     ax1.xaxis.set_major_locator(MultipleLocator(50))
     ax1.xaxis.set_minor_locator(MultipleLocator(10))
@@ -267,10 +272,10 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
     # ax2 = plt.subplot(1, num_plots, num_plots)
     ax2 = fig.add_subplot(spec[-1])
     for i, idx in enumerate(alpha_indices):
-        ax2.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i])
+        ax2.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i], linewidth=thicks[i], zorder=zorders[i])
         if bootstrap:
             #ax2.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-            ax2.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
+            ax2.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--', linewidth=thicks[i], zorder=zorders[i])
         else:
             ax2.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
 
@@ -278,7 +283,7 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
         ax2.set_yticklabels([])
     else:
         ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
     # ax2.legend(loc='upper center', frameon=False)
     ax2.set_xlim(6530, 6770)
     ax2.set_ylim(-0.16, 0.96)
@@ -301,14 +306,14 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
         # ax3 = plt.subplot(1, num_plots, 1)
         ax3 = fig.add_subplot(spec[0])
         for i, idx in enumerate(alpha_indices):
-            ax3.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i])
+            ax3.plot(wavelength, alphas[idx], c=colors[i], drawstyle='steps-mid', label=labels[i], linewidth=thicks[i], zorder=zorders[i])
             if bootstrap:
                 # ax2.fill_between(wavelength, bootstrap_lower[idx], bootstrap_upper[idx], linewidth=0.0, color=colors[i], alpha=0.5, step='pre')
-                ax3.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
+                ax3.plot(wavelength, bootstrap_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--', linewidth=thicks[i], zorder=zorders[i])
             else:
                 ax3.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
 
-        ax3.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax3.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
         # ax3.legend(loc='upper center', frameon=False)
         ax3.set_xlim(3712, 3742)
         ax3.set_ylim(-0.16, 0.96)
@@ -318,7 +323,8 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False):
         for xc in xcoords:
             ax3.axvline(x=xc, color='k', linewidth=1, linestyle='--')
         ax3.hlines(0, 3700, 3800, color='gray')
-        ax3.text(3724, 0.54, "[O II]", fontsize=font_size, backgroundcolor='white')
+        ax3.text(3718, 0.54, "[O II]", fontsize=font_size, backgroundcolor='white')
+        ax3.text(3728, 0.64, "[O II]", fontsize=font_size, backgroundcolor='white')
 
         ax3.xaxis.set_major_locator(MultipleLocator(20))
         # ax3.xaxis.set_minor_locator(MultipleLocator(10))
@@ -340,13 +346,16 @@ if __name__ == "__main__":
 
 # plot binned alphas
 # takes alphas already binned. use generate_binned_alphas
-def plot_binned(alpha_indices, colors, labels, envelope=False):
+def plot_binned(alpha_indices, colors, labels, envelope=False, thicks=None):
     fig, ax = plt.subplots(figsize=(6, 4.8))
 
+    if thicks is None:
+        thicks = [1.5 for l in labels]
+
     for i, idx in enumerate(alpha_indices):
-        ax.plot(binned_lambdas, binned_alphas[idx], c=colors[i], drawstyle='steps', label=labels[i])
+        ax.plot(binned_lambdas, binned_alphas[idx], c=colors[i], drawstyle='steps', label=labels[i], linewidth=thicks[i])
         if bootstrap:
-            ax.plot(binned_lambdas, bootstrap_binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
+            ax.plot(binned_lambdas, bootstrap_binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--', linewidth=thicks[i])
         else:
             ax.plot(binned_lambdas, binned_stds[idx], c=colors[i], drawstyle='steps', linestyle='--')
         if envelope:
@@ -359,7 +368,7 @@ def plot_binned(alpha_indices, colors, labels, envelope=False):
     ax.yaxis.set_minor_locator(MultipleLocator(0.02))
     # ax.figure(figsize=(6, 5))
     ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
     if boss:
         ax.set_xlim(3700, 10000)
     else:
@@ -379,7 +388,8 @@ if __name__ == "__main__":
     # PLOT: BOSS NORTH VS SOUTH EMISSIONS
     #################################
     if boss:
-        plot_emissions([0, 1, 2], ["North", "South", "Full Sky"], ['#004488', '#BB5566', '#DDAA33'], show_o3=True)
+        plot_emissions([1, 0], ["South", "North"], ['#BB5566', '#004488'], show_o3=True, thicks=[1.5, 1.7], zorders=[3, 2])
+        # removed "Full Sky" at index 2 with color '#DDAA33'
         if save != '0' and bootstrap:
             print("saving as:", '../paper_figures/unbinned_' + save + '.pdf')
             plt.savefig('../paper_figures/unbinned_' + save + '.pdf', bbox_inches='tight')
@@ -400,14 +410,14 @@ if __name__ == "__main__":
 
         a1, = ax1.plot(binned_lambdas, binned_alphas[2], c='k', drawstyle='steps', label='SDSS-II')
         ax1.fill_between(binned_lambdas, bootstrap_binned_lower[2], bootstrap_binned_upper[2], linewidth=0.0, color='k', alpha=0.2, step='pre')
-        a2, = ax1.plot(binned_lambdas, bootstrap_binned_stds[2], c='k', drawstyle='steps', linestyle='--', label='Pipeline Uncertainties')
+        a2, = ax1.plot(binned_lambdas, bootstrap_binned_stds[2], c='k', drawstyle='steps', linestyle='--', label='Formal Uncertainties')
         a3, = ax1.plot(binned_lambdas, binned_stds[2], c='m', drawstyle='steps', linestyle='dotted', label='Bootstrap Uncertainties')
 
         legend1 = ax1.legend([a1], ['SDSS-II'], frameon=False, loc='upper left')
-        legend2 = ax1.legend([a2, a3], ['Bootstrap Uncertainties', 'Pipeline Uncertainties'], frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1))
+        legend2 = ax1.legend([a2, a3], ['Bootstrap Uncertainties', 'Formal Uncertainties'], frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1))
         pyplot.gca().add_artist(legend1)
         ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
         ax1.set_xlim(x_min, x_max)
         ax1_ymin, ax1_ymax = 0, 0.29
         ax1.set_ylim(ax1_ymin, ax1_ymax)
@@ -421,14 +431,14 @@ if __name__ == "__main__":
 
         a4, = ax2.plot(binned_lambdas_boss, binned_alphas_boss[0], c='k', drawstyle='steps', label='BOSS')
         ax2.fill_between(binned_lambdas_boss, bootstrap_binned_lower_boss, bootstrap_binned_upper_boss, linewidth=0.0, color='k', alpha=0.2, step='pre')
-        a5, = ax2.plot(binned_lambdas_boss, bootstrap_binned_stds_boss, c='k', drawstyle='steps', linestyle='--', label='Pipeline Uncertainties')
+        a5, = ax2.plot(binned_lambdas_boss, bootstrap_binned_stds_boss, c='k', drawstyle='steps', linestyle='--', label='Formal Uncertainties')
         a6, = ax2.plot(binned_lambdas_boss, binned_stds_boss[0], c='m', drawstyle='steps', linestyle='dotted', label='Bootstrap Uncertainties')
 
         legend3 = ax2.legend([a4], ['BOSS'], frameon=False, loc='upper left')
-        legend4 = ax2.legend([a5, a6], ['Bootstrap Uncertainties', 'Pipeline Uncertainties'], frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1))
+        legend4 = ax2.legend([a5, a6], ['Bootstrap Uncertainties', 'Formal Uncertainties'], frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1))
         pyplot.gca().add_artist(legend3)
         ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
         ax2.set_xlim(x_min, x_max)
         ax2_ymin, ax2_ymax = 0, 0.29
         ax2.set_ylim(ax2_ymin, ax2_ymax)
@@ -461,7 +471,7 @@ if __name__ == "__main__":
     ##############################
     if boss:
         envelope = bootstrap
-        ax = plot_binned([1, 0], ['#BB5566', '#004488'], ['South', 'North'], envelope=envelope)
+        ax = plot_binned([1, 0], ['#BB5566', '#004488'], ['South', 'North'], envelope=envelope, thicks=[1.5, 1.7])
         ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size, horizontalalignment='center')
         ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
@@ -496,11 +506,11 @@ if __name__ == "__main__":
                                 np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_20.npy'), \
                                 np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_25.npy'), \
                                 np.load(alpha_direc + 'alpha_stds_boss_iris_2d_' + loadkey + '_30.npy')]
-        correction_factors_thresh = [np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy'),
-                                     np.load('../alphas_and_stds/correction_factor_boss_iris_15_smooth.npy'),
-                                     np.load('../alphas_and_stds/correction_factor_boss_iris_20_smooth.npy'),
-                                     np.load('../alphas_and_stds/correction_factor_boss_iris_25_smooth.npy'),
-                                     np.load('../alphas_and_stds/correction_factor_boss_iris_30_smooth.npy')]
+        correction_factors_thresh = [np.load('../alphas_and_stds/correction_factor_boss_iris_2d_' + loadkey + '_10_smooth.npy'),
+                                     np.load('../alphas_and_stds/correction_factor_boss_iris_2d_' + loadkey + '_15_smooth.npy'),
+                                     np.load('../alphas_and_stds/correction_factor_boss_iris_2d_' + loadkey + '_20_smooth.npy'),
+                                     np.load('../alphas_and_stds/correction_factor_boss_iris_2d_' + loadkey + '_25_smooth.npy'),
+                                     np.load('../alphas_and_stds/correction_factor_boss_iris_2d_' + loadkey + '_30_smooth.npy')]
         # test
         plt.plot(wavelength, correction_factors_thresh[0], label='10')
         plt.plot(wavelength, correction_factors_thresh[1], label='15')
@@ -554,18 +564,21 @@ if __name__ == "__main__":
         # ax1.text(0.98, 0.98, 'Linear\nModel', horizontalalignment='right', verticalalignment='top', transform=ax1.transAxes, fontsize='large')
 
         #"bright" color scheme from https://personal.sron.nl/~pault/
-        # (order: blue, red, green, yellow, cyan)
-        colors = ['#4477AA', '#CCBB44', '#66CCEE', '#EE6677', '#228833']
+        # (not in order: blue, yellow, cyan, red, green, purple)
+        # colors = ['#4477AA', '#CCBB44', '#66CCEE', '#EE6677', '#228833', '#AA3377']
+        colors = ['k', '#CCBB44', '#66CCEE', '#EE6677', '#228833', '#AA3377']
         labels = ['10', '15', '20', '25', '30']
+        thicks = [2.4, 1.2, 1.8, 1.2, 1.8]
+        styles = ['solid', 'solid', 'solid', 'solid', 'solid']
         for i in range(len(labels)):
-            ax1.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+            ax1.plot(binned_lambdas, binned_alphas_1d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i], linewidth=thicks[i], linestyle=styles[i])
             if bootstrap:
                 ax1.plot(binned_lambdas, bootstrap_binned_stds_thresh_1d[i], c = colors[i], drawstyle='steps', linestyle='--')
                 #ax1.fill_between(binned_lambdas, bootstrap_binned_lower_thresh_1d[i], bootstrap_binned_upper_thresh_1d[i], linewidth=0.0, color=colors[i], alpha=0.5, step='pre') #TEMP
             else:
                 ax1.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps', linestyle='--')
             ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-            ax1.set_ylabel(r"$\alpha_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+            ax1.set_ylabel(r"$\alpha_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
             ax1.set_xlim(x_min, x_max)
             ax1.set_ylim(0, y_max)
 
@@ -581,14 +594,14 @@ if __name__ == "__main__":
         # ax2.text(0.98, 0.98, 'Nonlinear\nModel', horizontalalignment='right', verticalalignment='top', transform=ax2.transAxes, fontsize='large')
 
         for i in range(len(labels)):
-            ax2.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i])
+            ax2.plot(binned_lambdas, binned_alphas_2d[i], c=colors[i], drawstyle='steps', label=r'I$_{100} < %s$' % labels[i], linewidth=thicks[i], linestyle=styles[i])
             if bootstrap:
                 ax2.plot(binned_lambdas, bootstrap_binned_stds_thresh_2d[i], c = colors[i], drawstyle='steps', linestyle='--')
                 #ax2.fill_between(binned_lambdas, bootstrap_binned_lower_thresh_2d[i], bootstrap_binned_upper_thresh_2d[i], linewidth=0.0, color=colors[i], alpha=0.5, step='pre') #TEMP
             else:
                 ax2.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps', linestyle='--')
             ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-            ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mu$m)")
+            ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
             ax2.set_xlim(x_min, x_max)
             ax2.set_ylim(0, y_max)
 
