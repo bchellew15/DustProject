@@ -4,6 +4,7 @@
 import os
 from multiprocessing import Pool
 from generate_plots import generate_binned_alphas
+import numpy as np
 
 num_processes = 6
 
@@ -25,30 +26,30 @@ num_processes = 6
 # os.system('python generate_alphas_ahab.py iris_2d 1 lon_e 10 15 0 0')
 # os.system('python generate_alphas_ahab.py iris_2d 1 lon_f 10 16 0 0')
 
-# then bootstrap
-os.system('python generate_alphas_ahab.py iris_2d 1 lat_a 10 5 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lat_b 10 6 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lat_c 10 7 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lat_d 10 8 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lat_e 10 9 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lat_f 10 10 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lon_a 10 11 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lon_b 10 12 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lon_c 10 13 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lon_d 10 14 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lon_e 10 15 1 0')
-os.system('python generate_alphas_ahab.py iris_2d 1 lon_f 10 16 1 0')
-
-# then generate bootstrap samples
-def run_bootstrapping(savekey):
-    execute_string = 'python bootstrap_ahab.py ' + savekey + ' 2000'
-    os.system(execute_string)
-
-inputs = ['lat_a', 'lat_b', 'lat_c', 'lat_d', 'lat_e', 'lat_f', 'lon_a', 'lon_b', 'lon_c', 'lon_d', 'lon_e', 'lon_f']
-with Pool(num_processes) as p:
-    outputs = p.imap_unordered(run_bootstrapping, inputs)
-    for output in outputs:
-        print(output)
+# # then bootstrap
+# os.system('python generate_alphas_ahab.py iris_2d 1 lat_a 10 5 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lat_b 10 6 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lat_c 10 7 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lat_d 10 8 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lat_e 10 9 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lat_f 10 10 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lon_a 10 11 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lon_b 10 12 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lon_c 10 13 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lon_d 10 14 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lon_e 10 15 1 0')
+# os.system('python generate_alphas_ahab.py iris_2d 1 lon_f 10 16 1 0')
+#
+# # then generate bootstrap samples
+# def run_bootstrapping(savekey):
+#     execute_string = 'python bootstrap_ahab.py ' + savekey + ' 2000'
+#     os.system(execute_string)
+#
+# inputs = ['lat_a', 'lat_b', 'lat_c', 'lat_d', 'lat_e', 'lat_f', 'lon_a', 'lon_b', 'lon_c', 'lon_d', 'lon_e', 'lon_f']
+# with Pool(num_processes) as p:
+#     outputs = p.imap_unordered(run_bootstrapping, inputs)
+#     for output in outputs:
+#         print(output)
 
 # generate envelopes
 wavelength_boss = np.load('/home/blakechellew/alphas_and_stds/wavelength_boss.npy')

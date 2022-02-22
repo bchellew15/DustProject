@@ -192,13 +192,35 @@ if __name__ == "__main__":
             with open(alpha_direc_boot + 'bootstrap_binned_lower_boss' + loadkey + '.p', 'rb') as pf:
                 bootstrap_binned_lower = pickle.load(pf)
                 # insert the ecliptic stuff
-                bootstrap_binned_lower.insert(2, np.load('../data/bootstrap_binned_lower_north_mask_ecliptic.npy'))
-                bootstrap_binned_lower.insert(3, np.load('../data/bootstrap_binned_lower_south_mask_ecliptic.npy'))
+                bootstrap_binned_lower.insert(2, np.load('../data/bootstrap_binned_lower_lat_a.npy'))
+                bootstrap_binned_lower.insert(3, np.load('../data/bootstrap_binned_lower_lat_b.npy'))
+                bootstrap_binned_lower.insert(4, np.load('../data/bootstrap_binned_lower_lat_c.npy'))
+                bootstrap_binned_lower.insert(5, np.load('../data/bootstrap_binned_lower_lat_d.npy'))
+                bootstrap_binned_lower.insert(6, np.load('../data/bootstrap_binned_lower_lat_e.npy'))
+                bootstrap_binned_lower.insert(7, np.load('../data/bootstrap_binned_lower_lat_f.npy'))
+                bootstrap_binned_lower.insert(8, np.load('../data/bootstrap_binned_lower_lon_a.npy'))
+                bootstrap_binned_lower.insert(9, np.load('../data/bootstrap_binned_lower_lon_b.npy'))
+                bootstrap_binned_lower.insert(10, np.load('../data/bootstrap_binned_lower_lon_c.npy'))
+                bootstrap_binned_lower.insert(11, np.load('../data/bootstrap_binned_lower_lon_d.npy'))
+                bootstrap_binned_lower.insert(12, np.load('../data/bootstrap_binned_lower_lon_e.npy'))
+                bootstrap_binned_lower.insert(13, np.load('../data/bootstrap_binned_lower_lon_f.npy'))
             with open(alpha_direc_boot + 'bootstrap_binned_upper_boss' + loadkey + '.p', 'rb') as pf:
                 bootstrap_binned_upper = pickle.load(pf)
                 # insert the ecliptic stuff
-                bootstrap_binned_upper.insert(2, np.load('../data/bootstrap_binned_upper_north_mask_ecliptic.npy'))
-                bootstrap_binned_upper.insert(3, np.load('../data/bootstrap_binned_upper_south_mask_ecliptic.npy'))
+                bootstrap_binned_upper.insert(2, np.load('../data/bootstrap_binned_upper_lat_a.npy'))
+                bootstrap_binned_upper.insert(3, np.load('../data/bootstrap_binned_upper_lat_b.npy'))
+                bootstrap_binned_upper.insert(4, np.load('../data/bootstrap_binned_upper_lat_c.npy'))
+                bootstrap_binned_upper.insert(5, np.load('../data/bootstrap_binned_upper_lat_d.npy'))
+                bootstrap_binned_upper.insert(6, np.load('../data/bootstrap_binned_upper_lat_e.npy'))
+                bootstrap_binned_upper.insert(7, np.load('../data/bootstrap_binned_upper_lat_f.npy'))
+                bootstrap_binned_upper.insert(8, np.load('../data/bootstrap_binned_upper_lon_a.npy'))
+                bootstrap_binned_upper.insert(9, np.load('../data/bootstrap_binned_upper_lon_b.npy'))
+                bootstrap_binned_upper.insert(10, np.load('../data/bootstrap_binned_upper_lon_c.npy'))
+                bootstrap_binned_upper.insert(11, np.load('../data/bootstrap_binned_upper_lon_d.npy'))
+                bootstrap_binned_upper.insert(12, np.load('../data/bootstrap_binned_upper_lon_e.npy'))
+                bootstrap_binned_upper.insert(13, np.load('../data/bootstrap_binned_upper_lon_f.npy'))
+                print("bootstrap_binned_upper:")
+                print(bootstrap_binned_upper)
             with open(alpha_direc_boot + 'bootstrap_binned_stds_boss' + loadkey + '.p', 'rb') as pf:
                 bootstrap_binned_stds = pickle.load(pf)
         else:
@@ -268,13 +290,14 @@ def plot_binned(alpha_indices, colors, labels, envelope=False, thicks=None):
 
 if __name__ == "__main__":
 
+    envelope = True
+
     ##############################
     # PLOT 2 Latitude Regions
     ##############################
     if boss:
-        envelope = bootstrap
         ax = plot_binned([2, 3], ['#BB5566', '#004488'], ['30 < |b| < 51', '51 < |b| < 71'],
-                         envelope=False, thicks=[1.5, 1.5])
+                         envelope=envelope, thicks=[1.5, 1.5])
         ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size, horizontalalignment='center')
         ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
@@ -287,9 +310,8 @@ if __name__ == "__main__":
     # PLOT 4 Latitude Regions
     ##############################
     if boss:
-        envelope = bootstrap
         ax = plot_binned([4, 5, 6, 7], ['#BB5566', '#004488', 'orange', 'black'],
-                         ['30 < |b| < 41', '41 < |b| < 51', '51 < |b| < 59', '59 < |b| < 71'], envelope=False,
+                         ['30 < |b| < 41', '41 < |b| < 51', '51 < |b| < 59', '59 < |b| < 71'], envelope=envelope,
                          thicks=[1.5, 1.5, 1.5, 1.5])
         ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
                 horizontalalignment='center')
@@ -305,7 +327,7 @@ if __name__ == "__main__":
     ##############################
     if boss:
         envelope = bootstrap
-        ax = plot_binned([8, 9], ['#BB5566', '#004488'], ['36 < |l| < 116', '116 < |l| < 171'], envelope=False,
+        ax = plot_binned([8, 9], ['#BB5566', '#004488'], ['36 < |l| < 116', '116 < |l| < 171'], envelope=envelope,
                          thicks=[1.5, 1.5])
         ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
                 horizontalalignment='center')
@@ -322,7 +344,7 @@ if __name__ == "__main__":
     if boss:
         envelope = bootstrap
         ax = plot_binned([10, 11, 12, 13], ['#BB5566', '#004488', 'orange', 'black'],
-                         ['36 < |l| < 84', '84 < |l| < 116', '116 < |l| < 145', '145 < |l| < 171'], envelope=False,
+                         ['36 < |l| < 84', '84 < |l| < 116', '116 < |l| < 145', '145 < |l| < 171'], envelope=envelope,
                          thicks=[1.5, 1.5, 1.5, 1.5])
         ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
                 horizontalalignment='center')
