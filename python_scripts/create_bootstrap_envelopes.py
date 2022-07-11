@@ -1,5 +1,5 @@
 # run this on ahab.
-# create the bootstrap envolopes here so the plotting code can run faster.
+# create the bootstrap envelopes here so the plotting code can run faster.
 # need to divide by flux conversion factor somewhere else.
 
 import numpy as np
@@ -17,7 +17,7 @@ hdulist = fits.open(hdulist_direc + 'SDSS_allskyspec.fits')
 wavelength_sdss = np.array(hdulist[1].data)
 
 #############################################################
-
+"""
 # now for the threshold plots
 
 bootstrap_alphas_thresh_1d = [np.load(alpha_direc_boot + 'bootstrap_alphas_boss_iris_1d_' + loadkey + '_10.npy'),
@@ -69,7 +69,7 @@ with open(alpha_direc_boot + 'bootstrap_binned_upper_thresh_2d' + loadkey + '.p'
 with open(alpha_direc_boot + 'bootstrap_binned_stds_thresh_2d' + loadkey + '.p', 'wb') as fp:
     pickle.dump(bootstrap_binned_stds_thresh_2d, fp)
 print("done saving")
-
+"""
 #########################################################
 
 # load bootstrap stuff:

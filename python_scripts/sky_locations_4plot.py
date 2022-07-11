@@ -60,10 +60,18 @@ mask = np.where(i100_old>threshold)[0]
 for p in np.unique(plate):
     if np.mean(i100_old[plate==p]) > threshold:
         mask = np.append(mask, np.where(plate==p)[0])
-mask = np.append(mask, 3178) #data at this location is bad
+mask = np.append(mask, np.where(plate == np.unique(plate)[36])[0])
+mask = np.append(mask, np.where(plate == np.unique(plate)[938])[0])
+mask = np.append(mask, np.where(plate == np.unique(plate)[1509])[0])
+mask = np.append(mask, np.where(plate == np.unique(plate)[1265])[0])
+mask = np.append(mask, np.where(plate == np.unique(plate)[1786])[0])
+mask = np.append(mask, np.where(plate == np.unique(plate)[2141])[0])
+mask = np.append(mask, np.where(plate == np.unique(plate)[2380])[0])
+mask = np.append(mask, np.where(plate == np.unique(plate)[2383])[0])
+mask = np.append(mask, np.where(plate == np.unique(plate)[2388])[0])
 
 
-fig = plt.figure(figsize=(12, 8), dpi=200)
+fig = plt.figure(figsize=(12, 8), dpi=300)
 fig.subplots_adjust(hspace=0.1) # height spaces
 fig.subplots_adjust(wspace=0.15) # width spaces
 plt.tight_layout()
@@ -73,9 +81,10 @@ ax = fig.add_subplot(222)
 #boss unweighted
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
-densities = np.load('../alphas_and_stds/boss_skyfiber_densities.npy')
-boss_colorbar_max = 256  # this is 256 * (9/4) to compare with SDSS
+densities = np.load('../alphas_and_stds/boss_skyfiber_densities.npy') / 4
+boss_colorbar_max = 128
 densities[densities > boss_colorbar_max] = boss_colorbar_max
+densities[densities < 1] = 1
 
 #mask coordinates:
 longs = np.delete(longs, mask)
@@ -119,8 +128,8 @@ m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], co
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
 cb = m.colorbar(location='bottom', label=r'Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
 cb.set_ticklabels(tick_labels)
 
 
@@ -128,9 +137,9 @@ cb.set_ticklabels(tick_labels)
 x1, y1 = m(360-20.7, 70.8)
 x2, y2 = m(360-279.3, 75.3)
 x3, y3 = m(360-88.4, -26.1)
-m.scatter(x1, y1, marker='.', s=10, c='r')
-m.scatter(x2, y2, marker='.', s=10, c='r')
-m.scatter(x3, y3, marker='.', s=10, c='r')
+# m.scatter(x1, y1, marker='.', s=10, c='r')
+# m.scatter(x2, y2, marker='.', s=10, c='r')
+# m.scatter(x3, y3, marker='.', s=10, c='r')
 
 #plt.title("Sky Fiber Density")
 
@@ -139,7 +148,7 @@ ax = fig.add_subplot(224)
 #boss weighted
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
-densities = np.load('../alphas_and_stds/boss_skyfiber_densities_weighted.npy')
+densities = np.load('../alphas_and_stds/boss_skyfiber_densities_weighted.npy') / 4
 densities[densities > boss_colorbar_max] = boss_colorbar_max #max on scale
 densities[densities<1] = 1 #min on scale
 
@@ -185,14 +194,14 @@ m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], co
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
 cb = m.colorbar(location='bottom', label=r'Weighted Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
 tick_labels[0] = '<1'
 cb.set_ticklabels(tick_labels)
 
-m.scatter(x1, y1, marker='.', s=10, c='r')
-m.scatter(x2, y2, marker='.', s=10, c='r')
-m.scatter(x3, y3, marker='.', s=10, c='r')
+# m.scatter(x1, y1, marker='.', s=10, c='r')
+# m.scatter(x2, y2, marker='.', s=10, c='r')
+# m.scatter(x3, y3, marker='.', s=10, c='r')
 
 #plt.title("Sky Fiber Density")
 
@@ -221,8 +230,9 @@ ax = fig.add_subplot(221)
 #sdss unweighted
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
-densities = np.load('../alphas_and_stds/sdss_skyfiber_densities.npy')
-densities[densities>256] = 256 #max on scale
+densities = np.load('../alphas_and_stds/sdss_skyfiber_densities.npy') / 4
+densities[densities>128] = 128 #max on scale
+densities[densities < 1] = 1
 
 #mask coordinates:
 longs = np.delete(longs, mask)
@@ -259,6 +269,11 @@ plt.text(0, 1, 'SDSS-II', horizontalalignment='left', verticalalignment='top', t
 #transform data coordinates
 x, y = m(longs,lats)
 
+# add an extra point to force colorbar:
+x = np.append(x, 0)
+y = np.append(y, 0)
+densities = np.append(densities, 128)
+
 m.drawmapboundary(linewidth=1, zorder=-1)
 m.drawmeridians(np.arange(0,360,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
 m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], color='gray')
@@ -266,8 +281,8 @@ m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], co
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
 cb = m.colorbar(location='bottom', label=r'Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
 cb.set_ticklabels(tick_labels)
 
 #plt.title("Sky Fiber Density")
@@ -278,8 +293,8 @@ ax = fig.add_subplot(223)
 #sdss weighted
 longs = np.copy(coords[:,0])
 lats = np.copy(coords[:,1])
-densities = np.load('../alphas_and_stds/sdss_skyfiber_densities_weighted.npy')
-densities[densities>256] = 256 #max on scale
+densities = np.load('../alphas_and_stds/sdss_skyfiber_densities_weighted.npy') / 4
+densities[densities>128] = 128 #max on scale
 densities[densities<1] = 1 #min on scale
 
 #mask coordinates:
@@ -324,15 +339,15 @@ m.drawparallels(np.arange(-90,90,30), zorder=0, linewidth=0.5, dashes=[1, 0], co
 m.scatter(x, y, marker='.', s=1, c=densities, cmap=new_cmap, norm=matplotlib.colors.LogNorm())
 
 cb = m.colorbar(location='bottom', label=r'Weighted Sky Fiber Density (deg$^{-2}$)')
-cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128, 256])
-tick_labels = [1, 2, 4, 8, 16, 32, 64, 128, '256+']
+cb.set_ticks([1, 2, 4, 8, 16, 32, 64, 128])
+tick_labels = [1, 2, 4, 8, 16, 32, 64, '128+']
 tick_labels[0] = '<1'
 cb.set_ticklabels(tick_labels)
 
 #plt.title("Sky Fiber Density")
 
 if save:
-    plt.savefig('../paper_figures/skyfibers_4plot_102621.png', bbox_inches='tight')
+    plt.savefig('../paper_figures/skyfibers_4plot_120221.png', bbox_inches='tight')
 else:
     plt.show()
 

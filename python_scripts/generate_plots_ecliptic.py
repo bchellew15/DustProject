@@ -236,7 +236,7 @@ def plot_binned(alpha_indices, colors, labels, envelope=False, thicks=None):
     ax.yaxis.set_minor_locator(MultipleLocator(0.02))
     # ax.figure(figsize=(6, 5))
     ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
     if boss:
         ax.set_xlim(3700, 10000)
     else:
@@ -254,11 +254,12 @@ if __name__ == "__main__":
     ##############################
     if boss:
         ax = plot_binned([1, 0], ['#BB5566', '#004488'], ['South', 'North'], envelope=envelope, thicks=[1.5, 1.7])
-        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size, horizontalalignment='center')
-        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
+        # ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size, horizontalalignment='center')
+        # ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
-            plt.clf()
+            # plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
+            # plt.clf()
+            pass
         elif show_plots:
             plt.show()
 
@@ -267,12 +268,13 @@ if __name__ == "__main__":
     ##############################
     if boss:
         ax = plot_binned([3, 2], ['#BB5566', '#004488'], ['South (ecliptic masked)', 'North (ecliptic masked)'], envelope=envelope, thicks=[1.5, 1.7])
-        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
-                horizontalalignment='center')
-        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
+        # ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
+        #         horizontalalignment='center')
+        # ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
-            plt.clf()
+            # plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
+            # plt.clf()
+            pass
         elif show_plots:
             plt.show()
 
@@ -280,12 +282,12 @@ if __name__ == "__main__":
     # SOUTH WITH / WITHOUT ECLIPTIC
     ##############################
     if boss:
-        ax = plot_binned([1, 3], ['#BB5566', '#004488'], ['South', 'South (ecliptic masked)'], envelope=envelope, thicks=[1.5, 1.7])
-        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
-                horizontalalignment='center')
-        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
+        ax = plot_binned([1, 3], ['#BB5566', '#004488'], ['South (as in paper)', 'South (ecliptic masked)'], envelope=envelope, thicks=[1.5, 1.7])
+        # ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
+        #         horizontalalignment='center')
+        # ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
+            plt.savefig('../paper_figures/south_ecliptic_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
             plt.show()
@@ -294,12 +296,12 @@ if __name__ == "__main__":
     # NORTH WITH / WITHOUT ECLIPTIC
     ##############################
     if boss:
-        ax = plot_binned([0, 2], ['#BB5566', '#004488'], ['North', 'North (ecliptic masked)'], envelope=envelope, thicks=[1.5, 1.7])
-        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
-                horizontalalignment='center')
-        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
+        ax = plot_binned([0, 2], ['#BB5566', '#004488'], ['North (as in paper)', 'North (ecliptic masked)'], envelope=envelope, thicks=[1.5, 1.7])
+        # ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
+        #         horizontalalignment='center')
+        # ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
+            plt.savefig('../paper_figures/north_ecliptic_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
             plt.show()

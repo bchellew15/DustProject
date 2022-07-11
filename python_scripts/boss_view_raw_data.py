@@ -14,12 +14,12 @@ num_files = len(filenames)
 
 #get list of plates and fiber ids
 hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + filenames[0])
-plate = hdulist[6].data
+plate0 = hdulist[6].data
 mjd = hdulist[5].data
 fiber_id = hdulist[7].data
 flambda = hdulist[0].data
 
-plate = 10000 * plate + mjd % 10000 #plate is now a unique identifier
+plate = 10000 * plate0 + mjd % 10000 #plate is now a unique identifier
 
 i100_old = np.loadtxt("/Users/blakechellew/Documents/DustProject/SFD_Maps/CodeC/SFD_i100_at_BOSS_locations.txt")[:,2]
 i100 = np.load("/Volumes/TOSHIBA/Dust_Overflow/i100_tao_boss_iris.npy", mmap_mode='r')
@@ -30,7 +30,15 @@ wavelength_boss = np.load('../alphas_and_stds/wavelength_boss.npy')
 # see "sky_locations.py" for sdss locations
 
 # check i100 variance on certain plates:
-"""
+
+# get plate numbers for masked plates
+
+print("plate numbers")
+for i in [36, 938, 1509, 1265, 1786, 2141, 2380, 2383, 2388]:
+    plate_num = plate0[np.where(plate == np.unique(plate)[i])]
+    print(plate_num)
+exit(0)
+
 print("check 1")
 
 i100_1d = np.copy(i100[:, 2000])
@@ -42,12 +50,15 @@ i100_1d[i100_old > 10] = np.nan
 for p in np.unique(plate):
     if np.mean(i100_old[plate == p]) > 10:
         i100_1d[plate == p] = np.nan
-i100_1d[3178] = np.nan  # data at this location is bad
-i100_1d[fiber_id == 840] = np.nan
+i100_1d[plate == np.unique(plate)[36]] = np.nan
+i100_1d[plate == np.unique(plate)[938]] = np.nan
 i100_1d[plate == np.unique(plate)[1509]] = np.nan
 i100_1d[plate == np.unique(plate)[1265]] = np.nan
 i100_1d[plate == np.unique(plate)[1786]] = np.nan
-i100_1d[(plate == np.unique(plate)[938]) * (fiber_id == 252)] = np.nan
+i100_1d[plate == np.unique(plate)[2141]] = np.nan
+i100_1d[plate == np.unique(plate)[2380]] = np.nan
+i100_1d[plate == np.unique(plate)[2383]] = np.nan
+i100_1d[plate == np.unique(plate)[2388]] = np.nan
 
 print("check 3")
 
@@ -59,14 +70,18 @@ for i in range(len(np.unique(plate))):
     i100_plate = i100_1d[plate == np.unique(plate)[i]]
     variance = np.nanvar(i100_plate)
     variances[i] = variance
-print("mean:", np.nanmean(variances))
-print("median:", np.nanmedian(variances))
+mean_variance = np.nanmean(variances)
+print("mean:", mean_variance)
+print("mean std:", np.sqrt(mean_variance))
+med_variance = np.nanmedian(variances)
+print("median:", med_variance)
+print("median std:", np.sqrt(med_variance))
 print("std:", np.nanstd(variances))
 plt.hist(variances)
 plt.show()
 
 exit(0)
-"""
+
 
 # view spectra for certain fibers:
 """

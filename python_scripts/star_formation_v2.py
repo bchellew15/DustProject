@@ -19,7 +19,7 @@ from scipy import ndimage
 # parameters
 # (poly_degree is for the polynomial added to the linear combo)
 # (continuum_degree is for ???)
-save = False
+save = True
 poly_degree = -1  # 1 is linear, etc.
 poly_order = poly_degree + 1
 continuum_deg = 10
@@ -32,6 +32,7 @@ min_wav = 4000
 max_wav = 9000  # bc03 switches to lower resolution around 9300
 dust_model_wd = False
 y_max = 0.38
+loadkey = '111521'
 
 # matplotlib options
 # matplotlib options
@@ -55,15 +56,15 @@ matplotlib.rcParams['axes.unicode_minus'] = False
 paths_bc03 = glob.glob('/Users/blakechellew/Documents/DustProject/BrandtFiles/bc03/*.spec')
 
 if bootstrap:
-    alphas_bootstrap = np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_012720.npy')
+    alphas_bootstrap = np.load('../alphas_and_stds/bootstrap_alphas_boss_iris_2d_' + loadkey + '_10.npy')
     # alpha_stds_bootstrap = np.load('../alphas_and_stds/bootstrap_alpha_stds_boss_iris_2d_012720.npy')
 # alphas and stds (boss):
-alphas_boss = np.load('../alphas_and_stds/alphas_boss_iris_2d_012720_10.npy')
-alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_boss_iris_2d_012720_10.npy')
+alphas_boss = np.load('../alphas_and_stds/alphas_boss_iris_2d_' + loadkey + '_10.npy')
+alpha_stds_boss = np.load('../alphas_and_stds/alpha_stds_boss_iris_2d_' + loadkey + '_10.npy')
 wavelength = np.load('../alphas_and_stds/wavelength_boss.npy')
 
 # apply model corrections
-correction_factor = np.load('../alphas_and_stds/correction_factor_boss_iris_smooth.npy')
+correction_factor = np.load('../alphas_and_stds/correction_factor_boss_iris_2d_' + loadkey + '_10_smooth.npy')
 alphas_boss = alphas_boss * correction_factor
 alpha_stds_boss = alpha_stds_boss * correction_factor
 if bootstrap:
@@ -197,7 +198,7 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     best_fit_model = continuum_norm(wavelength_trunc, coeffs[0], coeffs[1], coeffs[2])
     best_fit_model = continuum_norm(wavelength_trunc, 0, 0, 1)  # TEST: manually set the coeffs
     # and smooth it:
-    best_fit_model_smooth = gaussian_smoothing(best_fit_model, 100)
+    best_fit_model_smooth = gaussian_smoothing(best_fit_model, 90)
     plt.plot(wavelength_trunc, alphas_continuum, 'k', drawstyle='steps')
     plt.plot(wavelength_trunc, best_fit_model, 'r', drawstyle='steps')
     plt.plot(wavelength_trunc, best_fit_model_smooth, 'green', drawstyle='steps')
@@ -233,10 +234,10 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
     # panel 1
     ax1 = plt.subplot(2, 1, 1)
     single_model_corrected = continuum_norm(wavelength_trunc, 0, 0, 1)  # (0, 0, 1) is t5e9
-    ax1.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum')
-    ax1.plot(wavelength_trunc, best_fit_model - 1, 'r', drawstyle='steps', label='BC03 Model')
+    ax1.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum', linewidth=1.3)
+    ax1.plot(wavelength_trunc, best_fit_model - 1, c='#DDAA33', drawstyle='steps', label='BC03 Model', linewidth=1.9)
     # ax1.set_title("Correlation Spectrum vs. BC03 Starlight Model")
-    ax1.set_ylabel(r'$(\alpha^{\prime} / \alpha_{\mathrm{smooth}}^{\prime}) - 1$')
+    ax1.set_ylabel(r'$\left(\alpha^{\prime} / \alpha_{\mathrm{smooth}}^{\prime}\right) - 1$')
     ax1.set_xlim(5050, 5450)  # small wiggles
     ax1.set_ylim(-y_max, y_max)
     # ax1.legend(frameon=False, loc='lower center', bbox_to_anchor=(0.68, 0))
@@ -249,12 +250,12 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
 
     # panel 2
     ax2 = plt.subplot(2, 1, 2)
-    ax2.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum', zorder=1)
-    ax2.plot(wavelength_trunc, best_fit_model - 1, 'r', drawstyle='steps', label='BC03 Model', zorder=1)
+    ax2.plot(wavelength_trunc, alphas_continuum - 1, 'k', drawstyle='steps', label='Correlation Spectrum', zorder=1, linewidth=1.3)
+    ax2.plot(wavelength_trunc, best_fit_model - 1, c='#DDAA33', drawstyle='steps', label='BC03 Model', zorder=1, linewidth=1.9)
     # add grey patches:
     ax2.add_patch(matplotlib.patches.Rectangle((6540, -1), 55, 2, facecolor='black', alpha=0.13, zorder=2))
     ax2.add_patch(matplotlib.patches.Rectangle((6708, -1), 35, 2, facecolor='black', alpha=0.13, zorder=3))
-    ax2.set_ylabel(r'$(\alpha^{\prime} / \alpha_{\mathrm{smooth}}^{\prime}) - 1$')
+    ax2.set_ylabel(r'$\left(\alpha^{\prime} / \alpha_{\mathrm{smooth}}^{\prime}\right) - 1$')
     ax2.set_xlim(6000, 8000)  # big wiggles
     ax2.set_ylim(-y_max, y_max)
     ax2.legend(frameon=False, loc='upper center', bbox_to_anchor=(0.4, 1), ncol=2)
@@ -267,7 +268,7 @@ def alphas_to_coeffs(alphas, alpha_stds, wavelength, paths, showPlots=True):
 
     plt.tight_layout()
     if save:
-        plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/unbinned_model_compare_110921.pdf')
+        plt.savefig('/Users/blakechellew/Documents/DustProject/paper_figures/unbinned_model_compare_121821.pdf')
     plt.show()
 
     best_fit_uncorrected = best_fit_model  # TEMP

@@ -21,7 +21,7 @@ wd01_model = int(sys.argv[2])
 savekey = sys.argv[3]  # t5e9_grid_200_wd.npy
 
 
-save = True  # save ERE figure
+save = False  # save ERE figure
 boss = True  # whether to interpolate to BOSS wavelengths or SDSS
 # wd01_model = True  # otherwise zda04 model
 b = 40 * np.pi / 180  # latitude (should be 40 degrees -> radians)
@@ -36,7 +36,9 @@ sig_star_1 = 300  # 300 (alt 1.2)
 sig_star_2 = 1350  # 1350 (alt 5.4)
 mistakes = False
 rho_scale = 500  # 500  # previous: 5 or 1000  #.1 matches brandt code for sig = 1
-ahab = True
+ahab = False
+uv = True
+uv_cutoff = 2 # 1 is 6 eV, 2 is 8 eV
 
 # number of grid points (for TIR and scattering):
 # n_beta needs to be even
@@ -118,7 +120,18 @@ if wd01_model:
 else:
     wav_min = 600
     wav_max = 1126
+if uv:
+    # bruce suggested cutoffs of 6 eV or 8 eV.
+    # corresponding to (E = hf)
+    wav_min = 600
+    if uv_cutoff == 1:
+        wav_max = 864  # index corresponding to 2066.4 A  (actual 2065.4)
+    elif uv_cutoff == 2:
+        wav_max = 839  # index corr. to 1549.8 A  (actual 1548.8)
 dust_wav = dust_wav[wav_min:wav_max]
+
+# print(dust_wav[-1])
+# exit(0)
 
 # phase function
 def henyey(cos_xi, g):
@@ -251,7 +264,7 @@ def i_tir(bc03_f):
     ww1 = i_tir_integrand(lambs, z_of_tau(lambs, taus), rhos_1, betas, transform=1)
     print("starting second integral", flush=True)
     ww2 = i_tir_integrand(lambs, z_of_tau(lambs, taus), rhos_2, betas, transform=2)
-    print("finised second integral", flush=True)
+    print("finished second integral", flush=True)
 
     # integrate on simple grid
     # lamb_div = (lamb_max - lamb_min) / n_lamb
@@ -419,6 +432,13 @@ for p in paths[p_num:p_num+1]:
     bc03 = a[:, 1]
     bc03_f = interp1d(wav, bc03, kind='cubic')
 
+    # TEST plotting bc03
+    plt.plot(wav, bc03_f(wav))
+    plt.show()
+    print("lyman continuum level")
+    print(np.mean(bc03_f(wav)[(wav>450) & (wav<900)]))
+    exit(0)
+
     """
     # plots of integrand for I_TIR: (lambda, z, rho, beta)
     num_div = 50
@@ -464,6 +484,8 @@ for p in paths[p_num:p_num+1]:
     I_tir = i_tir(bc03_f)
     print("I_tir result")
     print(I_tir)
+
+    exit(0)
 
     # convert to 100 micron (there is an associated uncertainty)
     nu_I_nu_100 = .52 * I_tir  # units of angstroms * sigma
@@ -566,7 +588,7 @@ for p in paths[p_num:p_num+1]:
             ratio_brandt_mine = brandt_alphas / (alphas * bd12_factor)
             ratio_bd12_mine = bd12_alphas[:, 1][:-1] / (alphas_bin * bd12_factor)
 
-            plt.plot(wavelength, ratio_brandt_mine, 'purple', label='ratbinio of brandt alphas to mine')
+            plt.plot(wavelength, ratio_brandt_mine, 'purple', label='ratio of brandt alphas to mine')
             plt.plot(wavelength, np.ones(len(ratio_brandt_mine)), 'purple', linestyle='--')
             plt.plot(lambdas_bin, ratio_bd12_mine, 'pink', label='ratio of bd12 alphas to mine')
 

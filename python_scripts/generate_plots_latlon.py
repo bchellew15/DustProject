@@ -279,13 +279,13 @@ def plot_binned(alpha_indices, colors, labels, envelope=False, thicks=None):
     ax.yaxis.set_minor_locator(MultipleLocator(0.02))
     # ax.figure(figsize=(6, 5))
     ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
     if boss:
         ax.set_xlim(3700, 10000)
     else:
         ax.set_xlim(3850, 9200)
     ax.set_ylim(0, .4)
-    ax.legend(frameon=False)
+    ax.legend(frameon=False, ncol=2, loc='upper left')
     return ax
 
 if __name__ == "__main__":
@@ -298,11 +298,12 @@ if __name__ == "__main__":
     if boss:
         ax = plot_binned([2, 3], ['#BB5566', '#004488'], ['30 < |b| < 51', '51 < |b| < 71'],
                          envelope=envelope, thicks=[1.5, 1.5])
-        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size, horizontalalignment='center')
-        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
+        # ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size, horizontalalignment='center')
+        # ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
-            plt.clf()
+            # plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
+            # plt.clf()
+            pass
         elif show_plots:
             plt.show()
 
@@ -313,11 +314,11 @@ if __name__ == "__main__":
         ax = plot_binned([4, 5, 6, 7], ['#BB5566', '#004488', 'orange', 'black'],
                          ['30 < |b| < 41', '41 < |b| < 51', '51 < |b| < 59', '59 < |b| < 71'], envelope=envelope,
                          thicks=[1.5, 1.5, 1.5, 1.5])
-        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
-                horizontalalignment='center')
-        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
+        # ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
+        #         horizontalalignment='center')
+        # ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
+            plt.savefig('../paper_figures/four_latitudes_' + save + '.pdf', bbox_inches='tight')
             plt.clf()
         elif show_plots:
             plt.show()
@@ -329,28 +330,30 @@ if __name__ == "__main__":
         envelope = bootstrap
         ax = plot_binned([8, 9], ['#BB5566', '#004488'], ['36 < |l| < 116', '116 < |l| < 171'], envelope=envelope,
                          thicks=[1.5, 1.5])
-        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
-                horizontalalignment='center')
-        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
+        # ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
+        #         horizontalalignment='center')
+        # ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
-            plt.clf()
+            # plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
+            # plt.clf()
+            pass
         elif show_plots:
             plt.show()
 
     ##############################
-    # PLOT 2 Latitude Regions
+    # PLOT 4 Longitude Regions
     ##############################
     if boss:
         envelope = bootstrap
         ax = plot_binned([10, 11, 12, 13], ['#BB5566', '#004488', 'orange', 'black'],
                          ['36 < |l| < 84', '84 < |l| < 116', '116 < |l| < 145', '145 < |l| < 171'], envelope=envelope,
                          thicks=[1.5, 1.5, 1.5, 1.5])
-        ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
-                horizontalalignment='center')
-        ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
+        # ax.text(0.5, 0.2, "Bootstrap Uncertainties", transform=ax.transAxes, fontsize=font_size,
+        #         horizontalalignment='center')
+        # ax.arrow(0.5, 0.17, 0, -0.04, transform=ax.transAxes, width=.001, color='k', head_width=.01)
         if save != '0' and bootstrap:
-            plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
-            plt.clf()
+            # plt.savefig('../paper_figures/boss_north_south_' + save + '.pdf', bbox_inches='tight')
+            # plt.clf()
+            pass
         elif show_plots:
             plt.show()

@@ -246,7 +246,7 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False, thicks=None, zo
         ax1.set_yticklabels([])
         fig.supxlabel(r"Wavelength ($\mathrm{\AA}$)")
     else:
-        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
     ax1.legend(loc='upper center', bbox_to_anchor=(0.45, 0.95), frameon=False)
     ax1.set_xlim(4805, 5045)
     ax1.set_ylim(-0.16, 0.96)
@@ -283,7 +283,7 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False, thicks=None, zo
         ax2.set_yticklabels([])
     else:
         ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
     # ax2.legend(loc='upper center', frameon=False)
     ax2.set_xlim(6530, 6770)
     ax2.set_ylim(-0.16, 0.96)
@@ -313,7 +313,7 @@ def plot_emissions(alpha_indices, labels, colors, show_o3=False, thicks=None, zo
             else:
                 ax3.plot(wavelength, alpha_stds[idx], c=colors[i], drawstyle='steps-mid', linestyle='--')
 
-        ax3.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+        ax3.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
         # ax3.legend(loc='upper center', frameon=False)
         ax3.set_xlim(3712, 3742)
         ax3.set_ylim(-0.16, 0.96)
@@ -368,7 +368,7 @@ def plot_binned(alpha_indices, colors, labels, envelope=False, thicks=None):
     ax.yaxis.set_minor_locator(MultipleLocator(0.02))
     # ax.figure(figsize=(6, 5))
     ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+    ax.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
     if boss:
         ax.set_xlim(3700, 10000)
     else:
@@ -417,7 +417,7 @@ if __name__ == "__main__":
         legend2 = ax1.legend([a2, a3], ['Bootstrap Uncertainties', 'Formal Uncertainties'], frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1))
         pyplot.gca().add_artist(legend1)
         ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+        ax1.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
         ax1.set_xlim(x_min, x_max)
         ax1_ymin, ax1_ymax = 0, 0.29
         ax1.set_ylim(ax1_ymin, ax1_ymax)
@@ -438,7 +438,7 @@ if __name__ == "__main__":
         legend4 = ax2.legend([a5, a6], ['Bootstrap Uncertainties', 'Formal Uncertainties'], frameon=False, loc='lower center', bbox_to_anchor=(0.5, 0.1))
         pyplot.gca().add_artist(legend3)
         ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+        ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
         ax2.set_xlim(x_min, x_max)
         ax2_ymin, ax2_ymax = 0, 0.29
         ax2.set_ylim(ax2_ymin, ax2_ymax)
@@ -578,7 +578,7 @@ if __name__ == "__main__":
             else:
                 ax1.plot(binned_lambdas, binned_stds_1d[i], c=colors[i], drawstyle='steps', linestyle='--')
             ax1.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-            ax1.set_ylabel(r"$\alpha_\lambda$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+            ax1.set_ylabel(r"$\alpha_\lambda$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
             ax1.set_xlim(x_min, x_max)
             ax1.set_ylim(0, y_max)
 
@@ -601,7 +601,7 @@ if __name__ == "__main__":
             else:
                 ax2.plot(binned_lambdas, binned_stds_2d[i], c=colors[i], drawstyle='steps', linestyle='--')
             ax2.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
-            ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ = $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
+            ax2.set_ylabel(r"$\alpha_\lambda^{\prime}$ $\propto$ $\lambda I_{\lambda}$ / $\nu I_\nu$ (100 $\mathrm{\mu}$m)")
             ax2.set_xlim(x_min, x_max)
             ax2.set_ylim(0, y_max)
 

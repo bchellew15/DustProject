@@ -42,6 +42,7 @@ if boss:
     hdulist = fits.open("/Volumes/TOSHIBA/Dust_Overflow/" + 'skyfibers_lam0.fits')
     plate = hdulist[6].data
     mjd = hdulist[5].data
+    fiber_id = hdulist[7].data
     plate = 10000*plate + mjd%10000 #plate is now a unique identifier
     
 else:
@@ -66,7 +67,16 @@ for p in np.unique(plate):
     if np.mean(i100_old[plate==p]) > threshold:
         mask = np.append(mask, np.where(plate==p)[0])
 if boss:
-    mask = np.append(mask, 3178) #data at this location is bad
+    # don't mask the fibers... that's a different indexing system
+    mask = np.append(mask, np.where(plate == np.unique(plate)[36])[0])
+    mask = np.append(mask, np.where(plate == np.unique(plate)[938])[0])
+    mask = np.append(mask, np.where(plate == np.unique(plate)[1509])[0])
+    mask = np.append(mask, np.where(plate == np.unique(plate)[1265])[0])
+    mask = np.append(mask, np.where(plate == np.unique(plate)[1786])[0])
+    mask = np.append(mask, np.where(plate == np.unique(plate)[2141])[0])
+    mask = np.append(mask, np.where(plate == np.unique(plate)[2380])[0])
+    mask = np.append(mask, np.where(plate == np.unique(plate)[2383])[0])
+    mask = np.append(mask, np.where(plate == np.unique(plate)[2388])[0])
     
 longs = coords[:,0]
 lats = coords[:,1]

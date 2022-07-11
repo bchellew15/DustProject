@@ -10,12 +10,12 @@ hdulist = fits.open( '../data/SDSS_allskyspec.fits')
 wav_sdss = np.array(hdulist[1].data)
 loadkey = '111521'
 
-"""
+
 # Smooth the i100
 i100_files = [
-    '../alphas_and_stds/avg_i100_boss_iris.npy',
-    '../alphas_and_stds/avg_i100_boss_iris_north.npy',
-    '../alphas_and_stds/avg_i100_boss_iris_south.npy',
+    '../alphas_and_stds/avg_i100_boss_iris_' + loadkey + '.npy',
+    '../alphas_and_stds/avg_i100_boss_iris_north_' + loadkey + '.npy',
+    '../alphas_and_stds/avg_i100_boss_iris_south_' + loadkey + '.npy',
 ]
 i100s = [np.load(f) for f in i100_files]
 
@@ -30,7 +30,7 @@ for i, i100 in enumerate(i100s):
     np.save(i100_files[i].split('.npy')[0] + '_smooth.npy', i100_mean_smooth)
 
 exit(0)
-"""
+
 
 ######################
 # Now smooth the correction factors
