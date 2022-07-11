@@ -256,100 +256,100 @@ def mosaique_iris(alpha, delta, direc):
 
     return result
 
+if __name__ == "__main__":
+    #check against actual IRIS values:
+    if coords == 1:
+        #these are FK4 coordinates
+        actual_IRIS = np.loadtxt("/Users/blakechellew/Documents/DustProject/IRIS/brandt_iris/IRIS_values_skyphot.dat")
+        #these are same coordinates but FK5
+        #actual_IRIS2 = np.loadtxt("/Users/blakechellew/Documents/DustProject/IRIS/brandt_iris/skyphot_coords.dat")
 
-#check against actual IRIS values:
-if coords == 1:
-    #these are FK4 coordinates
-    actual_IRIS = np.loadtxt("/Users/blakechellew/Documents/DustProject/IRIS/brandt_iris/IRIS_values_skyphot.dat")
-    #these are same coordinates but FK5
-    #actual_IRIS2 = np.loadtxt("/Users/blakechellew/Documents/DustProject/IRIS/brandt_iris/skyphot_coords.dat")
+        #print("shape: ", actual_IRIS.shape)
 
-    #print("shape: ", actual_IRIS.shape)
+        start_idx = start_idx_actual
+        end_idx = end_idx_actual
 
-    start_idx = start_idx_actual
-    end_idx = end_idx_actual
+        #a, b either lat/long or not, and B1500 or J2000
+        a = actual_IRIS[:,0]
+        b = actual_IRIS[:,1]
+        iris_i100 = actual_IRIS[:,2]
 
-    #a, b either lat/long or not, and B1500 or J2000
-    a = actual_IRIS[:,0]
-    b = actual_IRIS[:,1]
-    iris_i100 = actual_IRIS[:,2]
+        #truncate:
+        a = a[start_idx:end_idx]
+        b = b[start_idx:end_idx]
+        iris_i100 = iris_i100[start_idx:end_idx]
 
-    #truncate:
-    a = a[start_idx:end_idx]
-    b = b[start_idx:end_idx]
-    iris_i100 = iris_i100[start_idx:end_idx]
+        result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
 
-    result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
+        from scipy.stats import linregress
+        print(linregress(iris_i100, result))
 
-    from scipy.stats import linregress
-    print(linregress(iris_i100, result))
+        plt.plot(iris_i100, result, 'k.', markersize=1)
+        x = np.arange(np.min(result), np.max(result), 0.1)
+        plt.plot(x, x)
+        plt.xlabel("iris i100")
+        plt.ylabel("my code results")
+        plt.show()
 
-    plt.plot(iris_i100, result, 'k.', markersize=1)
-    x = np.arange(np.min(result), np.max(result), 0.1)
-    plt.plot(x, x)
-    plt.xlabel("iris i100")
-    plt.ylabel("my code results")
-    plt.show()
+    #check against SFD values:
+    elif coords == 0:
+        a_b = np.load("/Users/blakechellew/Documents/DustProject/l_b_original.npy")
 
-#check against SFD values:
-elif coords == 0:
-    a_b = np.load("/Users/blakechellew/Documents/DustProject/l_b_original.npy")
+        start_idx = start_idx_sfd
+        end_idx = end_idx_sfd
 
-    start_idx = start_idx_sfd
-    end_idx = end_idx_sfd
+        a = a_b[start_idx:end_idx,0]
+        b = a_b[start_idx:end_idx,1]
 
-    a = a_b[start_idx:end_idx,0]
-    b = a_b[start_idx:end_idx,1]    
+        result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
+        #np.save('iris_i100_at_sfd.npy', result)
 
-    result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
-    #np.save('iris_i100_at_sfd.npy', result)
+        #check correlation
+        i100_original = np.load("/Users/blakechellew/Documents/DustProject/i100_1d.npy")[start_idx:end_idx]
 
-    #check correlation
-    i100_original = np.load("/Users/blakechellew/Documents/DustProject/i100_1d.npy")[start_idx:end_idx]
-    
-    
-    '''
-    #pick certain points:
-    #lower branch:
-    idx1 = np.where((result<1.9) * (result>1.7)*(i100_original<1.01)*(i100_original>0.95))[0]
-    #upper branch:
-    idx2 = np.where((result>2.275) * (result<2.295)*(i100_original<1.09)*(i100_original>1.0725))[0]
-    print("indices of selected points:")
-    print(idx1)
-    #124  144 2928 2960
-    print(idx2)
-    #668  694  726 2132
-    
-    #print("original:")
-    #print(i100_original[:50])
-    '''
 
-    from scipy.stats import linregress
-    print(linregress(i100_original, result))
-    
-    plt.plot(i100_original, result, 'k.', markersize=1)
-    #consider density plot
-    x = np.arange(np.min(result), np.max(result), 0.1)
-    plt.plot(x, x)
-    plt.xlabel("SFD i100")
-    plt.ylabel("IRIS i100")
-    plt.show()
+        '''
+        #pick certain points:
+        #lower branch:
+        idx1 = np.where((result<1.9) * (result>1.7)*(i100_original<1.01)*(i100_original>0.95))[0]
+        #upper branch:
+        idx2 = np.where((result>2.275) * (result<2.295)*(i100_original<1.09)*(i100_original>1.0725))[0]
+        print("indices of selected points:")
+        print(idx1)
+        #124  144 2928 2960
+        print(idx2)
+        #668  694  726 2132
+        
+        #print("original:")
+        #print(i100_original[:50])
+        '''
 
-#get IRIS values at BOSS locations:
-else:
-    #load coordinates:
-    a_b = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations.txt")
+        from scipy.stats import linregress
+        print(linregress(i100_original, result))
 
-    a = a_b[:,0]
-    b = a_b[:,1] 
+        plt.plot(i100_original, result, 'k.', markersize=1)
+        #consider density plot
+        x = np.arange(np.min(result), np.max(result), 0.1)
+        plt.plot(x, x)
+        plt.xlabel("SFD i100")
+        plt.ylabel("IRIS i100")
+        plt.show()
 
-    #get i100 values:
-    result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
+    #get IRIS values at BOSS locations:
+    else:
+        #load coordinates:
+        a_b = np.loadtxt("/Users/blakechellew/Documents/DustProject/BrandtFiles/BOSS_locations.txt")
 
-    #save i100 values:
-    np.save('iris_i100_at_boss.npy', result)
+        a = a_b[:,0]
+        b = a_b[:,1]
 
-    #check correlation with SFD BOSS values...
+        #get i100 values:
+        result = mosaique_iris(a, b, '/Users/blakechellew/Documents/DustProject/IRIS/IRISNOHOLES_B4H0')
+
+        #save i100 values:
+        np.save('iris_i100_at_boss.npy', result)
+
+        #check correlation with SFD BOSS values...
 
 
 
